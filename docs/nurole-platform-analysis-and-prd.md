@@ -432,7 +432,6 @@ Nurole operates as a **digital-first board search specialist** that connects org
 #### Dashboard Components:
 
 1. **Candidate Dashboard**:
-
    - Profile completion progress
    - Active applications status
    - Recommended opportunities

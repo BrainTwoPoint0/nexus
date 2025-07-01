@@ -184,32 +184,32 @@ interface CourseCardProps {
 
 ```typescript
 interface Course {
-  id: string
-  title: string
-  description: string
-  longDescription: string
-  category: CourseCategory
-  subcategory?: string
+  id: string;
+  title: string;
+  description: string;
+  longDescription: string;
+  category: CourseCategory;
+  subcategory?: string;
   instructor: {
-    name: string
-    title: string
-    avatar: string
-  }
-  duration: number // minutes
-  level: 'Beginner' | 'Intermediate' | 'Advanced'
-  rating: number
-  reviewCount: number
-  enrolledCount: number
-  thumbnailUrl: string
-  videoUrl: string
-  materials: string[]
-  prerequisites: string[]
-  learningObjectives: string[]
-  certificate: boolean
-  price: number
-  tags: string[]
-  createdAt: Date
-  updatedAt: Date
+    name: string;
+    title: string;
+    avatar: string;
+  };
+  duration: number; // minutes
+  level: 'Beginner' | 'Intermediate' | 'Advanced';
+  rating: number;
+  reviewCount: number;
+  enrolledCount: number;
+  thumbnailUrl: string;
+  videoUrl: string;
+  materials: string[];
+  prerequisites: string[];
+  learningObjectives: string[];
+  certificate: boolean;
+  price: number;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
