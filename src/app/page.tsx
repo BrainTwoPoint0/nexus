@@ -1,103 +1,200 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { MainLayout } from '@/components/layout/main-layout'
+import { Plus, Users, Briefcase, TrendingUp } from 'lucide-react'
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+}
+
+export default function HomePage() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <MainLayout>
+      <div className="page-container section-spacing">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="space-y-16"
+        >
+          {/* Hero Section */}
+          <motion.section variants={itemVariants} className="text-center space-y-6">
+            <h1 className="text-6xl font-bold text-foreground text-balance">
+              Where Executive Excellence{' '}
+              <span className="gradient-text">Connects</span>
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto text-balance">
+              The premier platform connecting executive talent with board opportunities through
+              intelligent matching and professional development.
+            </p>
+            <div className="flex items-center justify-center space-x-4">
+              <Button size="lg" className="shadow-nexus-md">
+                <Plus className="h-5 w-5" />
+                Join as Candidate
+              </Button>
+              <Button variant="outline" size="lg">
+                Post a Role
+              </Button>
+            </div>
+          </motion.section>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+          {/* Stats Section */}
+          <motion.section variants={itemVariants}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <Users className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-3xl font-bold">4,000+</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Successful Placements</p>
+                </CardContent>
+              </Card>
+
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <Briefcase className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-3xl font-bold">800+</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Annual Placements</p>
+                </CardContent>
+              </Card>
+
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <TrendingUp className="h-6 w-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-3xl font-bold">30+</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">Sector Specialists</p>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.section>
+
+          {/* Features Section */}
+          <motion.section variants={itemVariants} className="space-y-8">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl font-bold text-foreground">
+                Why Choose Nexus?
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Technology-enhanced executive search with human expertise at its core.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="card-featured">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Expert Curation</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Our 30+ sector specialists bring deep industry knowledge and proven track records
+                    to every search, ensuring quality matches that go beyond algorithms.
+                  </p>
+                  <div className="flex space-x-2">
+                    <Badge variant="secondary">Financial Services</Badge>
+                    <Badge variant="secondary">Technology</Badge>
+                    <Badge variant="secondary">Healthcare</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">AI-Powered Matching</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Advanced algorithms analyze skills, experience, and cultural fit to identify
+                    the perfect candidates for your board positions.
+                  </p>
+                  <div className="flex space-x-2">
+                    <Badge variant="outline">Skills Analysis</Badge>
+                    <Badge variant="outline">Cultural Fit</Badge>
+                    <Badge variant="outline">Experience Match</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Professional Growth</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Continuous learning opportunities, networking events, and career development
+                    resources to help you excel in your board roles.
+                  </p>
+                  <div className="flex space-x-2">
+                    <Badge variant="outline">Training</Badge>
+                    <Badge variant="outline">Networking</Badge>
+                    <Badge variant="outline">Mentorship</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-2xl">Trusted Network</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Join a community of accomplished executives and organizations committed
+                    to excellence in governance and leadership.
+                  </p>
+                  <div className="flex space-x-2">
+                    <Badge variant="outline">Vetted Members</Badge>
+                    <Badge variant="outline">Quality Network</Badge>
+                    <Badge variant="outline">Trusted Platform</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.section>
+
+          {/* CTA Section */}
+          <motion.section variants={itemVariants} className="text-center space-y-6 bg-secondary/20 rounded-2xl p-12">
+            <h2 className="text-4xl font-bold text-foreground">
+              Ready to Find Your Next Board Opportunity?
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Join thousands of executives who have advanced their careers through Nexus.
+            </p>
+            <div className="flex items-center justify-center space-x-4">
+              <Button size="lg">
+                Get Started Today
+              </Button>
+              <Button variant="outline" size="lg">
+                Learn More
+              </Button>
+            </div>
+          </motion.section>
+        </motion.div>
+      </div>
+    </MainLayout>
+  )
 }
