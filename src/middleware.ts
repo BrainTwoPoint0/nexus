@@ -37,12 +37,15 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Define paths that require authentication
-  const protectedPaths = ['/dashboard', '/profile', '/settings', '/opportunities'];
+  const protectedPaths = [
+    '/dashboard',
+    '/profile',
+    '/settings',
+    '/opportunities',
+  ];
 
   // Define paths that should redirect authenticated users
   const authPaths = ['/sign-in', '/sign-up'];
-
-
 
   const isProtectedPath = protectedPaths.some((path) =>
     pathname.startsWith(path)

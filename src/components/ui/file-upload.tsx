@@ -4,15 +4,15 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Upload, 
-  File, 
-  X, 
-  CheckCircle, 
+import {
+  Upload,
+  File,
+  X,
+  CheckCircle,
   AlertCircle,
   FileText,
   Image as ImageIcon,
-  Video
+  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +41,7 @@ export function FileUpload({
   onUpload,
   className,
   bucket = 'documents',
-  folder = 'resumes'
+  folder = 'resumes',
 }: FileUploadProps) {
   const [files, setFiles] = useState<FileUploadResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -51,14 +51,14 @@ export function FileUpload({
     if (!selectedFiles) return;
 
     const newFiles: FileUploadResult[] = [];
-    
+
     Array.from(selectedFiles).forEach((file) => {
       // Validate file size
       if (file.size > maxSize * 1024 * 1024) {
         newFiles.push({
           file,
           error: `File size exceeds ${maxSize}MB limit`,
-          status: 'error'
+          status: 'error',
         });
         return;
       }
@@ -69,7 +69,7 @@ export function FileUpload({
         newFiles.push({
           file,
           error: 'File type not supported',
-          status: 'error'
+          status: 'error',
         });
         return;
       }
@@ -77,14 +77,14 @@ export function FileUpload({
       newFiles.push({
         file,
         status: 'uploading',
-        progress: 0
+        progress: 0,
       });
     });
 
     if (!multiple) {
       setFiles(newFiles.slice(0, 1));
     } else {
-      setFiles(prev => [...prev, ...newFiles]);
+      setFiles((prev) => [...prev, ...newFiles]);
     }
 
     // Simulate upload process (replace with actual Supabase upload)
@@ -98,13 +98,22 @@ export function FileUpload({
   };
 
   // TODO: Replace with actual Supabase Storage upload
-  const simulateUpload = async (fileResult: FileUploadResult, index: number) => {
+  const simulateUpload = async (
+    fileResult: FileUploadResult,
+    index: number
+  ) => {
     const updateProgress = (progress: number) => {
-      setFiles(prev => prev.map((f, i) => 
-        f.file === fileResult.file 
-          ? { ...f, progress, status: progress === 100 ? 'completed' : 'uploading' }
-          : f
-      ));
+      setFiles((prev) =>
+        prev.map((f, i) =>
+          f.file === fileResult.file
+            ? {
+                ...f,
+                progress,
+                status: progress === 100 ? 'completed' : 'uploading',
+              }
+            : f
+        )
+      );
     };
 
     // Announce upload start to screen readers
@@ -115,17 +124,19 @@ export function FileUpload({
 
     // Simulate upload progress
     for (let progress = 0; progress <= 100; progress += 10) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       updateProgress(progress);
     }
 
     // Simulate getting the file URL
     const mockUrl = `https://example.com/uploads/${fileResult.file.name}`;
-    setFiles(prev => prev.map(f => 
-      f.file === fileResult.file 
-        ? { ...f, url: mockUrl, status: 'completed' }
-        : f
-    ));
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.file === fileResult.file
+          ? { ...f, url: mockUrl, status: 'completed' }
+          : f
+      )
+    );
 
     // Announce upload completion
     if (liveRegion) {
@@ -134,7 +145,7 @@ export function FileUpload({
   };
 
   const removeFile = (fileToRemove: File) => {
-    setFiles(prev => prev.filter(f => f.file !== fileToRemove));
+    setFiles((prev) => prev.filter((f) => f.file !== fileToRemove));
   };
 
   const getFileIcon = (fileName: string) => {
@@ -172,7 +183,7 @@ export function FileUpload({
       {/* Upload Area */}
       <div
         className={cn(
-          'relative border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+          'relative rounded-lg border-2 border-dashed p-8 text-center transition-colors',
           isDragging
             ? 'border-primary bg-primary/5'
             : 'border-border hover:border-primary/50',
@@ -195,21 +206,21 @@ export function FileUpload({
           accept={accept}
           multiple={multiple}
           onChange={(e) => handleFileSelect(e.target.files)}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
           aria-label={`Upload ${multiple ? 'files' : 'file'} (${accept}, max ${maxSize}MB)`}
         />
-        
+
         <div className="space-y-4">
-          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Upload className="h-6 w-6 text-primary" />
           </div>
-          
+
           <div className="space-y-2">
             <p className="text-lg font-medium">
               Drop your files here or{' '}
               <Button
                 variant="link"
-                className="p-0 h-auto text-primary"
+                className="h-auto p-0 text-primary"
                 onClick={() => fileInputRef.current?.click()}
               >
                 browse
@@ -229,20 +240,20 @@ export function FileUpload({
           <h4 className="text-sm font-medium">
             {multiple ? `${files.length} file(s)` : 'Selected file'}
           </h4>
-          
+
           <div className="space-y-2">
             {files.map((fileResult) => (
               <div
                 key={fileResult.file.name + fileResult.file.size}
-                className="flex items-center space-x-3 p-3 border rounded-lg bg-card"
+                className="flex items-center space-x-3 rounded-lg border bg-card p-3"
               >
                 <div className="flex-shrink-0">
                   {getFileIcon(fileResult.file.name)}
                 </div>
-                
-                <div className="flex-1 min-w-0 space-y-1">
+
+                <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium truncate">
+                    <p className="truncate text-sm font-medium">
                       {fileResult.file.name}
                     </p>
                     <div className="flex items-center space-x-2">
@@ -262,7 +273,7 @@ export function FileUpload({
                       </Button>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{formatFileSize(fileResult.file.size)}</span>
                     {fileResult.status === 'completed' && (
@@ -271,15 +282,14 @@ export function FileUpload({
                       </Badge>
                     )}
                     {fileResult.status === 'error' && (
-                      <Badge variant="destructive">
-                        {fileResult.error}
-                      </Badge>
+                      <Badge variant="destructive">{fileResult.error}</Badge>
                     )}
                   </div>
-                  
-                  {fileResult.status === 'uploading' && fileResult.progress !== undefined && (
-                    <Progress value={fileResult.progress} className="h-1" />
-                  )}
+
+                  {fileResult.status === 'uploading' &&
+                    fileResult.progress !== undefined && (
+                      <Progress value={fileResult.progress} className="h-1" />
+                    )}
                 </div>
               </div>
             ))}

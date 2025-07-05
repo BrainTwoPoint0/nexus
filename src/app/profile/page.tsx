@@ -515,9 +515,12 @@ export default function ProfilePage() {
                   <CardContent className="space-y-6">
                     <div className="space-y-4">
                       <div>
-                        <Label className="text-base font-medium">Resume/CV</Label>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Upload your current resume or CV. This will be shared with potential organizations.
+                        <Label className="text-base font-medium">
+                          Resume/CV
+                        </Label>
+                        <p className="mb-3 text-sm text-muted-foreground">
+                          Upload your current resume or CV. This will be shared
+                          with potential organizations.
                         </p>
                         <FileUpload
                           accept=".pdf,.doc,.docx"
@@ -533,9 +536,12 @@ export default function ProfilePage() {
                       </div>
 
                       <div>
-                        <Label className="text-base font-medium">Supporting Documents</Label>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          Upload additional documents such as certifications, cover letters, or references.
+                        <Label className="text-base font-medium">
+                          Supporting Documents
+                        </Label>
+                        <p className="mb-3 text-sm text-muted-foreground">
+                          Upload additional documents such as certifications,
+                          cover letters, or references.
                         </p>
                         <FileUpload
                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
@@ -544,7 +550,10 @@ export default function ProfilePage() {
                           bucket="documents"
                           folder="supporting"
                           onUpload={(files) => {
-                            console.log('Supporting documents uploaded:', files);
+                            console.log(
+                              'Supporting documents uploaded:',
+                              files
+                            );
                             // TODO: Save file URLs to user profile
                           }}
                         />
@@ -559,13 +568,15 @@ export default function ProfilePage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="p-4 border rounded-lg bg-muted/30">
+                      <div className="rounded-lg border bg-muted/30 p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <FileText className="h-5 w-5 text-blue-500" />
                             <div>
                               <p className="font-medium">Current Resume</p>
-                              <p className="text-sm text-muted-foreground">resume-john-doe-2024.pdf</p>
+                              <p className="text-sm text-muted-foreground">
+                                resume-john-doe-2024.pdf
+                              </p>
                             </div>
                           </div>
                           <div className="flex space-x-2">
@@ -579,10 +590,13 @@ export default function ProfilePage() {
                         </div>
                       </div>
 
-                      <div className="text-center py-8 text-muted-foreground">
-                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <div className="py-8 text-center text-muted-foreground">
+                        <FileText className="mx-auto mb-3 h-12 w-12 opacity-50" />
                         <p>No supporting documents uploaded yet.</p>
-                        <p className="text-sm">Upload certificates, references, or cover letters above.</p>
+                        <p className="text-sm">
+                          Upload certificates, references, or cover letters
+                          above.
+                        </p>
                       </div>
                     </div>
                   </CardContent>

@@ -93,17 +93,11 @@ const locations = [
   'Europe',
   'Global',
 ];
-const roleTypes = [
-  'All Types',
-  'board',
-  'executive', 
-  'advisory',
-  'consultant',
-];
+const roleTypes = ['All Types', 'board', 'executive', 'advisory', 'consultant'];
 export default function OpportunitiesPage() {
   const supabase = useSupabaseClient();
   const user = useUser();
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('All Sectors');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
@@ -119,7 +113,8 @@ export default function OpportunitiesPage() {
       try {
         const { data: jobsData, error } = await supabase
           .from('jobs')
-          .select(`
+          .select(
+            `
             id,
             title,
             description,
@@ -135,7 +130,8 @@ export default function OpportunitiesPage() {
             application_deadline,
             status,
             organization:organizations(name)
-          `)
+          `
+          )
           .eq('status', 'active')
           .order('created_at', { ascending: false });
 
@@ -166,7 +162,7 @@ export default function OpportunitiesPage() {
         (payload) => {
           console.log('New opportunity added:', payload);
           // Add new opportunity to the list
-          setOpportunities(prev => [payload.new as Opportunity, ...prev]);
+          setOpportunities((prev) => [payload.new as Opportunity, ...prev]);
         }
       )
       .on(
@@ -179,11 +175,9 @@ export default function OpportunitiesPage() {
         (payload) => {
           console.log('Opportunity updated:', payload);
           // Update existing opportunity
-          setOpportunities(prev =>
-            prev.map(opp =>
-              opp.id === payload.new.id
-                ? { ...opp, ...payload.new }
-                : opp
+          setOpportunities((prev) =>
+            prev.map((opp) =>
+              opp.id === payload.new.id ? { ...opp, ...payload.new } : opp
             )
           );
         }
@@ -198,8 +192,8 @@ export default function OpportunitiesPage() {
         (payload) => {
           console.log('Opportunity removed:', payload);
           // Remove opportunity from list
-          setOpportunities(prev =>
-            prev.filter(opp => opp.id !== payload.old.id)
+          setOpportunities((prev) =>
+            prev.filter((opp) => opp.id !== payload.old.id)
           );
         }
       )
@@ -212,7 +206,7 @@ export default function OpportunitiesPage() {
 
   const toggleBookmark = (id: string) => {
     // TODO: Implement real bookmarking with Supabase
-    setBookmarkedJobs(prev => {
+    setBookmarkedJobs((prev) => {
       const newBookmarked = new Set(prev);
       if (newBookmarked.has(id)) {
         newBookmarked.delete(id);
@@ -237,7 +231,8 @@ export default function OpportunitiesPage() {
       (opp.location && opp.location.includes(selectedLocation)) ||
       (selectedLocation === 'Remote' && opp.location === 'Remote');
     const matchesRoleType =
-      selectedRoleType === 'All Types' || opp.employment_type === selectedRoleType;
+      selectedRoleType === 'All Types' ||
+      opp.employment_type === selectedRoleType;
     const matchesBookmark = !showOnlyBookmarked || bookmarkedJobs.has(opp.id);
 
     return (
@@ -490,12 +485,12 @@ export default function OpportunitiesPage() {
                 {[1, 2, 3].map((i) => (
                   <Card key={i} className="animate-pulse">
                     <CardHeader>
-                      <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
-                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                      <div className="mb-2 h-6 w-3/4 rounded bg-muted"></div>
+                      <div className="h-4 w-1/2 rounded bg-muted"></div>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
-                      <div className="h-4 bg-muted rounded w-2/3"></div>
+                      <div className="mb-2 h-4 w-full rounded bg-muted"></div>
+                      <div className="h-4 w-2/3 rounded bg-muted"></div>
                     </CardContent>
                   </Card>
                 ))}
@@ -503,8 +498,14 @@ export default function OpportunitiesPage() {
             ) : filteredOpportunities.length === 0 ? (
               <Card>
                 <CardContent className="py-16 text-center">
-                  <p className="text-muted-foreground">No opportunities found matching your criteria.</p>
-                  <Button variant="ghost" onClick={clearFilters} className="mt-4">
+                  <p className="text-muted-foreground">
+                    No opportunities found matching your criteria.
+                  </p>
+                  <Button
+                    variant="ghost"
+                    onClick={clearFilters}
+                    className="mt-4"
+                  >
                     Clear filters
                   </Button>
                 </CardContent>
@@ -520,7 +521,9 @@ export default function OpportunitiesPage() {
                             <h3 className="text-xl font-semibold text-foreground">
                               {opportunity.title}
                             </h3>
-                            <Badge variant="outline">{opportunity.employment_type}</Badge>
+                            <Badge variant="outline">
+                              {opportunity.employment_type}
+                            </Badge>
                             {/* TODO: Add match score calculation later */}
                           </div>
                           <div className="flex items-center space-x-4 text-muted-foreground">
@@ -530,7 +533,9 @@ export default function OpportunitiesPage() {
                             </div>
                             <div className="flex items-center space-x-1">
                               <MapPin className="h-4 w-4" />
-                              <span>{opportunity.location || 'Location TBD'}</span>
+                              <span>
+                                {opportunity.location || 'Location TBD'}
+                              </span>
                             </div>
                             {opportunity.sector && (
                               <Badge variant="secondary">
@@ -544,10 +549,12 @@ export default function OpportunitiesPage() {
                           size="sm"
                           onClick={() => toggleBookmark(opportunity.id)}
                           className={
-                            bookmarkedJobs.has(opportunity.id) ? 'text-primary' : ''
+                            bookmarkedJobs.has(opportunity.id)
+                              ? 'text-primary'
+                              : ''
                           }
                           aria-label={
-                            bookmarkedJobs.has(opportunity.id) 
+                            bookmarkedJobs.has(opportunity.id)
                               ? `Remove ${opportunity.title} from bookmarks`
                               : `Add ${opportunity.title} to bookmarks`
                           }
@@ -558,74 +565,85 @@ export default function OpportunitiesPage() {
                         </Button>
                       </div>
                     </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="line-clamp-2 text-muted-foreground">
-                      {opportunity.description}
-                    </p>
+                    <CardContent className="space-y-4">
+                      <p className="line-clamp-2 text-muted-foreground">
+                        {opportunity.description}
+                      </p>
 
-                    <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
-                      <div className="flex items-center space-x-2">
-                        <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {opportunity.compensation_min && opportunity.compensation_max
-                            ? `${opportunity.compensation_currency || '$'}${(opportunity.compensation_min/1000).toFixed(0)}K - ${(opportunity.compensation_max/1000).toFixed(0)}K`
-                            : opportunity.compensation_min
-                            ? `${opportunity.compensation_currency || '$'}${(opportunity.compensation_min/1000).toFixed(0)}K+`
-                            : 'Competitive'}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{opportunity.time_commitment || 'TBD'}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-orange-600">
-                          {opportunity.application_deadline 
-                            ? new Date(opportunity.application_deadline) > new Date() 
-                              ? `${Math.ceil((new Date(opportunity.application_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`
-                              : 'Expired'
-                            : 'Open'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {opportunity.requirements && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Requirements:
-                        </Label>
-                        <div className="text-sm text-muted-foreground">
-                          {opportunity.requirements.slice(0, 150)}
-                          {opportunity.requirements.length > 150 && '...'}
+                      <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
+                        <div className="flex items-center space-x-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          <span>
+                            {opportunity.compensation_min &&
+                            opportunity.compensation_max
+                              ? `${opportunity.compensation_currency || '$'}${(opportunity.compensation_min / 1000).toFixed(0)}K - ${(opportunity.compensation_max / 1000).toFixed(0)}K`
+                              : opportunity.compensation_min
+                                ? `${opportunity.compensation_currency || '$'}${(opportunity.compensation_min / 1000).toFixed(0)}K+`
+                                : 'Competitive'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span>{opportunity.time_commitment || 'TBD'}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-orange-600">
+                            {opportunity.application_deadline
+                              ? new Date(opportunity.application_deadline) >
+                                new Date()
+                                ? `${Math.ceil((new Date(opportunity.application_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`
+                                : 'Expired'
+                              : 'Open'}
+                          </span>
                         </div>
                       </div>
-                    )}
 
-                    <div className="flex items-center justify-between border-t pt-4">
-                      <span className="text-sm text-muted-foreground">
-                        Posted {Math.floor((new Date().getTime() - new Date(opportunity.created_at).getTime()) / (1000 * 60 * 60 * 24))} days ago
-                      </span>
-                      <div className="flex space-x-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          aria-label={`Learn more about ${opportunity.title} at ${opportunity.organization.name}`}
-                        >
-                          Learn More
-                          <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
-                        </Button>
-                        <Button 
-                          size="sm"
-                          aria-label={`Apply for ${opportunity.title} at ${opportunity.organization.name}`}
-                        >
-                          Apply Now
-                        </Button>
+                      {opportunity.requirements && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">
+                            Requirements:
+                          </Label>
+                          <div className="text-sm text-muted-foreground">
+                            {opportunity.requirements.slice(0, 150)}
+                            {opportunity.requirements.length > 150 && '...'}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between border-t pt-4">
+                        <span className="text-sm text-muted-foreground">
+                          Posted{' '}
+                          {Math.floor(
+                            (new Date().getTime() -
+                              new Date(opportunity.created_at).getTime()) /
+                              (1000 * 60 * 60 * 24)
+                          )}{' '}
+                          days ago
+                        </span>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label={`Learn more about ${opportunity.title} at ${opportunity.organization.name}`}
+                          >
+                            Learn More
+                            <ExternalLink
+                              className="ml-2 h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                          <Button
+                            size="sm"
+                            aria-label={`Apply for ${opportunity.title} at ${opportunity.organization.name}`}
+                          >
+                            Apply Now
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    </CardContent>
+                  </Card>
+                </div>
               ))
             )}
           </motion.div>

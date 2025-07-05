@@ -34,7 +34,7 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 7,
     section: 'personal',
     completed: false,
-    priority: 'high'
+    priority: 'high',
   },
   {
     id: 'phone',
@@ -43,7 +43,7 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 4,
     section: 'personal',
     completed: false,
-    priority: 'medium'
+    priority: 'medium',
   },
   {
     id: 'linkedin',
@@ -52,7 +52,7 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 3,
     section: 'personal',
     completed: false,
-    priority: 'medium'
+    priority: 'medium',
   },
   {
     id: 'skills',
@@ -61,7 +61,7 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 8,
     section: 'skills',
     completed: false,
-    priority: 'high'
+    priority: 'high',
   },
   {
     id: 'work_history',
@@ -70,16 +70,16 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 12,
     section: 'experience',
     completed: false,
-    priority: 'high'
+    priority: 'high',
   },
   {
     id: 'board_experience',
     title: 'Add Board Experience',
-    description: 'Add any board positions you\'ve held',
+    description: "Add any board positions you've held",
     points: 10,
     section: 'experience',
     completed: false,
-    priority: 'high'
+    priority: 'high',
   },
   {
     id: 'education',
@@ -88,7 +88,7 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 5,
     section: 'experience',
     completed: false,
-    priority: 'medium'
+    priority: 'medium',
   },
   {
     id: 'certifications',
@@ -97,7 +97,7 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 5,
     section: 'skills',
     completed: false,
-    priority: 'medium'
+    priority: 'medium',
   },
   {
     id: 'resume',
@@ -106,8 +106,8 @@ const defaultSuggestions: CompletionSuggestion[] = [
     points: 8,
     section: 'documents',
     completed: false,
-    priority: 'high'
-  }
+    priority: 'high',
+  },
 ];
 
 export function ProfileCompleteness({
@@ -115,7 +115,7 @@ export function ProfileCompleteness({
   suggestions = defaultSuggestions,
   compact = false,
   showSuggestions = true,
-  onSuggestionClick
+  onSuggestionClick,
 }: ProfileCompletenessProps) {
   const [displayedCompleteness, setDisplayedCompleteness] = useState(0);
 
@@ -128,21 +128,36 @@ export function ProfileCompleteness({
   }, [completeness]);
 
   const getCompletenessStatus = (percentage: number) => {
-    if (percentage >= 90) return { label: 'Excellent', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (percentage >= 70) return { label: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-100' };
-    if (percentage >= 50) return { label: 'Fair', color: 'text-orange-600', bgColor: 'bg-orange-100' };
-    return { label: 'Needs Attention', color: 'text-red-600', bgColor: 'bg-red-100' };
+    if (percentage >= 90)
+      return {
+        label: 'Excellent',
+        color: 'text-green-600',
+        bgColor: 'bg-green-100',
+      };
+    if (percentage >= 70)
+      return { label: 'Good', color: 'text-blue-600', bgColor: 'bg-blue-100' };
+    if (percentage >= 50)
+      return {
+        label: 'Fair',
+        color: 'text-orange-600',
+        bgColor: 'bg-orange-100',
+      };
+    return {
+      label: 'Needs Attention',
+      color: 'text-red-600',
+      bgColor: 'bg-red-100',
+    };
   };
 
   const status = getCompletenessStatus(completeness);
-  const pendingSuggestions = suggestions.filter(s => !s.completed);
+  const pendingSuggestions = suggestions.filter((s) => !s.completed);
   const nextSuggestions = pendingSuggestions.slice(0, 3);
 
   if (compact) {
     return (
       <div className="flex items-center space-x-3">
         <div className="flex-1">
-          <div className="flex items-center justify-between mb-1">
+          <div className="mb-1 flex items-center justify-between">
             <span className="text-sm font-medium">Profile Completeness</span>
             <span className="text-sm font-semibold">{completeness}%</span>
           </div>
@@ -165,7 +180,7 @@ export function ProfileCompleteness({
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Progress Section */}
         <div className="space-y-3">
@@ -176,15 +191,17 @@ export function ProfileCompleteness({
               ) : (
                 <TrendingUp className="h-5 w-5 text-blue-500" />
               )}
-              <span className="font-medium text-lg">{completeness}% Complete</span>
+              <span className="text-lg font-medium">
+                {completeness}% Complete
+              </span>
             </div>
             <div className="text-sm text-muted-foreground">
               {100 - completeness} points to go
             </div>
           </div>
-          
+
           <Progress value={displayedCompleteness} className="h-3" />
-          
+
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Basic</span>
             <span>Good</span>
@@ -194,35 +211,39 @@ export function ProfileCompleteness({
 
         {/* Completion Message */}
         {completeness >= 90 ? (
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
                 <p className="font-medium text-green-800">Excellent Profile!</p>
                 <p className="text-sm text-green-700">
-                  Your profile is highly attractive to organizations looking for board members.
+                  Your profile is highly attractive to organizations looking for
+                  board members.
                 </p>
               </div>
             </div>
           </div>
         ) : completeness >= 70 ? (
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
             <div className="flex items-center space-x-2">
               <TrendingUp className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="font-medium text-blue-800">Good Progress!</p>
                 <p className="text-sm text-blue-700">
-                  You're on track. Complete a few more sections to maximize your visibility.
+                  You're on track. Complete a few more sections to maximize your
+                  visibility.
                 </p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4">
             <div className="flex items-center space-x-2">
               <AlertCircle className="h-5 w-5 text-orange-600" />
               <div>
-                <p className="font-medium text-orange-800">Boost Your Profile</p>
+                <p className="font-medium text-orange-800">
+                  Boost Your Profile
+                </p>
                 <p className="text-sm text-orange-700">
                   Complete more sections to attract top board opportunities.
                 </p>
@@ -232,55 +253,66 @@ export function ProfileCompleteness({
         )}
 
         {/* Quick Actions */}
-        {showSuggestions && nextSuggestions.length > 0 && completeness < 100 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium">Quick Wins</h4>
-              <span className="text-xs text-muted-foreground">
-                {pendingSuggestions.length} remaining
-              </span>
-            </div>
-            
-            <div className="space-y-2">
-              {nextSuggestions.map((suggestion) => (
-                <div
-                  key={suggestion.id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-secondary/50 transition-colors cursor-pointer"
-                  onClick={() => onSuggestionClick?.(suggestion)}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={cn(
-                      'w-2 h-2 rounded-full',
-                      suggestion.priority === 'high' ? 'bg-red-500' :
-                      suggestion.priority === 'medium' ? 'bg-orange-500' : 'bg-green-500'
-                    )} />
-                    <div>
-                      <p className="font-medium text-sm">{suggestion.title}</p>
-                      <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+        {showSuggestions &&
+          nextSuggestions.length > 0 &&
+          completeness < 100 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Quick Wins</h4>
+                <span className="text-xs text-muted-foreground">
+                  {pendingSuggestions.length} remaining
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {nextSuggestions.map((suggestion) => (
+                  <div
+                    key={suggestion.id}
+                    className="flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-colors hover:bg-secondary/50"
+                    onClick={() => onSuggestionClick?.(suggestion)}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div
+                        className={cn(
+                          'h-2 w-2 rounded-full',
+                          suggestion.priority === 'high'
+                            ? 'bg-red-500'
+                            : suggestion.priority === 'medium'
+                              ? 'bg-orange-500'
+                              : 'bg-green-500'
+                        )}
+                      />
+                      <div>
+                        <p className="text-sm font-medium">
+                          {suggestion.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {suggestion.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-xs">
+                        +{suggestion.points}
+                      </Badge>
+                      <Plus className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge variant="outline" className="text-xs">
-                      +{suggestion.points}
-                    </Badge>
-                    <Plus className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {pendingSuggestions.length > 3 && (
+                <Button variant="outline" size="sm" className="w-full">
+                  View All Suggestions ({pendingSuggestions.length - 3} more)
+                </Button>
+              )}
             </div>
-            
-            {pendingSuggestions.length > 3 && (
-              <Button variant="outline" size="sm" className="w-full">
-                View All Suggestions ({pendingSuggestions.length - 3} more)
-              </Button>
-            )}
-          </div>
-        )}
+          )}
 
         {/* Profile Benefits */}
         {completeness < 70 && (
-          <div className="p-4 border rounded-lg bg-muted/30">
-            <h4 className="font-medium mb-2">Complete Profile Benefits</h4>
+          <div className="rounded-lg border bg-muted/30 p-4">
+            <h4 className="mb-2 font-medium">Complete Profile Benefits</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
               <li>• Higher visibility in organization searches</li>
               <li>• Better quality board opportunity matches</li>
@@ -297,7 +329,8 @@ export function ProfileCompleteness({
 // Hook for calculating profile completeness from profile data
 export function useProfileCompleteness(profile: any) {
   const [completeness, setCompleteness] = useState(0);
-  const [suggestions, setSuggestions] = useState<CompletionSuggestion[]>(defaultSuggestions);
+  const [suggestions, setSuggestions] =
+    useState<CompletionSuggestion[]>(defaultSuggestions);
 
   useEffect(() => {
     if (!profile) return;
@@ -312,26 +345,27 @@ export function useProfileCompleteness(profile: any) {
     if (profile.email?.trim()) score += 3;
     if (profile.phone?.trim()) {
       score += 4;
-      updatedSuggestions.find(s => s.id === 'phone')!.completed = true;
+      updatedSuggestions.find((s) => s.id === 'phone')!.completed = true;
     }
     if (profile.title?.trim()) score += 5;
     if (profile.bio?.trim() && profile.bio.length > 50) {
       score += 7;
-      updatedSuggestions.find(s => s.id === 'bio')!.completed = true;
+      updatedSuggestions.find((s) => s.id === 'bio')!.completed = true;
     }
     if (profile.location?.trim()) score += 5;
 
     // Professional details (20 points)
     if (profile.skills && profile.skills.length >= 3) {
       score += 8;
-      updatedSuggestions.find(s => s.id === 'skills')!.completed = true;
+      updatedSuggestions.find((s) => s.id === 'skills')!.completed = true;
     }
     if (profile.linkedin_url?.trim()) {
       score += 3;
-      updatedSuggestions.find(s => s.id === 'linkedin')!.completed = true;
+      updatedSuggestions.find((s) => s.id === 'linkedin')!.completed = true;
     }
     if (profile.languages && profile.languages.length > 0) score += 2;
-    if (profile.sector_preferences && profile.sector_preferences.length > 0) score += 4;
+    if (profile.sector_preferences && profile.sector_preferences.length > 0)
+      score += 4;
     if (profile.availability_status) score += 3;
 
     // Experience sections would be calculated from related tables
