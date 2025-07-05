@@ -40,8 +40,6 @@ export function FileUpload({
   multiple = false,
   onUpload,
   className,
-  bucket = 'documents',
-  folder = 'resumes',
 }: FileUploadProps) {
   const [files, setFiles] = useState<FileUploadResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,9 +86,9 @@ export function FileUpload({
     }
 
     // Simulate upload process (replace with actual Supabase upload)
-    newFiles.forEach((fileResult, index) => {
+    newFiles.forEach((fileResult) => {
       if (fileResult.status === 'uploading') {
-        simulateUpload(fileResult, index);
+        simulateUpload(fileResult);
       }
     });
 
@@ -98,13 +96,10 @@ export function FileUpload({
   };
 
   // TODO: Replace with actual Supabase Storage upload
-  const simulateUpload = async (
-    fileResult: FileUploadResult,
-    index: number
-  ) => {
+  const simulateUpload = async (fileResult: FileUploadResult) => {
     const updateProgress = (progress: number) => {
       setFiles((prev) =>
-        prev.map((f, i) =>
+        prev.map((f) =>
           f.file === fileResult.file
             ? {
                 ...f,

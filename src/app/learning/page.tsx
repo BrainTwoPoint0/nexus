@@ -1,15 +1,7 @@
 'use client';
 
 import { useState, memo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-
-// Dynamic import for motion to reduce initial bundle size
-const motion = dynamic(
-  () => import('framer-motion').then((mod) => ({ default: mod.motion })),
-  {
-    ssr: false,
-  }
-) as any;
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,22 +15,23 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MainLayout } from '@/components/layout/main-layout';
-// Optimized lucide-react imports - only import what we need
-import Search from 'lucide-react/dist/esm/icons/search';
-import Play from 'lucide-react/dist/esm/icons/play';
-import Clock from 'lucide-react/dist/esm/icons/clock';
-import Users from 'lucide-react/dist/esm/icons/users';
-import Star from 'lucide-react/dist/esm/icons/star';
-import Award from 'lucide-react/dist/esm/icons/award';
-import BookOpen from 'lucide-react/dist/esm/icons/book-open';
-import TrendingUp from 'lucide-react/dist/esm/icons/trending-up';
-import Target from 'lucide-react/dist/esm/icons/target';
-import Shield from 'lucide-react/dist/esm/icons/shield';
-import Briefcase from 'lucide-react/dist/esm/icons/briefcase';
-import Lightbulb from 'lucide-react/dist/esm/icons/lightbulb';
-import Zap from 'lucide-react/dist/esm/icons/zap';
-import Globe from 'lucide-react/dist/esm/icons/globe';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
+import {
+  Search,
+  Play,
+  Clock,
+  Users,
+  Star,
+  Award,
+  BookOpen,
+  TrendingUp,
+  Target,
+  Shield,
+  Briefcase,
+  Lightbulb,
+  Zap,
+  Globe,
+  CheckCircle,
+} from 'lucide-react';
 
 const containerVariants = {
   hidden: { opacity: 0 },

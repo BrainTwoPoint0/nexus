@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +30,6 @@ import {
   MapPin,
   Building,
   Calendar,
-  TrendingUp,
   Briefcase,
   Clock,
   Bookmark,
@@ -96,7 +95,6 @@ const locations = [
 const roleTypes = ['All Types', 'board', 'executive', 'advisory', 'consultant'];
 export default function OpportunitiesPage() {
   const supabase = useSupabaseClient();
-  const user = useUser();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('All Sectors');
@@ -136,7 +134,7 @@ export default function OpportunitiesPage() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        if (jobsData) setOpportunities(jobsData as Opportunity[]);
+        if (jobsData) setOpportunities(jobsData as unknown as Opportunity[]);
       } catch (error) {
         console.error('Error fetching opportunities:', error);
       } finally {

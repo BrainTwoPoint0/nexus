@@ -96,7 +96,7 @@ export default function DashboardPage() {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('first_name, last_name, title, company, role, location')
-          .eq('id', user.id)
+          .eq('id', user?.id)
           .single();
 
         if (profileData) setProfile(profileData as Profile);
@@ -123,12 +123,12 @@ export default function DashboardPage() {
             )
           `
           )
-          .eq('candidate_id', user.id)
+          .eq('candidate_id', user?.id)
           .order('submitted_at', { ascending: false })
           .limit(10);
 
         if (applicationsData) {
-          setApplications(applicationsData as Application[]);
+          setApplications(applicationsData as unknown as Application[]);
           setStats((prev) => ({
             ...prev,
             applications_count: applicationsData.length,
@@ -157,7 +157,7 @@ export default function DashboardPage() {
           .limit(6);
 
         if (jobsData) {
-          setRecentJobs(jobsData as Job[]);
+          setRecentJobs(jobsData as unknown as Job[]);
           setStats((prev) => ({
             ...prev,
             matched_jobs_count: jobsData.length,
@@ -208,14 +208,14 @@ export default function DashboardPage() {
           event: '*',
           schema: 'public',
           table: 'applications',
-          filter: `candidate_id=eq.${user.id}`,
+          filter: `candidate_id=eq.${user?.id}`,
         },
         (payload) => {
           console.log('Application change received:', payload);
 
           if (payload.eventType === 'INSERT') {
             // Add new application to state
-            const newApplication = payload.new as any;
+            const newApplication = payload.new as Application;
             setApplications((prev) => [newApplication, ...prev]);
             setStats((prev) => ({
               ...prev,

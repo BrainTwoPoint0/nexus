@@ -1,6 +1,9 @@
 'use client';
 
-import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import {
+  SessionContextProvider,
+  useSupabaseClient,
+} from '@supabase/auth-helpers-react';
 import { createClient } from '@/lib/supabaseClient';
 import { useState } from 'react';
 
@@ -13,3 +16,6 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
     </SessionContextProvider>
   );
 }
+
+// Export the hook for use in components
+export const useSupabase = useSupabaseClient;

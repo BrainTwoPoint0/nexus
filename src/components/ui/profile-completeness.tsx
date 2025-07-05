@@ -230,8 +230,8 @@ export function ProfileCompleteness({
               <div>
                 <p className="font-medium text-blue-800">Good Progress!</p>
                 <p className="text-sm text-blue-700">
-                  You're on track. Complete a few more sections to maximize your
-                  visibility.
+                  You&apos;re on track. Complete a few more sections to maximize
+                  your visibility.
                 </p>
               </div>
             </div>
@@ -327,7 +327,9 @@ export function ProfileCompleteness({
 }
 
 // Hook for calculating profile completeness from profile data
-export function useProfileCompleteness(profile: any) {
+export function useProfileCompleteness(
+  profile: Record<string, string | number | string[] | null> | null
+) {
   const [completeness, setCompleteness] = useState(0);
   const [suggestions, setSuggestions] =
     useState<CompletionSuggestion[]>(defaultSuggestions);
@@ -340,31 +342,82 @@ export function useProfileCompleteness(profile: any) {
     const updatedSuggestions = [...defaultSuggestions];
 
     // Basic information (30 points)
-    if (profile.firstName?.trim()) score += 3;
-    if (profile.lastName?.trim()) score += 3;
-    if (profile.email?.trim()) score += 3;
-    if (profile.phone?.trim()) {
+    if (
+      profile.firstName &&
+      typeof profile.firstName === 'string' &&
+      profile.firstName.trim()
+    )
+      score += 3;
+    if (
+      profile.lastName &&
+      typeof profile.lastName === 'string' &&
+      profile.lastName.trim()
+    )
+      score += 3;
+    if (
+      profile.email &&
+      typeof profile.email === 'string' &&
+      profile.email.trim()
+    )
+      score += 3;
+    if (
+      profile.phone &&
+      typeof profile.phone === 'string' &&
+      profile.phone.trim()
+    ) {
       score += 4;
       updatedSuggestions.find((s) => s.id === 'phone')!.completed = true;
     }
-    if (profile.title?.trim()) score += 5;
-    if (profile.bio?.trim() && profile.bio.length > 50) {
+    if (
+      profile.title &&
+      typeof profile.title === 'string' &&
+      profile.title.trim()
+    )
+      score += 5;
+    if (
+      profile.bio &&
+      typeof profile.bio === 'string' &&
+      profile.bio.trim() &&
+      profile.bio.length > 50
+    ) {
       score += 7;
       updatedSuggestions.find((s) => s.id === 'bio')!.completed = true;
     }
-    if (profile.location?.trim()) score += 5;
+    if (
+      profile.location &&
+      typeof profile.location === 'string' &&
+      profile.location.trim()
+    )
+      score += 5;
 
     // Professional details (20 points)
-    if (profile.skills && profile.skills.length >= 3) {
+    if (
+      profile.skills &&
+      Array.isArray(profile.skills) &&
+      profile.skills.length >= 3
+    ) {
       score += 8;
       updatedSuggestions.find((s) => s.id === 'skills')!.completed = true;
     }
-    if (profile.linkedin_url?.trim()) {
+    if (
+      profile.linkedin_url &&
+      typeof profile.linkedin_url === 'string' &&
+      profile.linkedin_url.trim()
+    ) {
       score += 3;
       updatedSuggestions.find((s) => s.id === 'linkedin')!.completed = true;
     }
-    if (profile.languages && profile.languages.length > 0) score += 2;
-    if (profile.sector_preferences && profile.sector_preferences.length > 0)
+    if (
+      profile.languages &&
+      Array.isArray(profile.languages) &&
+      profile.languages.length > 0
+    )
+      score += 2;
+    if (
+      profile.sector_preferences &&
+      Array.isArray(profile.sector_preferences) &&
+      profile.sector_preferences.length > 0
+    )
       score += 4;
     if (profile.availability_status) score += 3;
 
