@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { FileUpload } from '@/components/ui/file-upload';
 import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
 import {
@@ -32,6 +33,7 @@ import {
   Upload,
   Plus,
   X,
+  FileText,
 } from 'lucide-react';
 
 const containerVariants = {
@@ -211,10 +213,11 @@ export default function ProfilePage() {
           {/* Profile Content */}
           <motion.div variants={itemVariants}>
             <Tabs defaultValue="personal" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="personal">Personal Info</TabsTrigger>
                 <TabsTrigger value="experience">Experience</TabsTrigger>
                 <TabsTrigger value="skills">Skills & Certs</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="preferences">Preferences</TabsTrigger>
               </TabsList>
 
@@ -496,6 +499,92 @@ export default function ProfilePage() {
                         Add Certification
                       </Button>
                     )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Documents */}
+              <TabsContent value="documents" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <FileText className="h-5 w-5" />
+                      <span>Resume & Documents</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-medium">Resume/CV</Label>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Upload your current resume or CV. This will be shared with potential organizations.
+                        </p>
+                        <FileUpload
+                          accept=".pdf,.doc,.docx"
+                          maxSize={5}
+                          multiple={false}
+                          bucket="documents"
+                          folder="resumes"
+                          onUpload={(files) => {
+                            console.log('Resume uploaded:', files);
+                            // TODO: Save file URL to user profile
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-base font-medium">Supporting Documents</Label>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Upload additional documents such as certifications, cover letters, or references.
+                        </p>
+                        <FileUpload
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          maxSize={10}
+                          multiple={true}
+                          bucket="documents"
+                          folder="supporting"
+                          onUpload={(files) => {
+                            console.log('Supporting documents uploaded:', files);
+                            // TODO: Save file URLs to user profile
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Document Management</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="p-4 border rounded-lg bg-muted/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <FileText className="h-5 w-5 text-blue-500" />
+                            <div>
+                              <p className="font-medium">Current Resume</p>
+                              <p className="text-sm text-muted-foreground">resume-john-doe-2024.pdf</p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm">
+                              Preview
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>No supporting documents uploaded yet.</p>
+                        <p className="text-sm">Upload certificates, references, or cover letters above.</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

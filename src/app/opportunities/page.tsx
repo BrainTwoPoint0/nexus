@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/input';
@@ -51,93 +52,26 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-// Mock data
-const mockOpportunities = [
-  {
-    id: 1,
-    title: 'Non-Executive Director',
-    company: 'GreenTech Solutions Ltd',
-    sector: 'Technology',
-    location: 'London, UK',
-    type: 'Non-Executive Director',
-    compensation: '£35,000 - £45,000',
-    timeCommitment: '8-10 days per year',
-    postedDate: '2 days ago',
-    deadline: '15 days left',
-    matchScore: 95,
-    description:
-      'Leading sustainable technology company seeking experienced NED with digital transformation expertise...',
-    requirements: [
-      '15+ years leadership experience',
-      'Technology sector background',
-      'Board experience preferred',
-    ],
-    isBookmarked: false,
-  },
-  {
-    id: 2,
-    title: 'Audit Committee Chair',
-    company: 'Healthcare Innovations plc',
-    sector: 'Healthcare',
-    location: 'Remote',
-    type: 'Committee Chair',
-    compensation: '£50,000 - £60,000',
-    timeCommitment: '12-15 days per year',
-    postedDate: '5 days ago',
-    deadline: '22 days left',
-    matchScore: 88,
-    description:
-      'Fast-growing healthcare company seeking experienced Audit Committee Chair...',
-    requirements: [
-      'Qualified accountant (ACA/ACCA/CIMA)',
-      'Public company experience',
-      'Healthcare sector knowledge',
-    ],
-    isBookmarked: true,
-  },
-  {
-    id: 3,
-    title: 'Independent Director',
-    company: 'Financial Services Group',
-    sector: 'Finance',
-    location: 'Edinburgh, UK',
-    type: 'Independent Director',
-    compensation: '£40,000 - £50,000',
-    timeCommitment: '10-12 days per year',
-    postedDate: '1 week ago',
-    deadline: '8 days left',
-    matchScore: 82,
-    description:
-      'Established financial services firm looking for independent director with risk management expertise...',
-    requirements: [
-      'Financial services background',
-      'Risk management experience',
-      'Regulatory knowledge',
-    ],
-    isBookmarked: false,
-  },
-  {
-    id: 4,
-    title: 'Board Chair',
-    company: 'Social Impact Ventures',
-    sector: 'Non-Profit',
-    location: 'Manchester, UK',
-    type: 'Chair',
-    compensation: 'Voluntary',
-    timeCommitment: '15-20 days per year',
-    postedDate: '3 days ago',
-    deadline: '30 days left',
-    matchScore: 76,
-    description:
-      'Social enterprise focused on community development seeking passionate Board Chair...',
-    requirements: [
-      'Non-profit sector experience',
-      'Community engagement background',
-      'Strategic leadership skills',
-    ],
-    isBookmarked: false,
-  },
-];
+// Types for opportunities
+interface Opportunity {
+  id: string;
+  title: string;
+  organization: {
+    name: string;
+  };
+  sector: string | null;
+  location: string | null;
+  employment_type: string;
+  compensation_min: number | null;
+  compensation_max: number | null;
+  compensation_currency: string;
+  time_commitment: string | null;
+  description: string;
+  requirements: string | null;
+  created_at: string;
+  application_deadline: string | null;
+  status: string;
+}
 
 const sectors = [
   'All Sectors',
@@ -161,43 +95,150 @@ const locations = [
 ];
 const roleTypes = [
   'All Types',
-  'Non-Executive Director',
-  'Chair',
-  'Committee Chair',
-  'Independent Director',
+  'board',
+  'executive', 
+  'advisory',
+  'consultant',
 ];
 export default function OpportunitiesPage() {
+  const supabase = useSupabaseClient();
+  const user = useUser();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('All Sectors');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
   const [selectedRoleType, setSelectedRoleType] = useState('All Types');
   const [showOnlyBookmarked, setShowOnlyBookmarked] = useState(false);
-  const [opportunities, setOpportunities] = useState(mockOpportunities);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [bookmarkedJobs, setBookmarkedJobs] = useState<Set<string>>(new Set());
 
-  const toggleBookmark = (id: number) => {
-    setOpportunities((prev) =>
-      prev.map((opp) =>
-        opp.id === id ? { ...opp, isBookmarked: !opp.isBookmarked } : opp
+  // Fetch opportunities from Supabase
+  useEffect(() => {
+    async function fetchOpportunities() {
+      try {
+        const { data: jobsData, error } = await supabase
+          .from('jobs')
+          .select(`
+            id,
+            title,
+            description,
+            requirements,
+            location,
+            sector,
+            compensation_min,
+            compensation_max,
+            compensation_currency,
+            time_commitment,
+            employment_type,
+            created_at,
+            application_deadline,
+            status,
+            organization:organizations(name)
+          `)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (jobsData) setOpportunities(jobsData as Opportunity[]);
+      } catch (error) {
+        console.error('Error fetching opportunities:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchOpportunities();
+  }, [supabase]);
+
+  // Real-time subscription for new opportunities
+  useEffect(() => {
+    const jobsSubscription = supabase
+      .channel('real-time-jobs')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'jobs',
+          filter: 'status=eq.active',
+        },
+        (payload) => {
+          console.log('New opportunity added:', payload);
+          // Add new opportunity to the list
+          setOpportunities(prev => [payload.new as Opportunity, ...prev]);
+        }
       )
-    );
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'jobs',
+        },
+        (payload) => {
+          console.log('Opportunity updated:', payload);
+          // Update existing opportunity
+          setOpportunities(prev =>
+            prev.map(opp =>
+              opp.id === payload.new.id
+                ? { ...opp, ...payload.new }
+                : opp
+            )
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'jobs',
+        },
+        (payload) => {
+          console.log('Opportunity removed:', payload);
+          // Remove opportunity from list
+          setOpportunities(prev =>
+            prev.filter(opp => opp.id !== payload.old.id)
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      jobsSubscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const toggleBookmark = (id: string) => {
+    // TODO: Implement real bookmarking with Supabase
+    setBookmarkedJobs(prev => {
+      const newBookmarked = new Set(prev);
+      if (newBookmarked.has(id)) {
+        newBookmarked.delete(id);
+      } else {
+        newBookmarked.add(id);
+      }
+      return newBookmarked;
+    });
   };
 
   const filteredOpportunities = opportunities.filter((opp) => {
     const matchesSearch =
       searchTerm === '' ||
       opp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      opp.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      opp.organization.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       opp.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesSector =
       selectedSector === 'All Sectors' || opp.sector === selectedSector;
     const matchesLocation =
       selectedLocation === 'All Locations' ||
-      opp.location.includes(selectedLocation) ||
+      (opp.location && opp.location.includes(selectedLocation)) ||
       (selectedLocation === 'Remote' && opp.location === 'Remote');
     const matchesRoleType =
-      selectedRoleType === 'All Types' || opp.type === selectedRoleType;
-    const matchesBookmark = !showOnlyBookmarked || opp.isBookmarked;
+      selectedRoleType === 'All Types' || opp.employment_type === selectedRoleType;
+    const matchesBookmark = !showOnlyBookmarked || bookmarkedJobs.has(opp.id);
 
     return (
       matchesSearch &&
@@ -444,52 +485,79 @@ export default function OpportunitiesPage() {
             variants={itemVariants}
             className="grid grid-cols-1 gap-6"
           >
-            {filteredOpportunities.map((opportunity) => (
-              <div key={opportunity.id}>
-                <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <h3 className="text-xl font-semibold text-foreground">
-                            {opportunity.title}
-                          </h3>
-                          <Badge variant="outline">{opportunity.type}</Badge>
-                          <div className="flex items-center space-x-1 text-primary">
-                            <TrendingUp className="h-4 w-4" />
-                            <span className="text-sm font-medium">
-                              {opportunity.matchScore}% match
-                            </span>
+            {loading ? (
+              <div className="space-y-6">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                      <div className="h-4 bg-muted rounded w-2/3"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : filteredOpportunities.length === 0 ? (
+              <Card>
+                <CardContent className="py-16 text-center">
+                  <p className="text-muted-foreground">No opportunities found matching your criteria.</p>
+                  <Button variant="ghost" onClick={clearFilters} className="mt-4">
+                    Clear filters
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredOpportunities.map((opportunity) => (
+                <div key={opportunity.id}>
+                  <Card className="transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <h3 className="text-xl font-semibold text-foreground">
+                              {opportunity.title}
+                            </h3>
+                            <Badge variant="outline">{opportunity.employment_type}</Badge>
+                            {/* TODO: Add match score calculation later */}
+                          </div>
+                          <div className="flex items-center space-x-4 text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                              <Building className="h-4 w-4" />
+                              <span>{opportunity.organization.name}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <MapPin className="h-4 w-4" />
+                              <span>{opportunity.location || 'Location TBD'}</span>
+                            </div>
+                            {opportunity.sector && (
+                              <Badge variant="secondary">
+                                {opportunity.sector}
+                              </Badge>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4 text-muted-foreground">
-                          <div className="flex items-center space-x-1">
-                            <Building className="h-4 w-4" />
-                            <span>{opportunity.company}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{opportunity.location}</span>
-                          </div>
-                          <Badge variant="secondary">
-                            {opportunity.sector}
-                          </Badge>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleBookmark(opportunity.id)}
+                          className={
+                            bookmarkedJobs.has(opportunity.id) ? 'text-primary' : ''
+                          }
+                          aria-label={
+                            bookmarkedJobs.has(opportunity.id) 
+                              ? `Remove ${opportunity.title} from bookmarks`
+                              : `Add ${opportunity.title} to bookmarks`
+                          }
+                        >
+                          <Bookmark
+                            className={`h-4 w-4 ${bookmarkedJobs.has(opportunity.id) ? 'fill-current' : ''}`}
+                          />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleBookmark(opportunity.id)}
-                        className={
-                          opportunity.isBookmarked ? 'text-primary' : ''
-                        }
-                      >
-                        <Bookmark
-                          className={`h-4 w-4 ${opportunity.isBookmarked ? 'fill-current' : ''}`}
-                        />
-                      </Button>
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
                   <CardContent className="space-y-4">
                     <p className="line-clamp-2 text-muted-foreground">
                       {opportunity.description}
@@ -498,87 +566,76 @@ export default function OpportunitiesPage() {
                     <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
                       <div className="flex items-center space-x-2">
                         <Briefcase className="h-4 w-4 text-muted-foreground" />
-                        <span>{opportunity.compensation}</span>
+                        <span>
+                          {opportunity.compensation_min && opportunity.compensation_max
+                            ? `${opportunity.compensation_currency || '$'}${(opportunity.compensation_min/1000).toFixed(0)}K - ${(opportunity.compensation_max/1000).toFixed(0)}K`
+                            : opportunity.compensation_min
+                            ? `${opportunity.compensation_currency || '$'}${(opportunity.compensation_min/1000).toFixed(0)}K+`
+                            : 'Competitive'}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span>{opportunity.timeCommitment}</span>
+                        <span>{opportunity.time_commitment || 'TBD'}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span className="text-orange-600">
-                          {opportunity.deadline}
+                          {opportunity.application_deadline 
+                            ? new Date(opportunity.application_deadline) > new Date() 
+                              ? `${Math.ceil((new Date(opportunity.application_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left`
+                              : 'Expired'
+                            : 'Open'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">
-                        Key Requirements:
-                      </Label>
-                      <div className="flex flex-wrap gap-2">
-                        {opportunity.requirements
-                          .slice(0, 3)
-                          .map((req, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {req}
-                            </Badge>
-                          ))}
-                        {opportunity.requirements.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{opportunity.requirements.length - 3} more
-                          </Badge>
-                        )}
+                    {opportunity.requirements && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Requirements:
+                        </Label>
+                        <div className="text-sm text-muted-foreground">
+                          {opportunity.requirements.slice(0, 150)}
+                          {opportunity.requirements.length > 150 && '...'}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     <div className="flex items-center justify-between border-t pt-4">
                       <span className="text-sm text-muted-foreground">
-                        Posted {opportunity.postedDate}
+                        Posted {Math.floor((new Date().getTime() - new Date(opportunity.created_at).getTime()) / (1000 * 60 * 60 * 24))} days ago
                       </span>
                       <div className="flex space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          aria-label={`Learn more about ${opportunity.title} at ${opportunity.organization.name}`}
+                        >
                           Learn More
-                          <ExternalLink className="ml-2 h-4 w-4" />
+                          <ExternalLink className="ml-2 h-4 w-4" aria-hidden="true" />
                         </Button>
-                        <Button size="sm">Apply Now</Button>
+                        <Button 
+                          size="sm"
+                          aria-label={`Apply for ${opportunity.title} at ${opportunity.organization.name}`}
+                        >
+                          Apply Now
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               </div>
-            ))}
+              ))
+            )}
           </motion.div>
 
           {/* Load More */}
-          {filteredOpportunities.length > 0 && (
+          {!loading && filteredOpportunities.length > 0 && (
             <motion.div variants={itemVariants} className="text-center">
               <Button variant="outline" size="lg">
                 Load More Opportunities
               </Button>
-            </motion.div>
-          )}
-
-          {/* No Results */}
-          {filteredOpportunities.length === 0 && (
-            <motion.div variants={itemVariants} className="py-12 text-center">
-              <div className="space-y-4">
-                <Search className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="text-lg font-semibold">
-                  No opportunities found
-                </h3>
-                <p className="text-muted-foreground">
-                  Try adjusting your search criteria or filters to find more
-                  opportunities.
-                </p>
-                <Button onClick={clearFilters} variant="outline">
-                  Clear All Filters
-                </Button>
-              </div>
             </motion.div>
           )}
         </motion.div>

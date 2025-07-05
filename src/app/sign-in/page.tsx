@@ -13,7 +13,7 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ErrorMessage } from '@/components/ui/error-states';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { useSupabase } from '@/components/providers/supabase-provider';
+import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 function SignInForm() {
@@ -25,7 +25,7 @@ function SignInForm() {
     password: '',
     rememberMe: false,
   });
-  const supabase = useSupabase();
+  const supabase = useSupabaseClient();
   const searchParams = useSearchParams();
   const router = useRouter();
 
