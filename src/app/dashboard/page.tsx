@@ -15,9 +15,15 @@ import {
   Calendar,
   Plus,
   ExternalLink,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useState, useEffect } from 'react';
+import { RecommendationCard } from '@/components/ui/recommendation-card';
+import { JobMatch } from '@/lib/matching-service';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -75,10 +81,13 @@ interface DashboardStats {
 export default function DashboardPage() {
   const supabase = useSupabaseClient();
   const user = useUser();
+  const { toast } = useToast();
+  const router = useRouter();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+  const [recommendations, setRecommendations] = useState<JobMatch[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     applications_count: 0,
     profile_views: 0,
@@ -86,6 +95,81 @@ export default function DashboardPage() {
     upcoming_events_count: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+
+  // Function to fetch AI recommendations
+  async function fetchRecommendations() {
+    if (!user) return;
+
+    setLoadingRecommendations(true);
+    try {
+      const response = await fetch(
+        `/api/recommendations/jobs?candidateId=${user.id}&limit=5`
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setRecommendations(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  }
+
+  // Function to refresh recommendations
+  async function refreshRecommendations() {
+    if (!user) return;
+
+    setLoadingRecommendations(true);
+    try {
+      // First trigger recalculation
+      await fetch('/api/recommendations/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: user.id, forceRecalculate: true }),
+      });
+
+      // Then fetch fresh recommendations
+      await fetchRecommendations();
+
+      toast({
+        title: 'Success',
+        description: 'Recommendations refreshed successfully!',
+      });
+    } catch (error) {
+      console.error('Error refreshing recommendations:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh recommendations',
+        variant: 'destructive',
+      });
+    }
+  }
+
+  // Function to handle recommendation interactions
+  async function handleRecommendationInteraction(
+    jobId: string,
+    interactionType: string,
+    data: Record<string, unknown> = {}
+  ) {
+    try {
+      await fetch('/api/recommendations/interactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId,
+          interactionType,
+          interactionData: data,
+          sessionId: `session_${Date.now()}`,
+        }),
+      });
+    } catch (error) {
+      console.error('Error recording interaction:', error);
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -193,7 +277,8 @@ export default function DashboardPage() {
     }
 
     fetchDashboardData();
-  }, [user, supabase]);
+    fetchRecommendations();
+  }, [user, supabase, fetchRecommendations]);
 
   // Real-time subscriptions for live updates
   useEffect(() => {
@@ -320,15 +405,6 @@ export default function DashboardPage() {
     },
   ];
 
-  function formatSalaryRange(min: number | null, max: number | null): string {
-    if (!min && !max) return 'Competitive';
-    if (min && max)
-      return `$${(min / 1000).toFixed(0)}K - $${(max / 1000).toFixed(0)}K`;
-    if (min) return `$${(min / 1000).toFixed(0)}K+`;
-    if (max) return `Up to $${(max / 1000).toFixed(0)}K`;
-    return 'Competitive';
-  }
-
   function getStatusBadgeVariant(status: string) {
     switch (status) {
       case 'pending':
@@ -376,31 +452,41 @@ export default function DashboardPage() {
           {/* Header */}
           <motion.div
             variants={itemVariants}
-            className="flex flex-col items-start justify-between space-y-4 md:flex-row md:items-center md:space-y-0"
+            className="flex flex-col space-y-4"
           >
             <div className="flex items-center space-x-4">
-              <Avatar className="h-12 w-12">
+              <Avatar className="h-12 w-12 flex-shrink-0">
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-2xl font-bold text-foreground sm:text-3xl">
                   Welcome back, {displayName.split(' ')[0]}
                 </h1>
-                <p className="text-muted-foreground" role="text">
+                <p className="truncate text-muted-foreground" role="text">
                   {titleAndCompany}
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" size="sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-initial"
+                onClick={() => router.push('/opportunities')}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                <span className="hidden sm:inline">Browse Opportunities</span>
+                <span className="sm:hidden">Browse Jobs</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-initial"
+              >
                 <Bell className="mr-2 h-4 w-4" />
                 Notifications
-              </Button>
-              <Button size="sm">
-                <Search className="mr-2 h-4 w-4" />
-                Browse Opportunities
               </Button>
             </div>
           </motion.div>
@@ -445,90 +531,154 @@ export default function DashboardPage() {
             </motion.div>
           </section>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Recent Opportunities */}
+          <div className="grid grid-cols-1 gap-6 lg:gap-8 xl:grid-cols-3">
+            {/* AI-Powered Recommendations */}
             <section
-              aria-labelledby="recent-opportunities-heading"
-              className="lg:col-span-2"
+              aria-labelledby="ai-recommendations-heading"
+              className="xl:col-span-2"
             >
               <motion.div variants={itemVariants}>
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                    <CardTitle id="recent-opportunities-heading">
-                      Recent Opportunities
-                    </CardTitle>
-                    <Button variant="ghost" size="sm">
-                      View All
-                      <ExternalLink className="ml-2 h-4 w-4" />
-                    </Button>
+                  <CardHeader className="pb-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 flex-shrink-0 text-primary" />
+                        <CardTitle
+                          id="ai-recommendations-heading"
+                          className="text-lg sm:text-xl"
+                        >
+                          AI-Powered Recommendations
+                        </CardTitle>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={refreshRecommendations}
+                          disabled={loadingRecommendations}
+                          className="flex-1 sm:flex-initial"
+                        >
+                          <RefreshCw
+                            className={`mr-2 h-4 w-4 ${loadingRecommendations ? 'animate-spin' : ''}`}
+                          />
+                          <span className="hidden sm:inline">Refresh</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1 sm:flex-initial"
+                          onClick={() => router.push('/opportunities')}
+                        >
+                          <span className="hidden sm:inline">View All</span>
+                          <span className="sm:hidden">All</span>
+                          <ExternalLink className="ml-1 h-4 w-4 sm:ml-2" />
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {loading ? (
+                    {loadingRecommendations ? (
                       <div className="space-y-4">
                         {[1, 2, 3].map((i) => (
                           <div
                             key={i}
-                            className="animate-pulse rounded-lg border p-4"
+                            className="animate-pulse rounded-lg border p-6"
                           >
-                            <div className="mb-2 h-4 w-3/4 rounded bg-muted"></div>
+                            <div className="mb-3 h-5 w-3/4 rounded bg-muted"></div>
                             <div className="mb-2 h-3 w-1/2 rounded bg-muted"></div>
-                            <div className="h-3 w-1/4 rounded bg-muted"></div>
+                            <div className="mb-4 h-3 w-1/4 rounded bg-muted"></div>
+                            <div className="space-y-2">
+                              <div className="h-2 w-full rounded bg-muted"></div>
+                              <div className="h-2 w-2/3 rounded bg-muted"></div>
+                            </div>
                           </div>
                         ))}
                       </div>
-                    ) : recentJobs.length > 0 ? (
-                      recentJobs.map((job) => (
-                        <div
-                          key={job.id}
-                          className="rounded-lg border p-4 transition-colors hover:bg-secondary/30"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1 space-y-2">
-                              <div className="flex items-center space-x-2">
-                                <h3 className="font-semibold text-foreground">
-                                  {job.title}
-                                </h3>
-                                <Badge variant="default">
-                                  {job.employment_type}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {job.organization.name} • {job.sector}
-                              </p>
-                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                                <span>{job.location}</span>
-                                <span>•</span>
-                                <span>{formatDate(job.created_at)}</span>
-                                <span>•</span>
-                                <span>
-                                  {formatSalaryRange(
-                                    job.compensation_min,
-                                    job.compensation_max
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="space-y-2 text-right">
-                              <div className="flex items-center space-x-1">
-                                <span className="text-sm font-medium text-primary">
-                                  New opportunity
-                                </span>
-                              </div>
-                              <Button size="sm" variant="outline">
-                                View Details
-                              </Button>
-                            </div>
+                    ) : recommendations.length > 0 ? (
+                      <div className="space-y-4">
+                        {recommendations.slice(0, 3).map((recommendation) => (
+                          <RecommendationCard
+                            key={recommendation.jobId}
+                            recommendation={recommendation}
+                            onLike={(jobId) => {
+                              handleRecommendationInteraction(
+                                jobId,
+                                'recommendation_like'
+                              );
+                              toast({
+                                title: 'Thanks for the feedback!',
+                                description:
+                                  'This helps us improve your recommendations.',
+                              });
+                            }}
+                            onDislike={(jobId) => {
+                              handleRecommendationInteraction(
+                                jobId,
+                                'recommendation_dislike'
+                              );
+                              toast({
+                                title: 'Thanks for the feedback!',
+                                description:
+                                  "We'll improve our recommendations based on your input.",
+                              });
+                            }}
+                            onView={(jobId) => {
+                              handleRecommendationInteraction(
+                                jobId,
+                                'recommendation_view'
+                              );
+                              router.push(`/opportunities/${jobId}`);
+                            }}
+                            onApply={(jobId) => {
+                              handleRecommendationInteraction(
+                                jobId,
+                                'job_application',
+                                { source: 'dashboard_recommendation' }
+                              );
+                              router.push(`/opportunities/${jobId}`);
+                            }}
+                            className="border-l-4 border-l-primary"
+                          />
+                        ))}
+                        {recommendations.length > 3 && (
+                          <div className="pt-4 text-center">
+                            <Button
+                              variant="outline"
+                              onClick={() => router.push('/opportunities')}
+                            >
+                              View {recommendations.length - 3} more
+                              recommendations
+                              <ExternalLink className="ml-2 h-4 w-4" />
+                            </Button>
                           </div>
-                        </div>
-                      ))
+                        )}
+                      </div>
                     ) : (
                       <div className="py-8 text-center">
-                        <p className="text-muted-foreground">
-                          No opportunities available at the moment.
+                        <Sparkles className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
+                        <p className="text-lg font-medium text-muted-foreground">
+                          No personalized recommendations yet
                         </p>
                         <p className="mt-2 text-sm text-muted-foreground">
-                          Check back later for new board positions.
+                          Complete your profile to get AI-powered job
+                          recommendations tailored to your experience and
+                          preferences.
                         </p>
+                        <div className="mt-4 space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => router.push('/profile')}
+                          >
+                            Complete Profile
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={refreshRecommendations}
+                          >
+                            Try Again
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -551,21 +701,37 @@ export default function DashboardPage() {
                     <CardTitle>Quick Actions</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start"
+                      variant="outline"
+                      onClick={() => router.push('/profile')}
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Update Profile
                     </Button>
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start"
+                      variant="outline"
+                      onClick={() => router.push('/opportunities')}
+                    >
                       <Search className="mr-2 h-4 w-4" />
                       Search Opportunities
                     </Button>
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start"
+                      variant="outline"
+                      onClick={() => router.push('/learning')}
+                    >
                       <Calendar className="mr-2 h-4 w-4" />
-                      View Events
+                      Learning Center
                     </Button>
-                    <Button className="w-full justify-start" variant="outline">
+                    <Button
+                      className="w-full justify-start"
+                      variant="outline"
+                      onClick={() => router.push('/profile')}
+                    >
                       <FileText className="mr-2 h-4 w-4" />
-                      Download CV
+                      My Profile
                     </Button>
                   </CardContent>
                 </Card>

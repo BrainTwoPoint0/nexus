@@ -16,8 +16,10 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { useUser } from '@supabase/auth-helpers-react';
 import { UserMenu } from './user-menu';
+import { useUserRole } from '@/hooks/use-user-role';
 
-const navigationItems = [
+// Navigation items for non-authenticated users
+const publicNavigationItems = [
   {
     title: 'For Candidates',
     href: '/candidates',
@@ -29,19 +31,14 @@ const navigationItems = [
         description: 'Discover board positions across all sectors',
       },
       {
-        title: 'My Applications',
-        href: '/applications',
-        description: 'Track your application progress',
-      },
-      {
-        title: 'Profile',
-        href: '/profile',
-        description: 'Manage your professional profile',
-      },
-      {
         title: 'Learning Center',
         href: '/learning',
         description: 'Professional development resources',
+      },
+      {
+        title: 'How It Works',
+        href: '/how-it-works',
+        description: 'Learn about our platform',
       },
     ],
   },
@@ -52,54 +49,194 @@ const navigationItems = [
     items: [
       {
         title: 'Post a Role',
-        href: '/post-role',
+        href: '/sign-up?type=organization',
         description: 'Create a new board position listing',
       },
       {
         title: 'Browse Talent',
-        href: '/talent',
-        description: 'Search our curated candidate database',
+        href: '/talent-preview',
+        description: 'See our curated candidate database',
       },
       {
-        title: 'Manage Searches',
-        href: '/searches',
-        description: 'Track your active searches',
-      },
-      {
-        title: 'Organization Profile',
-        href: '/org-profile',
-        description: 'Manage your organization details',
+        title: 'Enterprise Solutions',
+        href: '/enterprise',
+        description: 'Custom solutions for large organizations',
       },
     ],
   },
   {
-    title: 'Community',
-    href: '/community',
-    description: 'Connect with fellow board professionals',
+    title: 'Resources',
+    href: '/resources',
+    description: 'Resources for board professionals',
     items: [
+      {
+        title: 'Governance Guides',
+        href: '/resources/guides',
+        description: 'Best practices and templates',
+      },
+      {
+        title: 'Industry Insights',
+        href: '/resources/insights',
+        description: 'Market trends and analysis',
+      },
       {
         title: 'Events',
         href: '/events',
         description: 'Networking events and webinars',
       },
       {
-        title: 'Resources',
-        href: '/resources',
-        description: 'Governance guides and templates',
-      },
-      {
-        title: 'Mentorship',
-        href: '/mentorship',
-        description: 'Connect with experienced board members',
-      },
-      {
-        title: 'Discussions',
-        href: '/discussions',
-        description: 'Join professional conversations',
+        title: 'Blog',
+        href: '/blog',
+        description: 'Latest news and articles',
       },
     ],
   },
 ];
+
+// Role-based navigation items for authenticated users
+const getRoleBasedNavigation = (role: string | undefined) => {
+  if (!role) return [];
+
+  switch (role) {
+    case 'candidate':
+      return [
+        {
+          title: 'Opportunities',
+          href: '/opportunities',
+          description: 'Browse available board positions',
+          items: [
+            {
+              title: 'All Opportunities',
+              href: '/opportunities',
+              description: 'View all available positions',
+            },
+            {
+              title: 'Recommended',
+              href: '/opportunities?filter=recommended',
+              description: 'AI-powered recommendations',
+            },
+            {
+              title: 'Saved',
+              href: '/opportunities/saved',
+              description: 'Your saved opportunities',
+            },
+          ],
+        },
+        {
+          title: 'Applications',
+          href: '/applications',
+          description: 'Track your applications',
+          items: [
+            {
+              title: 'Active Applications',
+              href: '/applications',
+              description: 'Current application status',
+            },
+            {
+              title: 'Interview Schedule',
+              href: '/applications/interviews',
+              description: 'Upcoming interviews',
+            },
+            {
+              title: 'Application History',
+              href: '/applications/history',
+              description: 'Past applications',
+            },
+          ],
+        },
+      ];
+
+    case 'organization_admin':
+    case 'organization_employee':
+      return [
+        {
+          title: 'Talent',
+          href: '/talent',
+          description: 'Find qualified candidates',
+          items: [
+            {
+              title: 'Search Candidates',
+              href: '/talent',
+              description: 'Browse our candidate database',
+            },
+            {
+              title: 'Saved Candidates',
+              href: '/talent/saved',
+              description: 'Your shortlisted candidates',
+            },
+            {
+              title: 'Candidate Recommendations',
+              href: '/talent/recommendations',
+              description: 'AI-powered matches',
+            },
+          ],
+        },
+        {
+          title: 'Jobs',
+          href: '/jobs',
+          description: 'Manage your job postings',
+          items: [
+            {
+              title: 'Active Jobs',
+              href: '/jobs',
+              description: 'Currently open positions',
+            },
+            {
+              title: 'Post New Role',
+              href: '/post-role',
+              description: 'Create a new job posting',
+            },
+            {
+              title: 'Job Analytics',
+              href: '/jobs/analytics',
+              description: 'Performance metrics',
+            },
+          ],
+        },
+      ];
+
+    case 'consultant':
+      return [
+        {
+          title: 'Clients',
+          href: '/clients',
+          description: 'Manage your client relationships',
+          items: [
+            {
+              title: 'Active Clients',
+              href: '/clients',
+              description: 'Current client list',
+            },
+            {
+              title: 'Client Searches',
+              href: '/searches',
+              description: 'Ongoing search assignments',
+            },
+          ],
+        },
+        {
+          title: 'Candidates',
+          href: '/talent',
+          description: 'Access candidate database',
+          items: [
+            {
+              title: 'Search Database',
+              href: '/talent',
+              description: 'Find qualified candidates',
+            },
+            {
+              title: 'My Network',
+              href: '/talent/network',
+              description: 'Your candidate network',
+            },
+          ],
+        },
+      ];
+
+    default:
+      return [];
+  }
+};
 
 interface ListItemProps {
   className?: string;
@@ -139,6 +276,13 @@ const ListItem = ({
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const user = useUser();
+  const { userProfile } = useUserRole();
+
+  // Get navigation items based on authentication and role
+  const navigationItems =
+    user && userProfile
+      ? getRoleBasedNavigation(userProfile.role)
+      : publicNavigationItems;
 
   return (
     <header
@@ -160,32 +304,34 @@ export function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden items-center lg:flex">
-            <NavigationMenu>
-              <NavigationMenuList>
-                {navigationItems.map((item) => (
-                  <NavigationMenuItem key={item.title}>
-                    <NavigationMenuTrigger className="bg-transparent font-medium hover:bg-transparent focus:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
-                      {item.title}
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                        {item.items.map((subItem) => (
-                          <ListItem
-                            key={subItem.title}
-                            title={subItem.title}
-                            href={subItem.href}
-                          >
-                            {subItem.description}
-                          </ListItem>
-                        ))}
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                ))}
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
+          {navigationItems.length > 0 && (
+            <div className="hidden items-center lg:flex">
+              <NavigationMenu>
+                <NavigationMenuList>
+                  {navigationItems.map((item) => (
+                    <NavigationMenuItem key={item.title}>
+                      <NavigationMenuTrigger className="bg-transparent font-medium hover:bg-transparent focus:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                        {item.title}
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                          {item.items?.map((subItem) => (
+                            <ListItem
+                              key={subItem.title}
+                              title={subItem.title}
+                              href={subItem.href}
+                            >
+                              {subItem.description}
+                            </ListItem>
+                          ))}
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  ))}
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+          )}
 
           {/* Auth Section */}
           <div className="hidden items-center space-x-3 md:flex">
@@ -246,7 +392,7 @@ export function Header() {
                 <div key={item.title} className="space-y-2">
                   <h3 className="font-medium text-foreground">{item.title}</h3>
                   <div className="space-y-1 pl-4">
-                    {item.items.map((subItem) => (
+                    {item.items?.map((subItem) => (
                       <Link
                         key={subItem.title}
                         href={subItem.href}
