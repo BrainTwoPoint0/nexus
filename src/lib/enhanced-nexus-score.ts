@@ -118,17 +118,31 @@ export async function calculateEnhancedNexusScore(
 
   const candidate = candidates[0];
 
-  // Fetch related board experience
-  const { data: boardExperience } = await supabaseClient
-    .from('board_experience')
-    .select('*')
-    .eq('profile_id', candidateId);
+  // Fetch related board experience (handle table not existing)
+  let boardExperience: BoardExperience[] = [];
+  try {
+    const { data } = await supabaseClient
+      .from('board_experience')
+      .select('*')
+      .eq('profile_id', candidateId);
+    boardExperience = data || [];
+  } catch (error) {
+    console.log('Board experience table not found, using empty array');
+    boardExperience = [];
+  }
 
-  // Fetch related cultural assessment
-  const { data: culturalAssessments } = await supabaseClient
-    .from('cultural_assessment')
-    .select('*')
-    .eq('profile_id', candidateId);
+  // Fetch related cultural assessment (handle table not existing)
+  let culturalAssessments: CulturalAssessment[] = [];
+  try {
+    const { data } = await supabaseClient
+      .from('cultural_assessment')
+      .select('*')
+      .eq('profile_id', candidateId);
+    culturalAssessments = data || [];
+  } catch (error) {
+    console.log('Cultural assessment table not found, using empty array');
+    culturalAssessments = [];
+  }
 
   // Combine the data
   const candidateWithRelations = {
@@ -227,23 +241,28 @@ export async function calculateEnhancedNexusScore(
     skills_match_detail,
   });
 
-  // Store the enhanced score in the database
-  await supabaseClient.from('nexus_scores').upsert({
-    candidate_id: candidateId,
-    job_id: jobId,
-    overall_score,
-    skills_score,
-    experience_score: experience_relevance_score, // Map to existing field for backward compatibility
-    sector_score: sector_expertise_score, // Map to existing field
-    location_score: geographic_preference_score, // Map to existing field
-    cultural_fit_score,
-    experience_relevance_score,
-    board_experience_weight,
-    compensation_alignment_score,
-    skills_match_detail,
-    recommendation_reasons,
-    calculated_at: new Date().toISOString(),
-  });
+  // Store the enhanced score in the database (with error handling)
+  try {
+    await supabaseClient.from('nexus_scores').upsert({
+      candidate_id: candidateId,
+      job_id: jobId,
+      overall_score,
+      skills_score,
+      experience_score: experience_relevance_score, // Map to existing field for backward compatibility
+      sector_score: sector_expertise_score, // Map to existing field
+      location_score: geographic_preference_score, // Map to existing field
+      cultural_fit_score,
+      experience_relevance_score,
+      board_experience_weight,
+      compensation_alignment_score,
+      skills_match_detail,
+      recommendation_reasons,
+      calculated_at: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.warn('Failed to store nexus score in database:', error);
+    // Continue execution even if storing fails
+  }
 
   return {
     overall_score,

@@ -108,12 +108,19 @@ export default function DashboardPage() {
       );
       if (response.ok) {
         const result = await response.json();
-        if (result.success) {
+        if (result.success && Array.isArray(result.data)) {
           setRecommendations(result.data);
+        } else {
+          console.warn('API returned invalid data:', result);
+          setRecommendations([]);
         }
+      } else {
+        console.error('API response not ok:', response.status, response.statusText);
+        setRecommendations([]);
       }
     } catch (error) {
       console.error('Error fetching recommendations:', error);
+      setRecommendations([]);
     } finally {
       setLoadingRecommendations(false);
     }
@@ -126,11 +133,15 @@ export default function DashboardPage() {
     setLoadingRecommendations(true);
     try {
       // First trigger recalculation
-      await fetch('/api/recommendations/jobs', {
+      const recalcResponse = await fetch('/api/recommendations/jobs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ candidateId: user.id, forceRecalculate: true }),
       });
+
+      if (!recalcResponse.ok) {
+        console.warn('Recalculation request failed, continuing with fetch...');
+      }
 
       // Then fetch fresh recommendations
       await fetchRecommendations();
@@ -146,6 +157,8 @@ export default function DashboardPage() {
         description: 'Failed to refresh recommendations',
         variant: 'destructive',
       });
+    } finally {
+      setLoadingRecommendations(false);
     }
   }
 
@@ -249,7 +262,7 @@ export default function DashboardPage() {
         }
 
         // TODO: Add real profile views tracking later
-        // For now, using simulated data based on profile completeness
+        // For now, using simulated data based on profile completeness (consistent calculation)
         const profileCompletenessScore = [
           profileData?.first_name,
           profileData?.last_name,
@@ -258,9 +271,11 @@ export default function DashboardPage() {
           profileData?.location,
         ].filter(Boolean).length;
 
+        // Use a consistent calculation based on profile completeness and user ID
+        const userIdSum = user?.id ? parseInt(user.id.slice(-4), 16) % 20 : 5;
         const simulatedProfileViews = Math.max(
           0,
-          profileCompletenessScore * 8 + Math.floor(Math.random() * 10)
+          profileCompletenessScore * 8 + userIdSum
         );
 
         setStats((prev) => ({
@@ -276,9 +291,13 @@ export default function DashboardPage() {
       }
     }
 
+    async function loadRecommendations() {
+      await fetchRecommendations();
+    }
+
     fetchDashboardData();
-    fetchRecommendations();
-  }, [user, supabase, fetchRecommendations]);
+    loadRecommendations();
+  }, [user, supabase]);
 
   // Real-time subscriptions for live updates
   useEffect(() => {
