@@ -58,6 +58,46 @@ export const useUserRole = () => {
           .single();
 
         if (profileError) {
+          // If profile doesn't exist, create one for this user
+          if (profileError.code === 'PGRST116') {
+            console.log('Profile not found, creating profile for user:', user.id);
+            
+            // Create profile for user
+            const { error: createError } = await supabase
+              .from('profiles')
+              .insert({
+                id: user.id,
+                email: user.email,
+                first_name: user.user_metadata?.first_name || '',
+                last_name: user.user_metadata?.last_name || '',
+                role: 'candidate',
+                onboarding_completed: false,
+                onboarding_step: 0,
+              });
+
+            if (createError) {
+              console.error('Failed to create profile:', createError);
+              throw new Error('Failed to create user profile');
+            }
+
+            // Retry fetching the profile
+            const { data: retryData, error: retryError } = await supabase
+              .from('user_profile_with_role')
+              .select('*')
+              .eq('id', user.id)
+              .single();
+
+            if (retryError) {
+              throw retryError;
+            }
+            
+            if (retryData) {
+              setUserProfile(retryData);
+              setNavigation(getDefaultNavigation(retryData.role));
+              return;
+            }
+          }
+          
           throw profileError;
         }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -19,26 +19,16 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { RecommendationCard } from '@/components/ui/recommendation-card';
 import { JobMatch } from '@/lib/matching-service';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { getStatusBadgeVariant } from '@/lib/status-utils';
+import { formatRelativeDate as formatDate } from '@/lib/date-utils';
+import { containerVariants, itemVariants } from '@/lib/animation-variants';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-};
+// Using shared animation variants from lib/animation-variants.ts
 
 interface Profile {
   first_name: string | null;
@@ -97,8 +87,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
 
-  // Function to fetch AI recommendations
-  async function fetchRecommendations() {
+  // Memoize the fetch recommendations function
+  const fetchRecommendations = useCallback(async () => {
     if (!user) return;
 
     setLoadingRecommendations(true);
@@ -124,10 +114,10 @@ export default function DashboardPage() {
     } finally {
       setLoadingRecommendations(false);
     }
-  }
+  }, [user]);
 
-  // Function to refresh recommendations
-  async function refreshRecommendations() {
+  // Memoize the refresh recommendations function
+  const refreshRecommendations = useCallback(async () => {
     if (!user) return;
 
     setLoadingRecommendations(true);
@@ -160,14 +150,14 @@ export default function DashboardPage() {
     } finally {
       setLoadingRecommendations(false);
     }
-  }
+  }, [user, fetchRecommendations, toast]);
 
-  // Function to handle recommendation interactions
-  async function handleRecommendationInteraction(
+  // Memoize interaction handler
+  const handleRecommendationInteraction = useCallback(async (
     jobId: string,
     interactionType: string,
     data: Record<string, unknown> = {}
-  ) {
+  ) => {
     try {
       await fetch('/api/recommendations/interactions', {
         method: 'POST',
@@ -182,7 +172,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error recording interaction:', error);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -297,7 +287,7 @@ export default function DashboardPage() {
 
     fetchDashboardData();
     loadRecommendations();
-  }, [user, supabase]);
+  }, [user, supabase, fetchRecommendations]);
 
   // Real-time subscriptions for live updates
   useEffect(() => {
@@ -384,8 +374,8 @@ export default function DashboardPage() {
     ? `${profile.title}${profile.company ? ' at ' + profile.company : ''}`
     : '';
 
-  // Dynamic stats based on real data
-  const dynamicStats = [
+  // Memoize expensive stats calculations
+  const dynamicStats = useMemo(() => [
     {
       title: 'Applications Sent',
       value: stats.applications_count.toString(),
@@ -422,42 +412,9 @@ export default function DashboardPage() {
       icon: Calendar,
       change: 'This month',
     },
-  ];
+  ], [stats, applications, recentJobs]);
 
-  function getStatusBadgeVariant(status: string) {
-    switch (status) {
-      case 'pending':
-        return 'default';
-      case 'reviewed':
-        return 'secondary';
-      case 'interviewing':
-        return 'default';
-      case 'offered':
-        return 'default';
-      case 'accepted':
-        return 'default';
-      case 'rejected':
-        return 'destructive';
-      case 'withdrawn':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  }
-
-  function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInDays = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (diffInDays === 0) return 'Today';
-    if (diffInDays === 1) return '1 day ago';
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
-  }
+  // Using shared utility functions from lib/status-utils.ts and lib/date-utils.ts
 
   return (
     <MainLayout>

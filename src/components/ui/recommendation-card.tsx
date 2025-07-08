@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import {
   Card,
   CardContent,
@@ -8,7 +8,7 @@ import {
   CardHeader,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
   ThumbsUp,
@@ -35,6 +35,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { JobMatch } from '@/lib/matching-service';
+import { getScoreColor, getScoreLabel } from '@/lib/status-utils';
 
 interface RecommendationCardProps {
   recommendation: JobMatch;
@@ -45,7 +46,7 @@ interface RecommendationCardProps {
   className?: string;
 }
 
-export function RecommendationCard({
+const RecommendationCard = memo(function RecommendationCard({
   recommendation,
   onLike,
   onDislike,
@@ -59,35 +60,31 @@ export function RecommendationCard({
 
   const { job, score } = recommendation;
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
+  // Memoize expensive calculations using shared utilities
+  const scoreColor = useMemo(() => getScoreColor(score.overall_score), [score.overall_score]);
+  const scoreLabel = useMemo(() => getScoreLabel(score.overall_score), [score.overall_score]);
+
+  // Memoize event handlers to prevent child re-renders
+  const handleLike = useCallback(() => {
+    setIsLiked(prev => !prev);
     setIsDisliked(false);
     onLike?.(recommendation.jobId);
-  };
+  }, [onLike, recommendation.jobId]);
 
-  const handleDislike = () => {
-    setIsDisliked(!isDisliked);
+  const handleDislike = useCallback(() => {
+    setIsDisliked(prev => !prev);
     setIsLiked(false);
     onDislike?.(recommendation.jobId);
-  };
+  }, [onDislike, recommendation.jobId]);
 
-  const handleView = () => {
+  const handleView = useCallback(() => {
     onView?.(recommendation.jobId);
-  };
+  }, [onView, recommendation.jobId]);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 75) return 'text-blue-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-gray-600';
-  };
+  const handleApply = useCallback(() => {
+    onApply?.(recommendation.jobId);
+  }, [onApply, recommendation.jobId]);
 
-  const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Excellent Match';
-    if (score >= 75) return 'Great Match';
-    if (score >= 60) return 'Good Match';
-    return 'Fair Match';
-  };
 
   return (
     <Card className={`transition-shadow hover:shadow-md ${className}`}>
@@ -104,12 +101,12 @@ export function RecommendationCard({
           </div>
           <div className="flex flex-shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
             <div
-              className={`text-xl font-bold sm:text-2xl ${getScoreColor(score.overall_score)}`}
+              className={`text-xl font-bold sm:text-2xl ${scoreColor}`}
             >
               {score.overall_score}%
             </div>
             <Badge variant="secondary" className="whitespace-nowrap text-xs">
-              {getScoreLabel(score.overall_score)}
+              {scoreLabel}
             </Badge>
           </div>
         </div>
@@ -315,7 +312,7 @@ export function RecommendationCard({
           </Button>
 
           <Button
-            onClick={() => onApply?.(recommendation.jobId)}
+            onClick={handleApply}
             size="sm"
             className="flex-1"
           >
@@ -365,6 +362,7 @@ export function RecommendationCard({
       </CardFooter>
     </Card>
   );
-}
+});
 
+export { RecommendationCard };
 export default RecommendationCard;
