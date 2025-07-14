@@ -105,7 +105,11 @@ export default function DashboardPage() {
           setRecommendations([]);
         }
       } else {
-        console.error('API response not ok:', response.status, response.statusText);
+        console.error(
+          'API response not ok:',
+          response.status,
+          response.statusText
+        );
         setRecommendations([]);
       }
     } catch (error) {
@@ -153,26 +157,29 @@ export default function DashboardPage() {
   }, [user, fetchRecommendations, toast]);
 
   // Memoize interaction handler
-  const handleRecommendationInteraction = useCallback(async (
-    jobId: string,
-    interactionType: string,
-    data: Record<string, unknown> = {}
-  ) => {
-    try {
-      await fetch('/api/recommendations/interactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobId,
-          interactionType,
-          interactionData: data,
-          sessionId: `session_${Date.now()}`,
-        }),
-      });
-    } catch (error) {
-      console.error('Error recording interaction:', error);
-    }
-  }, []);
+  const handleRecommendationInteraction = useCallback(
+    async (
+      jobId: string,
+      interactionType: string,
+      data: Record<string, unknown> = {}
+    ) => {
+      try {
+        await fetch('/api/recommendations/interactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId,
+            interactionType,
+            interactionData: data,
+            sessionId: `session_${Date.now()}`,
+          }),
+        });
+      } catch (error) {
+        console.error('Error recording interaction:', error);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -375,44 +382,47 @@ export default function DashboardPage() {
     : '';
 
   // Memoize expensive stats calculations
-  const dynamicStats = useMemo(() => [
-    {
-      title: 'Applications Sent',
-      value: stats.applications_count.toString(),
-      icon: FileText,
-      change: `${
-        applications.filter((app) => {
-          const oneWeekAgo = new Date();
-          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-          return new Date(app.submitted_at) > oneWeekAgo;
-        }).length
-      } this week`,
-    },
-    {
-      title: 'Profile Views',
-      value: stats.profile_views.toString(),
-      icon: Users,
-      change: `+${Math.floor(stats.profile_views * 0.2)} this week`,
-    },
-    {
-      title: 'Opportunities Available',
-      value: stats.matched_jobs_count.toString(),
-      icon: TrendingUp,
-      change: `${
-        recentJobs.filter((job) => {
-          const threeDaysAgo = new Date();
-          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-          return new Date(job.created_at) > threeDaysAgo;
-        }).length
-      } new this week`,
-    },
-    {
-      title: 'Upcoming Events',
-      value: stats.upcoming_events_count.toString(),
-      icon: Calendar,
-      change: 'This month',
-    },
-  ], [stats, applications, recentJobs]);
+  const dynamicStats = useMemo(
+    () => [
+      {
+        title: 'Applications Sent',
+        value: stats.applications_count.toString(),
+        icon: FileText,
+        change: `${
+          applications.filter((app) => {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            return new Date(app.submitted_at) > oneWeekAgo;
+          }).length
+        } this week`,
+      },
+      {
+        title: 'Profile Views',
+        value: stats.profile_views.toString(),
+        icon: Users,
+        change: `+${Math.floor(stats.profile_views * 0.2)} this week`,
+      },
+      {
+        title: 'Opportunities Available',
+        value: stats.matched_jobs_count.toString(),
+        icon: TrendingUp,
+        change: `${
+          recentJobs.filter((job) => {
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            return new Date(job.created_at) > threeDaysAgo;
+          }).length
+        } new this week`,
+      },
+      {
+        title: 'Upcoming Events',
+        value: stats.upcoming_events_count.toString(),
+        icon: Calendar,
+        change: 'This month',
+      },
+    ],
+    [stats, applications, recentJobs]
+  );
 
   // Using shared utility functions from lib/status-utils.ts and lib/date-utils.ts
 

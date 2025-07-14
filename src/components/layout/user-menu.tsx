@@ -22,11 +22,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUserRole } from '@/hooks/use-user-role';
+import { getUserQuickActions } from '@/lib/navigation-config';
 
 export function UserMenu() {
   const supabase = useSupabaseClient();
   const user = useUser();
-  const { userProfile, navigation } = useUserRole();
+  const { userProfile } = useUserRole();
+
+  // Get quick actions for the user based on their role
+  const quickActions = getUserQuickActions(userProfile?.role);
 
   if (!user) return null;
 
@@ -90,7 +94,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         {/* Dynamic navigation based on role */}
-        {navigation.slice(0, 4).map((item) => (
+        {quickActions.slice(0, 4).map((item) => (
           <DropdownMenuItem key={item.href} asChild>
             <Link href={item.href} className="flex cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />

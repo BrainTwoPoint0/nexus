@@ -328,7 +328,12 @@ export function ProfileCompleteness({
 
 // Hook for calculating profile completeness from profile data
 export function useProfileCompleteness(
-  profile: Record<string, string | number | string[] | null> | null
+  profile: Record<string, string | number | string[] | boolean | null> | null,
+  boardExperience?: unknown[],
+  workHistory?: unknown[],
+  education?: unknown[],
+  certifications?: unknown[],
+  documents?: unknown[]
 ) {
   const [completeness, setCompleteness] = useState(0);
   const [suggestions, setSuggestions] =
@@ -341,17 +346,17 @@ export function useProfileCompleteness(
     let score = 0;
     const updatedSuggestions = [...defaultSuggestions];
 
-    // Basic information (30 points)
+    // Basic information (25 points)
     if (
-      profile.firstName &&
-      typeof profile.firstName === 'string' &&
-      profile.firstName.trim()
+      profile.first_name &&
+      typeof profile.first_name === 'string' &&
+      profile.first_name.trim()
     )
       score += 3;
     if (
-      profile.lastName &&
-      typeof profile.lastName === 'string' &&
-      profile.lastName.trim()
+      profile.last_name &&
+      typeof profile.last_name === 'string' &&
+      profile.last_name.trim()
     )
       score += 3;
     if (
@@ -383,14 +388,22 @@ export function useProfileCompleteness(
       score += 7;
       updatedSuggestions.find((s) => s.id === 'bio')!.completed = true;
     }
+
+    // Location and company (5 points)
     if (
       profile.location &&
       typeof profile.location === 'string' &&
       profile.location.trim()
     )
-      score += 5;
+      score += 3;
+    if (
+      profile.company &&
+      typeof profile.company === 'string' &&
+      profile.company.trim()
+    )
+      score += 2;
 
-    // Professional details (20 points)
+    // Professional details (15 points)
     if (
       profile.skills &&
       Array.isArray(profile.skills) &&
@@ -408,26 +421,54 @@ export function useProfileCompleteness(
       updatedSuggestions.find((s) => s.id === 'linkedin')!.completed = true;
     }
     if (
-      profile.languages &&
-      Array.isArray(profile.languages) &&
-      profile.languages.length > 0
-    )
-      score += 2;
-    if (
       profile.sector_preferences &&
       Array.isArray(profile.sector_preferences) &&
       profile.sector_preferences.length > 0
     )
       score += 4;
-    if (profile.availability_status) score += 3;
 
-    // Experience sections would be calculated from related tables
-    // For now, we'll use mock data or props to determine completion
-    // This would be replaced with actual database queries
+    // Board Experience (20 points)
+    if (boardExperience && boardExperience.length > 0) {
+      score += 12;
+      updatedSuggestions.find((s) => s.id === 'board_experience')!.completed =
+        true;
+    }
+
+    // Work History (15 points)
+    if (workHistory && workHistory.length > 0) {
+      score += 12;
+      updatedSuggestions.find((s) => s.id === 'work_history')!.completed = true;
+    }
+
+    // Education (10 points)
+    if (education && education.length > 0) {
+      score += 5;
+      updatedSuggestions.find((s) => s.id === 'education')!.completed = true;
+    }
+
+    // Certifications (5 points)
+    if (certifications && certifications.length > 0) {
+      score += 5;
+      updatedSuggestions.find((s) => s.id === 'certifications')!.completed =
+        true;
+    }
+
+    // Documents (5 points)
+    if (documents && documents.length > 0) {
+      score += 8;
+      updatedSuggestions.find((s) => s.id === 'resume')!.completed = true;
+    }
 
     setCompleteness(Math.min(score, 100));
     setSuggestions(updatedSuggestions);
-  }, [profile]);
+  }, [
+    profile,
+    boardExperience,
+    workHistory,
+    education,
+    certifications,
+    documents,
+  ]);
 
   return { completeness, suggestions };
 }

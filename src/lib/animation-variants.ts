@@ -28,15 +28,15 @@ export const itemVariants: Variants = {
  */
 export const cardVariants: Variants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
+  visible: {
+    opacity: 1,
+    y: 0,
     scale: 1,
-    transition: { duration: 0.3 }
+    transition: { duration: 0.3 },
   },
-  hover: { 
+  hover: {
     scale: 1.02,
-    transition: { duration: 0.2 }
+    transition: { duration: 0.2 },
   },
 };
 
@@ -45,10 +45,10 @@ export const cardVariants: Variants = {
  */
 export const slideInLeftVariants: Variants = {
   hidden: { opacity: 0, x: -50 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
-    transition: { duration: 0.4 }
+    transition: { duration: 0.4 },
   },
 };
 
@@ -57,10 +57,10 @@ export const slideInLeftVariants: Variants = {
  */
 export const slideInRightVariants: Variants = {
   hidden: { opacity: 0, x: 50 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
-    transition: { duration: 0.4 }
+    transition: { duration: 0.4 },
   },
 };
 
@@ -68,27 +68,27 @@ export const slideInRightVariants: Variants = {
  * Modal/dialog animation
  */
 export const modalVariants: Variants = {
-  hidden: { 
-    opacity: 0, 
-    scale: 0.8,
-    y: 20
-  },
-  visible: { 
-    opacity: 1, 
-    scale: 1,
-    y: 0,
-    transition: { 
-      duration: 0.3,
-      ease: "easeOut"
-    }
-  },
-  exit: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     scale: 0.8,
     y: 20,
-    transition: { 
-      duration: 0.2 
-    }
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    y: 20,
+    transition: {
+      duration: 0.2,
+    },
   },
 };
 
@@ -110,9 +110,9 @@ export const spinnerVariants: Variants = {
     transition: {
       duration: 1,
       repeat: Infinity,
-      ease: "linear"
-    }
-  }
+      ease: 'linear',
+    },
+  },
 };
 
 /**
@@ -124,9 +124,9 @@ export const pulseVariants: Variants = {
     transition: {
       duration: 1.5,
       repeat: Infinity,
-      ease: "easeInOut"
-    }
-  }
+      ease: 'easeInOut',
+    },
+  },
 };
 
 /**
@@ -141,27 +141,27 @@ export const buttonVariants: Variants = {
  * Notification/toast animation
  */
 export const toastVariants: Variants = {
-  hidden: { 
-    opacity: 0, 
-    x: 300,
-    scale: 0.8
-  },
-  visible: { 
-    opacity: 1, 
-    x: 0,
-    scale: 1,
-    transition: { 
-      duration: 0.3,
-      ease: "easeOut"
-    }
-  },
-  exit: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     x: 300,
     scale: 0.8,
-    transition: { 
-      duration: 0.2 
-    }
+  },
+  visible: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+    },
+  },
+  exit: {
+    opacity: 0,
+    x: 300,
+    scale: 0.8,
+    transition: {
+      duration: 0.2,
+    },
   },
 };
 
@@ -170,15 +170,15 @@ export const toastVariants: Variants = {
  */
 export const listItemVariants: Variants = {
   hidden: { opacity: 0, height: 0 },
-  visible: { 
-    opacity: 1, 
-    height: "auto",
-    transition: { duration: 0.3 }
+  visible: {
+    opacity: 1,
+    height: 'auto',
+    transition: { duration: 0.3 },
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     height: 0,
-    transition: { duration: 0.2 }
+    transition: { duration: 0.2 },
   },
 };
 
@@ -187,10 +187,10 @@ export const listItemVariants: Variants = {
  */
 export const accordionVariants: Variants = {
   closed: { height: 0, opacity: 0 },
-  open: { 
-    height: "auto", 
+  open: {
+    height: 'auto',
     opacity: 1,
-    transition: { duration: 0.3 }
+    transition: { duration: 0.3 },
   },
 };
 

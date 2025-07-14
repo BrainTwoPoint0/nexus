@@ -61,18 +61,24 @@ const RecommendationCard = memo(function RecommendationCard({
   const { job, score } = recommendation;
 
   // Memoize expensive calculations using shared utilities
-  const scoreColor = useMemo(() => getScoreColor(score.overall_score), [score.overall_score]);
-  const scoreLabel = useMemo(() => getScoreLabel(score.overall_score), [score.overall_score]);
+  const scoreColor = useMemo(
+    () => getScoreColor(score.overall_score),
+    [score.overall_score]
+  );
+  const scoreLabel = useMemo(
+    () => getScoreLabel(score.overall_score),
+    [score.overall_score]
+  );
 
   // Memoize event handlers to prevent child re-renders
   const handleLike = useCallback(() => {
-    setIsLiked(prev => !prev);
+    setIsLiked((prev) => !prev);
     setIsDisliked(false);
     onLike?.(recommendation.jobId);
   }, [onLike, recommendation.jobId]);
 
   const handleDislike = useCallback(() => {
-    setIsDisliked(prev => !prev);
+    setIsDisliked((prev) => !prev);
     setIsLiked(false);
     onDislike?.(recommendation.jobId);
   }, [onDislike, recommendation.jobId]);
@@ -84,7 +90,6 @@ const RecommendationCard = memo(function RecommendationCard({
   const handleApply = useCallback(() => {
     onApply?.(recommendation.jobId);
   }, [onApply, recommendation.jobId]);
-
 
   return (
     <Card className={`transition-shadow hover:shadow-md ${className}`}>
@@ -100,9 +105,7 @@ const RecommendationCard = memo(function RecommendationCard({
             </div>
           </div>
           <div className="flex flex-shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end sm:gap-1">
-            <div
-              className={`text-xl font-bold sm:text-2xl ${scoreColor}`}
-            >
+            <div className={`text-xl font-bold sm:text-2xl ${scoreColor}`}>
               {score.overall_score}%
             </div>
             <Badge variant="secondary" className="whitespace-nowrap text-xs">
@@ -311,11 +314,7 @@ const RecommendationCard = memo(function RecommendationCard({
             <span className="sm:hidden">View</span>
           </Button>
 
-          <Button
-            onClick={handleApply}
-            size="sm"
-            className="flex-1"
-          >
+          <Button onClick={handleApply} size="sm" className="flex-1">
             <ExternalLink className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Apply Now</span>
             <span className="sm:hidden">Apply</span>

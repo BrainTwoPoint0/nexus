@@ -40,7 +40,7 @@ export function formatRelativeDate(dateString: string): string {
   if (diffInMonths < 12) return `${diffInMonths} months ago`;
   if (diffInYears === 1) return '1 year ago';
   if (diffInYears < 5) return `${diffInYears} years ago`;
-  
+
   return date.toLocaleDateString();
 }
 
@@ -108,17 +108,17 @@ export function getCurrentWeekRange(): { start: Date; end: Date } {
   const now = new Date();
   const start = new Date(now);
   const end = new Date(now);
-  
+
   // Get Monday (start of week)
   const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
   start.setDate(diff);
   start.setHours(0, 0, 0, 0);
-  
+
   // Get Sunday (end of week)
   end.setDate(start.getDate() + 6);
   end.setHours(23, 59, 59, 999);
-  
+
   return { start, end };
 }
 
@@ -128,25 +128,25 @@ export function getCurrentWeekRange(): { start: Date; end: Date } {
 export function formatDuration(startDate: string, endDate?: string): string {
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
-  
+
   const diffInMs = end.getTime() - start.getTime();
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
   const diffInMonths = Math.floor(diffInDays / 30);
-  
+
   if (diffInDays < 30) {
     return diffInDays === 1 ? '1 day' : `${diffInDays} days`;
   }
-  
+
   if (diffInMonths < 12) {
     return diffInMonths === 1 ? '1 month' : `${diffInMonths} months`;
   }
-  
+
   const years = Math.floor(diffInMonths / 12);
   const remainingMonths = diffInMonths % 12;
-  
+
   if (remainingMonths === 0) {
     return years === 1 ? '1 year' : `${years} years`;
   }
-  
+
   return `${years} year${years !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
 }

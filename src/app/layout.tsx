@@ -16,10 +16,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     template: '%s | Nexus',
-    default: 'Nexus - Premier Board Opportunities Platform'
+    default: 'Nexus - Premier Board Opportunities Platform',
   },
-  description: 'Connect executive talent with board opportunities through intelligent matching and professional development.',
-  keywords: ['board positions', 'executive search', 'board directors', 'governance', 'non-executive directors'],
+  description:
+    'Connect executive talent with board opportunities through intelligent matching and professional development.',
+  keywords: [
+    'board positions',
+    'executive search',
+    'board directors',
+    'governance',
+    'non-executive directors',
+  ],
   authors: [{ name: 'Nexus Team' }],
   creator: 'Nexus',
   openGraph: {
@@ -28,12 +35,14 @@ export const metadata: Metadata = {
     url: process.env.NEXT_PUBLIC_APP_URL || 'https://nexus.app',
     siteName: 'Nexus',
     title: 'Nexus - Premier Board Opportunities Platform',
-    description: 'Connect executive talent with board opportunities through intelligent matching and professional development.',
+    description:
+      'Connect executive talent with board opportunities through intelligent matching and professional development.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Nexus - Premier Board Opportunities Platform',
-    description: 'Connect executive talent with board opportunities through intelligent matching and professional development.',
+    description:
+      'Connect executive talent with board opportunities through intelligent matching and professional development.',
   },
   robots: {
     index: true,

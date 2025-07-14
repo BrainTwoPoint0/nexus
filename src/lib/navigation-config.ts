@@ -188,11 +188,16 @@ export const getUserQuickActions = (role?: string) => {
 /**
  * Get the complete navigation structure for the current user
  */
-export const getNavigationForUser = (isAuthenticated: boolean, role?: string) => {
+export const getNavigationForUser = (
+  isAuthenticated: boolean,
+  role?: string
+) => {
+  // role parameter is currently unused but may be used for role-based navigation in the future
+  void role;
   if (isAuthenticated) {
     return [...coreNavigation, ...authenticatedNavigation];
   }
-  
+
   return coreNavigation;
 };
 
@@ -207,10 +212,10 @@ export const canAccessNavItem = (
   if (item.requiresAuth && !isAuthenticated) {
     return false;
   }
-  
+
   if (item.roles && userRole && !item.roles.includes(userRole)) {
     return false;
   }
-  
+
   return true;
 };

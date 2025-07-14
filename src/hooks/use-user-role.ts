@@ -33,14 +33,12 @@ export const useUserRole = () => {
   const user = useUser();
   const supabase = useSupabaseClient();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [navigation, setNavigation] = useState<NavigationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       setUserProfile(null);
-      setNavigation([]);
       setLoading(false);
       return;
     }
@@ -60,8 +58,11 @@ export const useUserRole = () => {
         if (profileError) {
           // If profile doesn't exist, create one for this user
           if (profileError.code === 'PGRST116') {
-            console.log('Profile not found, creating profile for user:', user.id);
-            
+            console.log(
+              'Profile not found, creating profile for user:',
+              user.id
+            );
+
             // Create profile for user
             const { error: createError } = await supabase
               .from('profiles')
@@ -90,33 +91,18 @@ export const useUserRole = () => {
             if (retryError) {
               throw retryError;
             }
-            
+
             if (retryData) {
               setUserProfile(retryData);
-              setNavigation(getDefaultNavigation(retryData.role));
               return;
             }
           }
-          
+
           throw profileError;
         }
 
         if (profileData) {
           setUserProfile(profileData);
-
-          // Get navigation based on role
-          const { data: navData, error: navError } = await supabase.rpc(
-            'get_user_navigation',
-            { user_id: user.id }
-          );
-
-          if (navError) {
-            console.warn('Failed to get navigation:', navError);
-            // Fallback to basic navigation
-            setNavigation(getDefaultNavigation(profileData.role));
-          } else {
-            setNavigation(navData || getDefaultNavigation(profileData.role));
-          }
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);
@@ -135,7 +121,6 @@ export const useUserRole = () => {
           role_display_name: 'Candidate',
         };
         setUserProfile(fallbackProfile);
-        setNavigation(getDefaultNavigation('candidate'));
       } finally {
         setLoading(false);
       }
@@ -197,7 +182,6 @@ export const useUserRole = () => {
 
   return {
     userProfile,
-    navigation,
     loading,
     error,
     hasPermission,
@@ -212,59 +196,7 @@ export const useUserRole = () => {
   };
 };
 
-// Default navigation fallback
-const getDefaultNavigation = (role: UserRole): NavigationItem[] => {
-  const baseNav: NavigationItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Profile', href: '/profile' },
-  ];
-
-  switch (role) {
-    case 'candidate':
-      return [
-        ...baseNav,
-        { title: 'Opportunities', href: '/opportunities' },
-        { title: 'Applications', href: '/applications' },
-        { title: 'Learning', href: '/learning' },
-      ];
-
-    case 'organization_admin':
-      return [
-        ...baseNav,
-        { title: 'Post Role', href: '/post-role' },
-        { title: 'Candidates', href: '/talent' },
-        { title: 'Team', href: '/team' },
-        { title: 'Analytics', href: '/analytics' },
-      ];
-
-    case 'organization_employee':
-      return [
-        ...baseNav,
-        { title: 'Our Searches', href: '/searches' },
-        { title: 'Candidates', href: '/talent' },
-      ];
-
-    case 'consultant':
-      return [
-        ...baseNav,
-        { title: 'Candidates', href: '/talent' },
-        { title: 'Clients', href: '/clients' },
-        { title: 'Searches', href: '/searches' },
-      ];
-
-    case 'platform_admin':
-      return [
-        ...baseNav,
-        { title: 'Admin Panel', href: '/admin' },
-        { title: 'Users', href: '/admin/users' },
-        { title: 'Organizations', href: '/admin/organizations' },
-        { title: 'Analytics', href: '/admin/analytics' },
-      ];
-
-    default:
-      return baseNav;
-  }
-};
+// Navigation is now handled by the unified navigation system in /lib/navigation-config.ts
 
 // Default permission checking fallback
 const getDefaultPermission = (role: UserRole, permission: string): boolean => {

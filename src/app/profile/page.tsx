@@ -18,9 +18,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { FileUpload } from '@/components/ui/file-upload';
 import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
+import {
+  ProfileCompleteness,
+  useProfileCompleteness,
+} from '@/components/ui/profile-completeness';
+import { BoardExperienceManager } from '@/components/ui/board-experience-manager';
+import { WorkHistoryManager } from '@/components/ui/work-history-manager';
+import { DocumentManager } from '@/components/ui/document-manager';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import {
@@ -30,12 +36,10 @@ import {
   Mail,
   Building,
   Briefcase,
-  Award,
   Settings,
   Upload,
   Plus,
   X,
-  FileText,
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
@@ -77,6 +81,7 @@ interface Profile {
   profile_completeness: number;
   profile_verified: boolean;
   premium_member: boolean;
+  [key: string]: string | number | string[] | boolean | null;
 }
 
 interface BoardExperience {
@@ -99,6 +104,80 @@ interface Certification {
   issue_date: string;
   expiry_date: string | null;
   is_active: boolean;
+  credential_id: string | null;
+  verification_url: string | null;
+  description: string | null;
+}
+
+interface WorkHistory {
+  id: string;
+  company_name: string;
+  position_title: string;
+  department: string | null;
+  employment_type: string;
+  company_size: string | null;
+  sector: string | null;
+  location: string | null;
+  start_date: string;
+  end_date: string | null;
+  is_current: boolean;
+  key_responsibilities: string | null;
+  major_achievements: string | null;
+  reporting_to: string | null;
+  team_size: number | null;
+  reason_for_leaving: string | null;
+}
+
+interface Education {
+  id: string;
+  institution_name: string;
+  institution_country: string | null;
+  degree_type: string;
+  degree_name: string | null;
+  field_of_study: string | null;
+  specialization: string | null;
+  grade_classification: string | null;
+  gpa: number | null;
+  start_year: number | null;
+  graduation_year: number | null;
+  is_ongoing: boolean;
+  thesis_title: string | null;
+  honors_awards: string[] | null;
+  relevant_coursework: string[] | null;
+  extracurricular_activities: string[] | null;
+}
+
+interface Document {
+  id: string;
+  profile_id: string;
+  original_filename: string;
+  stored_filename: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  mime_type: string;
+  document_category: string;
+  document_subcategory: string | null;
+  title: string;
+  description: string | null;
+  version_number: number;
+  is_primary: boolean;
+  is_current_version: boolean;
+  replaced_document_id: string | null;
+  password_protected: boolean;
+  access_level: string;
+  download_count: number;
+  last_accessed: string | null;
+  virus_scan_status: string | null;
+  virus_scan_date: string | null;
+  content_extracted: string | null;
+  tags: string[];
+  upload_ip: string | null;
+  upload_user_agent: string | null;
+  retention_until: string | null;
+  upload_date: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Available sectors for selection
@@ -153,11 +232,24 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [boardExperience, setBoardExperience] = useState<BoardExperience[]>([]);
   const [certifications, setCertifications] = useState<Certification[]>([]);
+  const [workHistory, setWorkHistory] = useState<WorkHistory[]>([]);
+  const [education, setEducation] = useState<Education[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [newSkill, setNewSkill] = useState('');
   const [newSector, setNewSector] = useState('');
+  const [activeTab, setActiveTab] = useState('personal');
+
+  // Calculate profile completeness
+  const { completeness, suggestions } = useProfileCompleteness(
+    profile,
+    boardExperience,
+    workHistory,
+    education,
+    certifications,
+    documents
+  );
 
   // Load profile data on mount
   useEffect(() => {
@@ -165,13 +257,59 @@ export default function ProfilePage() {
 
     const loadProfile = async () => {
       try {
-        // Load main profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
+        // Load all data in parallel for better performance
+        const [
+          profileResult,
+          boardResult,
+          certResult,
+          workResult,
+          educationResult,
+          documentsResult,
+        ] = await Promise.all([
+          // Load main profile
+          supabase.from('profiles').select('*').eq('id', user.id).single(),
 
+          // Load board experience
+          supabase
+            .from('board_experience')
+            .select('*')
+            .eq('profile_id', user.id)
+            .order('start_date', { ascending: false }),
+
+          // Load certifications
+          supabase
+            .from('certifications')
+            .select('*')
+            .eq('profile_id', user.id)
+            .eq('is_active', true)
+            .order('issue_date', { ascending: false }),
+
+          // Load work history
+          supabase
+            .from('work_history')
+            .select('*')
+            .eq('profile_id', user.id)
+            .order('start_date', { ascending: false }),
+
+          // Load education
+          supabase
+            .from('education')
+            .select(
+              'id, institution_name, institution_country, degree_type, degree_name, field_of_study, specialization, grade_classification, gpa, start_year, graduation_year, is_ongoing, thesis_title, honors_awards, relevant_coursework, extracurricular_activities'
+            )
+            .eq('profile_id', user.id)
+            .order('graduation_year', { ascending: false }),
+
+          // Load documents
+          supabase
+            .from('documents')
+            .select('*')
+            .eq('profile_id', user.id)
+            .order('upload_date', { ascending: false }),
+        ]);
+
+        // Handle profile data
+        const { data: profileData, error: profileError } = profileResult;
         if (profileError && profileError.code !== 'PGRST116') {
           throw profileError;
         }
@@ -210,24 +348,35 @@ export default function ProfilePage() {
           setIsEditing(true); // Start in edit mode for new profiles
         }
 
-        // Load board experience
-        const { data: boardData } = await supabase
-          .from('board_experience')
-          .select('*')
-          .eq('profile_id', user.id)
-          .order('start_date', { ascending: false });
+        // Set all the related data
+        setBoardExperience(boardResult.data || []);
+        setCertifications(certResult.data || []);
+        setWorkHistory(workResult.data || []);
+        setEducation(educationResult.data || []);
+        setDocuments(documentsResult.data || []);
 
-        if (boardData) setBoardExperience(boardData);
-
-        // Load certifications
-        const { data: certData } = await supabase
-          .from('certifications')
-          .select('*')
-          .eq('profile_id', user.id)
-          .eq('is_active', true)
-          .order('issue_date', { ascending: false });
-
-        if (certData) setCertifications(certData);
+        // Log any errors from the parallel queries (but don't fail completely)
+        [
+          boardResult,
+          certResult,
+          workResult,
+          educationResult,
+          documentsResult,
+        ].forEach((result, index) => {
+          if (result.error) {
+            const tables = [
+              'board_experience',
+              'certifications',
+              'work_history',
+              'education',
+              'documents',
+            ];
+            console.warn(
+              `Warning: Could not load ${tables[index]}:`,
+              result.error
+            );
+          }
+        });
       } catch (error) {
         console.error('Error loading profile:', error);
         toast({
@@ -270,6 +419,82 @@ export default function ProfilePage() {
       });
 
       if (error) throw error;
+
+      // Save board experience if there are changes
+      if (boardExperience.length > 0) {
+        // Delete existing board experience
+        await supabase
+          .from('board_experience')
+          .delete()
+          .eq('profile_id', user.id);
+
+        // Insert updated board experience
+        const { error: boardError } = await supabase
+          .from('board_experience')
+          .insert(
+            boardExperience.map((exp) => ({
+              ...exp,
+              profile_id: user.id,
+            }))
+          );
+
+        if (boardError) throw boardError;
+      }
+
+      // Save work history if there are changes
+      if (workHistory.length > 0) {
+        // Delete existing work history
+        await supabase.from('work_history').delete().eq('profile_id', user.id);
+
+        // Insert updated work history
+        const { error: workError } = await supabase.from('work_history').insert(
+          workHistory.map((hist) => ({
+            ...hist,
+            profile_id: user.id,
+          }))
+        );
+
+        if (workError) throw workError;
+      }
+
+      // Save education if there are changes
+      if (education.length > 0) {
+        // Delete existing education
+        await supabase.from('education').delete().eq('profile_id', user.id);
+
+        // Insert updated education
+        const { error: educationError } = await supabase
+          .from('education')
+          .insert(
+            education.map((edu) => ({
+              ...edu,
+              profile_id: user.id,
+            }))
+          );
+
+        if (educationError) throw educationError;
+      }
+
+      // Save certifications if there are changes
+      if (certifications.length > 0) {
+        // Delete existing certifications
+        await supabase
+          .from('certifications')
+          .delete()
+          .eq('profile_id', user.id);
+
+        // Insert updated certifications
+        const { error: certificationsError } = await supabase
+          .from('certifications')
+          .insert(
+            certifications.map((cert) => ({
+              ...cert,
+              profile_id: user.id,
+            }))
+          );
+
+        if (certificationsError) throw certificationsError;
+      }
 
       setIsEditing(false);
       toast({
@@ -369,6 +594,87 @@ export default function ProfilePage() {
           }
         : null
     );
+  };
+
+  const handleBoardExperienceUpdate = async (
+    updatedExperience: BoardExperience[]
+  ) => {
+    setBoardExperience(updatedExperience);
+
+    // If not in editing mode, save to database immediately
+    if (!isEditing && user) {
+      try {
+        // Delete existing board experience
+        await supabase
+          .from('board_experience')
+          .delete()
+          .eq('profile_id', user.id);
+
+        // Insert new board experience
+        if (updatedExperience.length > 0) {
+          const { error } = await supabase.from('board_experience').insert(
+            updatedExperience.map((exp) => ({
+              ...exp,
+              profile_id: user.id,
+            }))
+          );
+
+          if (error) throw error;
+        }
+
+        toast({
+          title: 'Success',
+          description: 'Board experience updated successfully!',
+        });
+      } catch (error) {
+        console.error('Error updating board experience:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update board experience',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleWorkHistoryUpdate = async (updatedHistory: WorkHistory[]) => {
+    setWorkHistory(updatedHistory);
+
+    // If not in editing mode, save to database immediately
+    if (!isEditing && user) {
+      try {
+        // Delete existing work history
+        await supabase.from('work_history').delete().eq('profile_id', user.id);
+
+        // Insert new work history
+        if (updatedHistory.length > 0) {
+          const { error } = await supabase.from('work_history').insert(
+            updatedHistory.map((hist) => ({
+              ...hist,
+              profile_id: user.id,
+            }))
+          );
+
+          if (error) throw error;
+        }
+
+        toast({
+          title: 'Success',
+          description: 'Work history updated successfully!',
+        });
+      } catch (error) {
+        console.error('Error updating work history:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to update work history',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
+  const handleDocumentsUpdate = (updatedDocuments: Document[]) => {
+    setDocuments(updatedDocuments);
   };
 
   if (isLoading) {
@@ -471,7 +777,7 @@ export default function ProfilePage() {
                   </Badge>
                 )}
                 <span className="text-muted-foreground">
-                  {profile.profile_completeness || 0}% Complete
+                  {completeness}% Complete
                 </span>
               </div>
 
@@ -514,9 +820,106 @@ export default function ProfilePage() {
             </div>
           </motion.div>
 
+          {/* Profile Completeness */}
+          <motion.div variants={itemVariants}>
+            <ProfileCompleteness
+              completeness={completeness}
+              suggestions={suggestions}
+              onSuggestionClick={(suggestion) => {
+                // Navigate to the relevant tab
+                setActiveTab(suggestion.section);
+
+                // Focus on the specific field after a short delay to allow tab switch
+                setTimeout(() => {
+                  let elementToFocus: HTMLElement | null = null;
+
+                  switch (suggestion.id) {
+                    case 'bio':
+                      elementToFocus = document.querySelector('[name="bio"]');
+                      break;
+                    case 'phone':
+                      elementToFocus = document.querySelector('[name="phone"]');
+                      break;
+                    case 'linkedin':
+                      elementToFocus = document.querySelector(
+                        '[name="linkedin_url"]'
+                      );
+                      break;
+                    case 'skills':
+                      elementToFocus =
+                        document.querySelector('[name="newSkill"]');
+                      break;
+                    case 'work_history':
+                      // Focus on the "Add Work Experience" button or first input
+                      elementToFocus = document.querySelector(
+                        '[data-section="work-history"]'
+                      );
+                      break;
+                    case 'board_experience':
+                      // Focus on the "Add Board Experience" button or first input
+                      elementToFocus = document.querySelector(
+                        '[data-section="board-experience"]'
+                      );
+                      break;
+                    case 'education':
+                      // Focus on the "Add Education" button or first input
+                      elementToFocus = document.querySelector(
+                        '[data-section="education"]'
+                      );
+                      break;
+                    case 'certifications':
+                      // Focus on the "Add Certification" button or first input
+                      elementToFocus = document.querySelector(
+                        '[data-section="certifications"]'
+                      );
+                      break;
+                    case 'resume':
+                      // Focus on the documents tab file upload area
+                      elementToFocus = document.querySelector(
+                        '[data-section="documents"]'
+                      );
+                      break;
+                    default:
+                      // Focus on the first input in the current tab
+                      elementToFocus = document.querySelector(
+                        `[data-tab="${suggestion.section}"] input, [data-tab="${suggestion.section}"] textarea`
+                      );
+                  }
+
+                  if (elementToFocus) {
+                    elementToFocus.focus();
+                    // Add visual highlight
+                    elementToFocus.classList.add(
+                      'ring-2',
+                      'ring-primary',
+                      'ring-offset-2'
+                    );
+                    setTimeout(() => {
+                      elementToFocus?.classList.remove(
+                        'ring-2',
+                        'ring-primary',
+                        'ring-offset-2'
+                      );
+                    }, 2000);
+                  }
+                }, 100);
+
+                // Show toast notification
+                toast({
+                  title: 'Profile Quick Win',
+                  description: `Navigate to ${suggestion.title} to improve your profile by ${suggestion.points} points.`,
+                });
+              }}
+            />
+          </motion.div>
+
           {/* Profile Content */}
           <motion.div variants={itemVariants}>
-            <Tabs defaultValue="personal" className="space-y-6">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="personal">Personal Info</TabsTrigger>
                 <TabsTrigger value="experience">Experience</TabsTrigger>
@@ -598,6 +1001,7 @@ export default function ProfilePage() {
                           <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
                             id="phone"
+                            name="phone"
                             value={profile.phone || ''}
                             onChange={(e) =>
                               handleInputChange('phone', e.target.value)
@@ -628,9 +1032,24 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="linkedin_url">LinkedIn Profile</Label>
+                      <Input
+                        id="linkedin_url"
+                        name="linkedin_url"
+                        value={profile.linkedin_url || ''}
+                        onChange={(e) =>
+                          handleInputChange('linkedin_url', e.target.value)
+                        }
+                        disabled={!isEditing}
+                        placeholder="https://linkedin.com/in/yourprofile"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="bio">Professional Bio</Label>
                       <Textarea
                         id="bio"
+                        name="bio"
                         value={profile.bio || ''}
                         onChange={(e) =>
                           handleInputChange('bio', e.target.value)
@@ -685,42 +1104,38 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Board Experience Section */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold">
-                          Board Experience
-                        </h3>
-                        {isEditing && (
-                          <Button variant="outline" size="sm">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Position
-                          </Button>
-                        )}
-                      </div>
+                    <BoardExperienceManager
+                      data-section="board-experience"
+                      boardExperience={boardExperience}
+                      onUpdate={handleBoardExperienceUpdate}
+                      isEditing={isEditing}
+                    />
+                  </CardContent>
+                </Card>
 
-                      <div className="space-y-3">
-                        <div className="rounded-lg border p-4">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h4 className="font-medium">
-                                Non-Executive Director
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                TechStartup Ltd • 2020 - Present
-                              </p>
-                              <p className="mt-2 text-sm">
-                                Oversight of technology strategy and digital
-                                transformation initiatives.
-                              </p>
-                            </div>
-                            {isEditing && (
-                              <Button variant="ghost" size="sm">
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                {/* Work History Section */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <WorkHistoryManager
+                      data-section="work-history"
+                      workHistory={workHistory}
+                      onUpdate={handleWorkHistoryUpdate}
+                      isEditing={isEditing}
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Education Section */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="rounded-lg border p-4">
+                      <h3 className="mb-2 font-semibold">Education</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Education management is being updated for the new
+                        database schema.
+                        {education.length > 0 &&
+                          ` You have ${education.length} education record(s).`}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -766,6 +1181,7 @@ export default function ProfilePage() {
                         <div className="space-y-3">
                           <div className="flex space-x-2">
                             <Input
+                              name="newSkill"
                               placeholder="Add a skill..."
                               value={newSkill}
                               onChange={(e) => setNewSkill(e.target.value)}
@@ -803,160 +1219,28 @@ export default function ProfilePage() {
                 </Card>
 
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Certifications & Qualifications</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {certifications && certifications.length > 0 ? (
-                      certifications.map((cert) => (
-                        <div
-                          key={cert.id}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Award className="h-5 w-5 text-primary" />
-                            <div>
-                              <span className="font-medium">
-                                {cert.certification_name}
-                              </span>
-                              <p className="text-sm text-muted-foreground">
-                                {cert.issuing_organization}
-                              </p>
-                              {cert.issue_date && (
-                                <p className="text-xs text-muted-foreground">
-                                  Issued:{' '}
-                                  {new Date(cert.issue_date).getFullYear()}
-                                  {cert.expiry_date &&
-                                    ` • Expires: ${new Date(cert.expiry_date).getFullYear()}`}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          {isEditing && (
-                            <Button variant="ghost" size="sm">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-4 text-center">
-                        <Award className="mx-auto mb-2 h-12 w-12 text-muted-foreground/50" />
-                        <p className="text-sm text-muted-foreground">
-                          {isEditing
-                            ? 'Add certifications to showcase your qualifications'
-                            : 'No certifications added yet'}
-                        </p>
-                      </div>
-                    )}
-                    {isEditing && (
-                      <Button variant="outline" size="sm">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Certification
-                      </Button>
-                    )}
+                  <CardContent className="pt-6">
+                    <div className="rounded-lg border p-4">
+                      <h3 className="mb-2 font-semibold">Certifications</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Certifications management is being updated for the new
+                        database schema.
+                        {certifications.length > 0 &&
+                          ` You have ${certifications.length} certification(s).`}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
               {/* Documents */}
               <TabsContent value="documents" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <FileText className="h-5 w-5" />
-                      <span>Resume & Documents</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-base font-medium">
-                          Resume/CV
-                        </Label>
-                        <p className="mb-3 text-sm text-muted-foreground">
-                          Upload your current resume or CV. This will be shared
-                          with potential organizations.
-                        </p>
-                        <FileUpload
-                          accept=".pdf,.doc,.docx"
-                          maxSize={5}
-                          multiple={false}
-                          bucket="documents"
-                          folder="resumes"
-                          onUpload={(files) => {
-                            console.log('Resume uploaded:', files);
-                            // TODO: Save file URL to user profile
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <Label className="text-base font-medium">
-                          Supporting Documents
-                        </Label>
-                        <p className="mb-3 text-sm text-muted-foreground">
-                          Upload additional documents such as certifications,
-                          cover letters, or references.
-                        </p>
-                        <FileUpload
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                          maxSize={10}
-                          multiple={true}
-                          bucket="documents"
-                          folder="supporting"
-                          onUpload={(files) => {
-                            console.log(
-                              'Supporting documents uploaded:',
-                              files
-                            );
-                            // TODO: Save file URLs to user profile
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Document Management</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="rounded-lg border bg-muted/30 p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <FileText className="h-5 w-5 text-blue-500" />
-                            <div>
-                              <p className="font-medium">Current Resume</p>
-                              <p className="text-sm text-muted-foreground">
-                                resume-john-doe-2024.pdf
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
-                              Preview
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="py-8 text-center text-muted-foreground">
-                        <FileText className="mx-auto mb-3 h-12 w-12 opacity-50" />
-                        <p>No supporting documents uploaded yet.</p>
-                        <p className="text-sm">
-                          Upload certificates, references, or cover letters
-                          above.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <DocumentManager
+                  data-section="documents"
+                  documents={documents}
+                  onUpdate={handleDocumentsUpdate}
+                  isEditing={isEditing}
+                />
               </TabsContent>
 
               {/* Preferences */}
