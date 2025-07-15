@@ -27,6 +27,8 @@ import {
 import { BoardExperienceManager } from '@/components/ui/board-experience-manager';
 import { WorkHistoryManager } from '@/components/ui/work-history-manager';
 import { DocumentManager } from '@/components/ui/document-manager';
+import { CompensationManager } from '@/components/ui/compensation-manager';
+import { AvailabilityManager } from '@/components/ui/availability-manager';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import {
@@ -77,7 +79,13 @@ interface Profile {
   compensation_min: number | null;
   compensation_max: number | null;
   compensation_currency: string;
-  travel_willingness: string;
+  compensation_type: string;
+  equity_interest: boolean;
+  benefits_important: string[];
+  availability_start_date: string | null;
+  time_commitment_preference: string | null;
+  travel_willingness: string | null;
+  remote_work_preference: string | null;
   profile_completeness: number;
   profile_verified: boolean;
   premium_member: boolean;
@@ -338,8 +346,14 @@ export default function ProfilePage() {
             availability_status: 'immediately_available',
             compensation_min: null,
             compensation_max: null,
-            compensation_currency: 'GBP',
-            travel_willingness: 'domestic_only',
+            compensation_currency: 'USD',
+            compensation_type: 'annual',
+            equity_interest: false,
+            benefits_important: [],
+            availability_start_date: null,
+            time_commitment_preference: null,
+            travel_willingness: null,
+            remote_work_preference: null,
             profile_completeness: 0,
             profile_verified: false,
             premium_member: false,
@@ -677,6 +691,108 @@ export default function ProfilePage() {
     setDocuments(updatedDocuments);
   };
 
+  const handleCompensationUpdate = async (compensationData: {
+    compensation_min: number | null;
+    compensation_max: number | null;
+    compensation_currency: string;
+    compensation_type: string;
+    equity_interest: boolean;
+    benefits_important: string[];
+  }) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          compensation_min: compensationData.compensation_min,
+          compensation_max: compensationData.compensation_max,
+          compensation_currency: compensationData.compensation_currency,
+          compensation_type: compensationData.compensation_type,
+          equity_interest: compensationData.equity_interest,
+          benefits_important: compensationData.benefits_important,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              compensation_min: compensationData.compensation_min,
+              compensation_max: compensationData.compensation_max,
+              compensation_currency: compensationData.compensation_currency,
+              compensation_type: compensationData.compensation_type,
+              equity_interest: compensationData.equity_interest,
+              benefits_important: compensationData.benefits_important,
+            }
+          : null
+      );
+
+      toast({
+        title: 'Success',
+        description: 'Compensation preferences updated successfully!',
+      });
+    } catch (error) {
+      console.error('Error updating compensation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update compensation preferences',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAvailabilityUpdate = async (availabilityData: {
+    availability_start_date: string | null;
+    time_commitment_preference: string | null;
+    travel_willingness: string | null;
+    remote_work_preference: string | null;
+  }) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          availability_start_date: availabilityData.availability_start_date,
+          time_commitment_preference:
+            availabilityData.time_commitment_preference,
+          travel_willingness: availabilityData.travel_willingness,
+          remote_work_preference: availabilityData.remote_work_preference,
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              availability_start_date: availabilityData.availability_start_date,
+              time_commitment_preference:
+                availabilityData.time_commitment_preference,
+              travel_willingness: availabilityData.travel_willingness,
+              remote_work_preference: availabilityData.remote_work_preference,
+            }
+          : null
+      );
+
+      toast({
+        title: 'Success',
+        description: 'Availability preferences updated successfully!',
+      });
+    } catch (error) {
+      console.error('Error updating availability:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update availability preferences',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -920,10 +1036,12 @@ export default function ProfilePage() {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="personal">Personal Info</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-7">
+                <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="experience">Experience</TabsTrigger>
-                <TabsTrigger value="skills">Skills & Certs</TabsTrigger>
+                <TabsTrigger value="skills">Skills</TabsTrigger>
+                <TabsTrigger value="compensation">Compensation</TabsTrigger>
+                <TabsTrigger value="availability">Availability</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="preferences">Preferences</TabsTrigger>
               </TabsList>
@@ -1231,6 +1349,37 @@ export default function ProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Compensation */}
+              <TabsContent value="compensation" className="space-y-6">
+                <CompensationManager
+                  compensation={{
+                    compensation_min: profile.compensation_min,
+                    compensation_max: profile.compensation_max,
+                    compensation_currency: profile.compensation_currency,
+                    compensation_type: profile.compensation_type,
+                    equity_interest: profile.equity_interest,
+                    benefits_important: profile.benefits_important || [],
+                  }}
+                  onUpdate={handleCompensationUpdate}
+                  isEditing={isEditing}
+                />
+              </TabsContent>
+
+              {/* Availability */}
+              <TabsContent value="availability" className="space-y-6">
+                <AvailabilityManager
+                  availability={{
+                    availability_start_date: profile.availability_start_date,
+                    time_commitment_preference:
+                      profile.time_commitment_preference,
+                    travel_willingness: profile.travel_willingness,
+                    remote_work_preference: profile.remote_work_preference,
+                  }}
+                  onUpdate={handleAvailabilityUpdate}
+                  isEditing={isEditing}
+                />
               </TabsContent>
 
               {/* Documents */}

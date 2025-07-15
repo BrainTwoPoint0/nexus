@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { ErrorMessage } from '@/components/ui/error-states';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useSupabase } from '@/components/providers/supabase-provider';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -20,12 +20,16 @@ function SignUpForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
+    userType: 'candidate', // 'candidate' or 'organization'
     firstName: '',
     lastName: '',
     email: '',
     password: '',
     confirmPassword: '',
     agreeToTerms: false,
+    // Organization-specific fields
+    organizationName: '',
+    organizationSector: '',
   });
   const supabase = useSupabase();
   const searchParams = useSearchParams();
@@ -47,6 +51,14 @@ function SignUpForm() {
     if (!formData.agreeToTerms)
       newErrors.push('You must agree to the Terms of Service');
 
+    // Organization-specific validation
+    if (formData.userType === 'organization') {
+      if (!formData.organizationName)
+        newErrors.push('Organization name is required');
+      if (!formData.organizationSector)
+        newErrors.push('Organization sector is required');
+    }
+
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.push('Please enter a valid email address');
     }
@@ -64,13 +76,22 @@ function SignUpForm() {
     }
 
     // Supabase sign-up
-    const { error } = await supabase.auth.signUp({
+    const { data: authData, error } = await supabase.auth.signUp({
       email: formData.email,
       password: formData.password,
       options: {
         data: {
           first_name: formData.firstName,
           last_name: formData.lastName,
+          user_type: formData.userType,
+          organization_name:
+            formData.userType === 'organization'
+              ? formData.organizationName
+              : null,
+          organization_sector:
+            formData.userType === 'organization'
+              ? formData.organizationSector
+              : null,
         },
       },
     });
@@ -81,8 +102,40 @@ function SignUpForm() {
       return;
     }
 
-    // Redirect to dashboard or show confirmation
-    const redirectPath = searchParams.get('redirect') || '/dashboard';
+    // For organizations, create organization record after successful auth
+    if (formData.userType === 'organization' && authData.user) {
+      try {
+        // Create organization record
+        const organizationSlug = formData.organizationName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+
+        const { error: orgError } = await supabase
+          .from('organizations')
+          .insert([
+            {
+              name: formData.organizationName,
+              slug: organizationSlug,
+              sector: formData.organizationSector,
+            },
+          ]);
+
+        if (orgError) {
+          console.error('Error creating organization:', orgError);
+          // Don't fail the signup for this, user can complete organization setup later
+        }
+      } catch (error) {
+        console.error('Error creating organization:', error);
+        // Don't fail the signup for this
+      }
+    }
+
+    // Redirect based on user type
+    const redirectPath =
+      formData.userType === 'organization'
+        ? '/org-dashboard'
+        : searchParams.get('redirect') || '/dashboard';
     router.push(redirectPath);
   };
 
@@ -128,6 +181,89 @@ function SignUpForm() {
                     ))}
                   </div>
                 )}
+
+                {/* User Type Selection */}
+                <div className="space-y-3">
+                  <Label>I am signing up as:</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div
+                      className={`cursor-pointer rounded-lg border-2 p-4 text-center transition-colors ${
+                        formData.userType === 'candidate'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-muted hover:border-primary/50'
+                      }`}
+                      onClick={() => handleInputChange('userType', 'candidate')}
+                    >
+                      <User className="mx-auto mb-2 h-8 w-8" />
+                      <div className="font-medium">Board Candidate</div>
+                      <div className="text-xs text-muted-foreground">
+                        Looking for board positions
+                      </div>
+                    </div>
+                    <div
+                      className={`cursor-pointer rounded-lg border-2 p-4 text-center transition-colors ${
+                        formData.userType === 'organization'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-muted hover:border-primary/50'
+                      }`}
+                      onClick={() =>
+                        handleInputChange('userType', 'organization')
+                      }
+                    >
+                      <Building className="mx-auto mb-2 h-8 w-8" />
+                      <div className="font-medium">Organization</div>
+                      <div className="text-xs text-muted-foreground">
+                        Hiring board members
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Organization Details (conditional) */}
+                {formData.userType === 'organization' && (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="organizationName">
+                        Organization Name
+                      </Label>
+                      <Input
+                        id="organizationName"
+                        placeholder="Enter your organization name"
+                        value={formData.organizationName}
+                        onChange={(e) =>
+                          handleInputChange('organizationName', e.target.value)
+                        }
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="organizationSector">
+                        Industry Sector
+                      </Label>
+                      <Input
+                        id="organizationSector"
+                        placeholder="e.g., Technology, Healthcare, Finance"
+                        value={formData.organizationSector}
+                        onChange={(e) =>
+                          handleInputChange(
+                            'organizationSector',
+                            e.target.value
+                          )
+                        }
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Personal Details */}
+                <div className="space-y-2">
+                  <Label>
+                    {formData.userType === 'organization'
+                      ? 'Primary Contact'
+                      : 'Your Name'}
+                  </Label>
+                </div>
 
                 {/* Name Fields */}
                 <div className="grid grid-cols-2 gap-4">

@@ -49,7 +49,7 @@ function SignInForm() {
     }
 
     // Supabase sign-in
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password,
     });
@@ -60,9 +60,48 @@ function SignInForm() {
       return;
     }
 
-    // Redirect to dashboard on success
-    const redirectPath = searchParams.get('redirect') || '/dashboard';
-    router.push(redirectPath);
+    // Determine redirect path based on user type
+    let redirectPath = searchParams.get('redirect');
+
+    if (!redirectPath && authData.user) {
+      // Check user type from auth metadata
+      const userType = authData.user.user_metadata?.user_type;
+
+      if (userType === 'organization') {
+        // For organizations, check if they have an organization membership
+        try {
+          const { data: orgMember, error: memberError } = await supabase
+            .from('organization_members')
+            .select('organization_id, role')
+            .eq('user_id', authData.user.id)
+            .eq('status', 'active')
+            .single();
+
+          if (memberError || !orgMember) {
+            // No organization membership found, send to setup
+            redirectPath = '/org-setup';
+          } else {
+            // Has organization membership, send to dashboard
+            redirectPath = '/org-dashboard';
+          }
+        } catch (error) {
+          console.error('Error checking organization membership:', error);
+          // On error, send to setup to be safe
+          redirectPath = '/org-setup';
+        }
+      } else {
+        // For candidates or undefined user type, default to candidate dashboard
+        redirectPath = '/dashboard';
+      }
+    } else if (!redirectPath) {
+      // Fallback if no user data
+      redirectPath = '/dashboard';
+    }
+
+    // Add a small delay to ensure auth state is properly set
+    setTimeout(() => {
+      router.push(redirectPath);
+    }, 100);
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {

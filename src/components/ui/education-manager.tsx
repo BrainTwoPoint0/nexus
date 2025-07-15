@@ -66,7 +66,6 @@ const DEGREE_TYPES = [
   'Professional Qualification',
 ];
 
-
 const FIELDS_OF_STUDY = [
   'Business Administration',
   'Finance',
@@ -197,7 +196,6 @@ export function EducationManager({
     onUpdate(updatedEducation);
   };
 
-
   const sortedEducation = [...education].sort((a, b) => {
     const aDate = a.graduation_year || new Date().getFullYear();
     const bDate = b.graduation_year || new Date().getFullYear();
@@ -314,16 +312,17 @@ export function EducationManager({
                       </div>
                     )}
 
-                    {edu.extracurricular_activities && edu.extracurricular_activities.length > 0 && (
-                      <div>
-                        <h5 className="mb-2 text-sm font-medium">
-                          Activities & Achievements
-                        </h5>
-                        <p className="text-sm text-muted-foreground">
-                          {edu.extracurricular_activities.join(', ')}
-                        </p>
-                      </div>
-                    )}
+                    {edu.extracurricular_activities &&
+                      edu.extracurricular_activities.length > 0 && (
+                        <div>
+                          <h5 className="mb-2 text-sm font-medium">
+                            Activities & Achievements
+                          </h5>
+                          <p className="text-sm text-muted-foreground">
+                            {edu.extracurricular_activities.join(', ')}
+                          </p>
+                        </div>
+                      )}
 
                     <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                       <div className="flex items-center space-x-1">
@@ -432,7 +431,10 @@ export function EducationManager({
                   max="2030"
                   value={formData.start_year || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, start_year: parseInt(e.target.value) || null })
+                    setFormData({
+                      ...formData,
+                      start_year: parseInt(e.target.value) || null,
+                    })
                   }
                   placeholder="e.g. 2020"
                 />
@@ -447,7 +449,10 @@ export function EducationManager({
                   max="2030"
                   value={formData.graduation_year || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, graduation_year: parseInt(e.target.value) || null })
+                    setFormData({
+                      ...formData,
+                      graduation_year: parseInt(e.target.value) || null,
+                    })
                   }
                   placeholder="e.g. 2024"
                   disabled={formData.is_ongoing}
@@ -477,7 +482,10 @@ export function EducationManager({
                   id="location"
                   value={formData.institution_country || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, institution_country: e.target.value })
+                    setFormData({
+                      ...formData,
+                      institution_country: e.target.value,
+                    })
                   }
                   placeholder="e.g. Cambridge, MA"
                 />
@@ -490,9 +498,9 @@ export function EducationManager({
                   value={formData.gpa?.toString() || ''}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setFormData({ 
-                      ...formData, 
-                      gpa: value === '' ? null : parseFloat(value) || null 
+                    setFormData({
+                      ...formData,
+                      gpa: value === '' ? null : parseFloat(value) || null,
                     });
                   }}
                   placeholder="e.g. 3.8/4.0"
@@ -522,7 +530,10 @@ export function EducationManager({
                 id="grade"
                 value={formData.grade_classification || ''}
                 onChange={(e) =>
-                  setFormData({ ...formData, grade_classification: e.target.value })
+                  setFormData({
+                    ...formData,
+                    grade_classification: e.target.value,
+                  })
                 }
                 placeholder="e.g. First Class, Upper Second"
               />
