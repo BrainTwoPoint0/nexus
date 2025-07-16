@@ -57,6 +57,18 @@ export function formatShortDate(dateString: string): string {
 }
 
 /**
+ * Format a date string to a readable format (e.g., "January 15, 2024")
+ */
+export function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
  * Format a date string to include time (e.g., "Jan 15, 2024 at 3:30 PM")
  */
 export function formatDateTime(dateString: string): string {

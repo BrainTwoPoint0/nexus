@@ -179,11 +179,11 @@ export function Header() {
         {mobileMenuOpen && (
           <div
             id="mobile-menu"
-            className="border-t border-border py-4 lg:hidden"
+            className="fixed inset-x-0 top-[72px] z-40 max-h-[calc(100vh-72px)] overflow-y-auto border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:hidden"
             role="menu"
             aria-labelledby="mobile-menu-button"
           >
-            <div className="space-y-4">
+            <div className="space-y-4 p-4">
               {navigationItems.map((item) => (
                 <div key={item.title} className="space-y-2">
                   <h3 className="font-medium text-foreground">{item.title}</h3>

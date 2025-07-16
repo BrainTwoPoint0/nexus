@@ -78,11 +78,18 @@ const TRAVEL_OPTIONS = [
     color: 'text-red-600',
   },
   {
-    value: 'domestic',
-    label: 'Domestic Travel',
+    value: 'domestic_only',
+    label: 'Domestic Only',
     description: 'Willing to travel within country',
     icon: Plane,
     color: 'text-yellow-600',
+  },
+  {
+    value: 'european',
+    label: 'European Travel',
+    description: 'Open to travel within Europe',
+    icon: Plane,
+    color: 'text-orange-600',
   },
   {
     value: 'international',
@@ -92,9 +99,9 @@ const TRAVEL_OPTIONS = [
     color: 'text-green-600',
   },
   {
-    value: 'extensive',
-    label: 'Extensive Travel',
-    description: 'Comfortable with frequent travel requirements',
+    value: 'global',
+    label: 'Global Travel',
+    description: 'Comfortable with worldwide travel requirements',
     icon: Plane,
     color: 'text-blue-600',
   },
@@ -447,14 +454,20 @@ export function AvailabilityManager({
                 <SelectTrigger>
                   <SelectValue placeholder="Select time commitment preference" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {TIME_COMMITMENT_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center space-x-2">
-                        <option.icon className="h-4 w-4" />
-                        <div>
-                          <div className="font-medium">{option.label}</div>
-                          <div className="text-xs text-muted-foreground">
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="py-3"
+                    >
+                      <div className="flex w-full items-start space-x-3">
+                        <option.icon className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">
+                            {option.label}
+                          </div>
+                          <div className="mt-0.5 text-xs leading-tight text-muted-foreground">
                             {option.description}
                           </div>
                         </div>
@@ -480,14 +493,22 @@ export function AvailabilityManager({
                 <SelectTrigger>
                   <SelectValue placeholder="Select travel willingness" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {TRAVEL_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center space-x-2">
-                        <option.icon className={`h-4 w-4 ${option.color}`} />
-                        <div>
-                          <div className="font-medium">{option.label}</div>
-                          <div className="text-xs text-muted-foreground">
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="py-3"
+                    >
+                      <div className="flex w-full items-start space-x-3">
+                        <option.icon
+                          className={`mt-0.5 h-5 w-5 flex-shrink-0 ${option.color}`}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">
+                            {option.label}
+                          </div>
+                          <div className="mt-0.5 text-xs leading-tight text-muted-foreground">
                             {option.description}
                           </div>
                         </div>
@@ -513,14 +534,20 @@ export function AvailabilityManager({
                 <SelectTrigger>
                   <SelectValue placeholder="Select remote work preference" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px] overflow-y-auto">
                   {REMOTE_WORK_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex items-center space-x-2">
-                        <option.icon className="h-4 w-4" />
-                        <div>
-                          <div className="font-medium">{option.label}</div>
-                          <div className="text-xs text-muted-foreground">
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      className="py-3"
+                    >
+                      <div className="flex w-full items-start space-x-3">
+                        <option.icon className="mt-0.5 h-5 w-5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">
+                            {option.label}
+                          </div>
+                          <div className="mt-0.5 text-xs leading-tight text-muted-foreground">
                             {option.description}
                           </div>
                         </div>

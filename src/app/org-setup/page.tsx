@@ -25,15 +25,9 @@ export default function OrganizationSetupPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in and is organization type
+    // LinkedIn-style: Any authenticated user can create an organization
     if (!user) {
       router.push('/sign-in');
-      return;
-    }
-
-    const userType = user.user_metadata?.user_type;
-    if (userType !== 'organization') {
-      router.push('/dashboard');
       return;
     }
 

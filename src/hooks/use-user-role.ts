@@ -29,6 +29,31 @@ export interface NavigationItem {
   icon?: string;
 }
 
+// Map raw profile data to UserProfile interface
+const mapProfileData = (data: Record<string, unknown>): UserProfile => ({
+  id: data.id as string,
+  first_name: data.first_name as string | null,
+  last_name: data.last_name as string | null,
+  email: data.email as string | null,
+  role: (data.role as UserRole) || 'candidate',
+  onboarding_completed: (data.onboarding_completed as boolean) || false,
+  onboarding_step: (data.onboarding_step as number) || 0,
+  permissions: (data.permissions as Record<string, boolean>) || {},
+  role_display_name: getRoleDisplayName((data.role as UserRole) || 'candidate'),
+});
+
+// Get display name for user role
+const getRoleDisplayName = (role: UserRole): string => {
+  const roleNames: Record<UserRole, string> = {
+    candidate: 'Candidate',
+    organization_admin: 'Organization Admin',
+    organization_employee: 'Organization Employee',
+    consultant: 'Consultant',
+    platform_admin: 'Platform Admin',
+  };
+  return roleNames[role] || 'Candidate';
+};
+
 export const useUserRole = () => {
   const user = useUser();
   const supabase = useSupabaseClient();
@@ -50,7 +75,7 @@ export const useUserRole = () => {
 
         // Get user profile with role information
         const { data: profileData, error: profileError } = await supabase
-          .from('user_profile_with_role')
+          .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single();
@@ -63,27 +88,35 @@ export const useUserRole = () => {
               user.id
             );
 
-            // Create profile for user
+            // Create profile for user (using upsert to handle duplicates)
             const { error: createError } = await supabase
               .from('profiles')
-              .insert({
-                id: user.id,
-                email: user.email,
-                first_name: user.user_metadata?.first_name || '',
-                last_name: user.user_metadata?.last_name || '',
-                role: 'candidate',
-                onboarding_completed: false,
-                onboarding_step: 0,
-              });
+              .upsert(
+                {
+                  id: user.id,
+                  email: user.email,
+                  first_name: user.user_metadata?.first_name || '',
+                  last_name: user.user_metadata?.last_name || '',
+                  role: 'candidate',
+                  onboarding_completed: false,
+                  onboarding_step: 0,
+                },
+                {
+                  onConflict: 'id',
+                }
+              );
 
             if (createError) {
               console.error('Failed to create profile:', createError);
-              throw new Error('Failed to create user profile');
+              // Don't throw error for duplicate key - profile already exists
+              if (createError.code !== '23505') {
+                throw new Error('Failed to create user profile');
+              }
             }
 
             // Retry fetching the profile
             const { data: retryData, error: retryError } = await supabase
-              .from('user_profile_with_role')
+              .from('profiles')
               .select('*')
               .eq('id', user.id)
               .single();
@@ -93,7 +126,7 @@ export const useUserRole = () => {
             }
 
             if (retryData) {
-              setUserProfile(retryData);
+              setUserProfile(mapProfileData(retryData));
               return;
             }
           }
@@ -102,7 +135,7 @@ export const useUserRole = () => {
         }
 
         if (profileData) {
-          setUserProfile(profileData);
+          setUserProfile(mapProfileData(profileData));
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);

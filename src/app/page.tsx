@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,17 +48,19 @@ export default function HomePage() {
               development.
             </p>
             <div className="flex items-center justify-center space-x-4">
-              <Button size="lg" className="shadow-nexus-md">
-                <Plus className="h-5 w-5" />
-                Join as Candidate
+              <Button size="lg" className="shadow-nexus-md" asChild>
+                <Link href="/sign-up">
+                  <Plus className="h-5 w-5" />
+                  Join as Candidate
+                </Link>
               </Button>
-              <Button variant="outline" size="lg">
-                Post a Role
+              <Button variant="outline" size="lg" asChild>
+                <Link href="/organizations">Post a Role</Link>
               </Button>
             </div>
           </motion.section>
 
-          {/* Stats Section */}
+          {/* Market Stats Section */}
           <motion.section variants={itemVariants}>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               <Card className="text-center">
@@ -65,10 +68,12 @@ export default function HomePage() {
                   <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                     <Users className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="text-3xl font-bold">4,000+</CardTitle>
+                  <CardTitle className="text-3xl font-bold">3,361</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Successful Placements</p>
+                  <p className="text-muted-foreground">
+                    Board Positions Available Annually
+                  </p>
                 </CardContent>
               </Card>
 
@@ -77,10 +82,12 @@ export default function HomePage() {
                   <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                     <Briefcase className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="text-3xl font-bold">800+</CardTitle>
+                  <CardTitle className="text-3xl font-bold">65%</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Annual Placements</p>
+                  <p className="text-muted-foreground">
+                    Board Appointments Made Through Personal Networks
+                  </p>
                 </CardContent>
               </Card>
 
@@ -89,10 +96,12 @@ export default function HomePage() {
                   <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
                     <TrendingUp className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="text-3xl font-bold">30+</CardTitle>
+                  <CardTitle className="text-3xl font-bold">63</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Sector Specialists</p>
+                  <p className="text-muted-foreground">
+                    Industry Sectors With Active Board Recruitment
+                  </p>
                 </CardContent>
               </Card>
             </div>
@@ -202,9 +211,11 @@ export default function HomePage() {
               through Nexus.
             </p>
             <div className="flex items-center justify-center space-x-4">
-              <Button size="lg">Get Started Today</Button>
-              <Button variant="outline" size="lg">
-                Learn More
+              <Button size="lg" asChild>
+                <Link href="/sign-up">Get Started Today</Link>
+              </Button>
+              <Button variant="outline" size="lg" asChild>
+                <Link href="/about">Learn More</Link>
               </Button>
             </div>
           </motion.section>

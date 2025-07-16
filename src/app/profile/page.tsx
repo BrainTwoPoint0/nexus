@@ -61,6 +61,21 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+type AvailabilityStatus =
+  | 'immediately_available'
+  | 'available_in_1_month'
+  | 'available_in_3_months'
+  | 'not_available';
+type TravelWillingness =
+  | 'none'
+  | 'domestic_only'
+  | 'european'
+  | 'international'
+  | 'global';
+type CompensationCurrency = 'GBP' | 'USD' | 'EUR';
+type VisibilityStatus = 'public' | 'private' | 'connections_only';
+type UserRole = 'candidate' | 'organization' | 'admin';
+
 interface Profile {
   id: string;
   first_name: string | null;
@@ -72,24 +87,47 @@ interface Profile {
   location: string | null;
   company: string | null;
   linkedin_url: string | null;
+  website: string | null;
+  website_url: string | null;
+  portfolio_url: string | null;
+  twitter_handle: string | null;
+  avatar_url: string | null;
   skills: string[];
   sector_preferences: string[];
   languages: string[];
-  availability_status: string;
+  nationality: string | null;
+  residence_country: string | null;
+  availability_status: AvailabilityStatus;
+  available_from: string | null;
+  availability_start_date: string | null;
+  time_commitment_min: number | null;
+  time_commitment_max: number | null;
+  time_commitment_preference: string | null;
+  travel_willingness: TravelWillingness | null;
+  remote_work_preference: string | null;
   compensation_min: number | null;
   compensation_max: number | null;
-  compensation_currency: string;
+  compensation_currency: CompensationCurrency;
   compensation_type: string;
   equity_interest: boolean;
+  board_fee_expectation: number | null;
   benefits_important: string[];
-  availability_start_date: string | null;
-  time_commitment_preference: string | null;
-  travel_willingness: string | null;
-  remote_work_preference: string | null;
   profile_completeness: number;
   profile_verified: boolean;
+  is_verified: boolean;
   premium_member: boolean;
-  [key: string]: string | number | string[] | boolean | null;
+  member_since: string | null;
+  last_login: string | null;
+  login_count: number;
+  onboarding_completed: boolean;
+  onboarding_step: number;
+  permissions: Record<string, boolean>;
+  role: UserRole;
+  visibility_status: VisibilityStatus;
+  verification_date: string | null;
+  last_profile_update: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface BoardExperience {
@@ -98,6 +136,7 @@ interface BoardExperience {
   position_title: string;
   organization_type: string;
   organization_sector: string | null;
+  organization_size: string | null;
   start_date: string;
   end_date: string | null;
   is_current: boolean;
@@ -132,7 +171,7 @@ interface WorkHistory {
   key_responsibilities: string | null;
   major_achievements: string | null;
   reporting_to: string | null;
-  team_size: number | null;
+  total_team_size: number | null;
   reason_for_leaving: string | null;
 }
 
@@ -251,7 +290,7 @@ export default function ProfilePage() {
 
   // Calculate profile completeness
   const { completeness, suggestions } = useProfileCompleteness(
-    profile,
+    profile as Record<string, string | number | boolean | string[] | null> | null,
     boardExperience,
     workHistory,
     education,
@@ -340,23 +379,47 @@ export default function ProfilePage() {
             location: null,
             company: null,
             linkedin_url: null,
+            website: null,
+            website_url: null,
+            portfolio_url: null,
+            twitter_handle: null,
+            avatar_url: null,
             skills: [],
             sector_preferences: [],
             languages: ['English'],
+            nationality: null,
+            residence_country: null,
             availability_status: 'immediately_available',
+            available_from: null,
+            availability_start_date: null,
+            time_commitment_min: null,
+            time_commitment_max: null,
+            time_commitment_preference: null,
+            travel_willingness: null,
+            remote_work_preference: null,
             compensation_min: null,
             compensation_max: null,
             compensation_currency: 'USD',
             compensation_type: 'annual',
             equity_interest: false,
+            board_fee_expectation: null,
             benefits_important: [],
-            availability_start_date: null,
-            time_commitment_preference: null,
-            travel_willingness: null,
-            remote_work_preference: null,
             profile_completeness: 0,
             profile_verified: false,
+            is_verified: false,
             premium_member: false,
+            member_since: null,
+            last_login: null,
+            login_count: 0,
+            onboarding_completed: false,
+            onboarding_step: 0,
+            permissions: {},
+            role: 'candidate',
+            visibility_status: 'public',
+            verification_date: null,
+            last_profile_update: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           };
           setProfile(newProfile);
           setIsEditing(true); // Start in edit mode for new profiles
@@ -557,9 +620,9 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-            ...prev,
-            skills: [...prev.skills, newSkill.trim()],
-          }
+          ...prev,
+          skills: [...prev.skills, newSkill.trim()],
+        }
         : null
     );
     setNewSkill('');
@@ -570,9 +633,9 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-            ...prev,
-            skills: prev.skills.filter((skill) => skill !== skillToRemove),
-          }
+          ...prev,
+          skills: prev.skills.filter((skill) => skill !== skillToRemove),
+        }
         : null
     );
   };
@@ -588,9 +651,9 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-            ...prev,
-            sector_preferences: [...prev.sector_preferences, newSector.trim()],
-          }
+          ...prev,
+          sector_preferences: [...prev.sector_preferences, newSector.trim()],
+        }
         : null
     );
     setNewSector('');
@@ -601,11 +664,11 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-            ...prev,
-            sector_preferences: prev.sector_preferences.filter(
-              (sector) => sector !== sectorToRemove
-            ),
-          }
+          ...prev,
+          sector_preferences: prev.sector_preferences.filter(
+            (sector) => sector !== sectorToRemove
+          ),
+        }
         : null
     );
   };
@@ -694,7 +757,7 @@ export default function ProfilePage() {
   const handleCompensationUpdate = async (compensationData: {
     compensation_min: number | null;
     compensation_max: number | null;
-    compensation_currency: string;
+    compensation_currency: CompensationCurrency;
     compensation_type: string;
     equity_interest: boolean;
     benefits_important: string[];
@@ -719,14 +782,14 @@ export default function ProfilePage() {
       setProfile((prev) =>
         prev
           ? {
-              ...prev,
-              compensation_min: compensationData.compensation_min,
-              compensation_max: compensationData.compensation_max,
-              compensation_currency: compensationData.compensation_currency,
-              compensation_type: compensationData.compensation_type,
-              equity_interest: compensationData.equity_interest,
-              benefits_important: compensationData.benefits_important,
-            }
+            ...prev,
+            compensation_min: compensationData.compensation_min,
+            compensation_max: compensationData.compensation_max,
+            compensation_currency: compensationData.compensation_currency,
+            compensation_type: compensationData.compensation_type,
+            equity_interest: compensationData.equity_interest,
+            benefits_important: compensationData.benefits_important,
+          }
           : null
       );
 
@@ -747,7 +810,7 @@ export default function ProfilePage() {
   const handleAvailabilityUpdate = async (availabilityData: {
     availability_start_date: string | null;
     time_commitment_preference: string | null;
-    travel_willingness: string | null;
+    travel_willingness: TravelWillingness | null;
     remote_work_preference: string | null;
   }) => {
     if (!user) return;
@@ -769,13 +832,13 @@ export default function ProfilePage() {
       setProfile((prev) =>
         prev
           ? {
-              ...prev,
-              availability_start_date: availabilityData.availability_start_date,
-              time_commitment_preference:
-                availabilityData.time_commitment_preference,
-              travel_willingness: availabilityData.travel_willingness,
-              remote_work_preference: availabilityData.remote_work_preference,
-            }
+            ...prev,
+            availability_start_date: availabilityData.availability_start_date,
+            time_commitment_preference:
+              availabilityData.time_commitment_preference,
+            travel_willingness: availabilityData.travel_willingness,
+            remote_work_preference: availabilityData.remote_work_preference,
+          }
           : null
       );
 
@@ -1036,15 +1099,49 @@ export default function ProfilePage() {
               onValueChange={setActiveTab}
               className="space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-7">
-                <TabsTrigger value="personal">Personal</TabsTrigger>
-                <TabsTrigger value="experience">Experience</TabsTrigger>
-                <TabsTrigger value="skills">Skills</TabsTrigger>
-                <TabsTrigger value="compensation">Compensation</TabsTrigger>
-                <TabsTrigger value="availability">Availability</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="preferences">Preferences</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto">
+                <TabsList className="inline-flex h-auto w-max min-w-full justify-start p-1 md:grid md:w-full md:grid-cols-7">
+                  <TabsTrigger
+                    value="personal"
+                    className="flex-shrink-0 text-sm"
+                  >
+                    Personal
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="experience"
+                    className="flex-shrink-0 text-sm"
+                  >
+                    Experience
+                  </TabsTrigger>
+                  <TabsTrigger value="skills" className="flex-shrink-0 text-sm">
+                    Skills
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="compensation"
+                    className="flex-shrink-0 text-sm"
+                  >
+                    Compensation
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="availability"
+                    className="flex-shrink-0 text-sm"
+                  >
+                    Availability
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="documents"
+                    className="flex-shrink-0 text-sm"
+                  >
+                    Documents
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="preferences"
+                    className="flex-shrink-0 text-sm"
+                  >
+                    Preferences
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* Personal Information */}
               <TabsContent value="personal" className="space-y-6">
@@ -1149,18 +1246,96 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="linkedin_url">LinkedIn Profile</Label>
-                      <Input
-                        id="linkedin_url"
-                        name="linkedin_url"
-                        value={profile.linkedin_url || ''}
-                        onChange={(e) =>
-                          handleInputChange('linkedin_url', e.target.value)
-                        }
-                        disabled={!isEditing}
-                        placeholder="https://linkedin.com/in/yourprofile"
-                      />
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="linkedin_url">LinkedIn Profile</Label>
+                        <Input
+                          id="linkedin_url"
+                          name="linkedin_url"
+                          value={profile.linkedin_url || ''}
+                          onChange={(e) =>
+                            handleInputChange('linkedin_url', e.target.value)
+                          }
+                          disabled={!isEditing}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="website">Website</Label>
+                        <Input
+                          id="website"
+                          name="website"
+                          value={profile.website || ''}
+                          onChange={(e) =>
+                            handleInputChange('website', e.target.value)
+                          }
+                          disabled={!isEditing}
+                          placeholder="https://yourwebsite.com"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="portfolio_url">Portfolio URL</Label>
+                        <Input
+                          id="portfolio_url"
+                          name="portfolio_url"
+                          value={profile.portfolio_url || ''}
+                          onChange={(e) =>
+                            handleInputChange('portfolio_url', e.target.value)
+                          }
+                          disabled={!isEditing}
+                          placeholder="https://portfolio.example.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="twitter_handle">Twitter Handle</Label>
+                        <Input
+                          id="twitter_handle"
+                          name="twitter_handle"
+                          value={profile.twitter_handle || ''}
+                          onChange={(e) =>
+                            handleInputChange('twitter_handle', e.target.value)
+                          }
+                          disabled={!isEditing}
+                          placeholder="@yourhandle"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="nationality">Nationality</Label>
+                        <Input
+                          id="nationality"
+                          name="nationality"
+                          value={profile.nationality || ''}
+                          onChange={(e) =>
+                            handleInputChange('nationality', e.target.value)
+                          }
+                          disabled={!isEditing}
+                          placeholder="British"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="residence_country">
+                          Country of Residence
+                        </Label>
+                        <Input
+                          id="residence_country"
+                          name="residence_country"
+                          value={profile.residence_country || ''}
+                          onChange={(e) =>
+                            handleInputChange(
+                              'residence_country',
+                              e.target.value
+                            )
+                          }
+                          disabled={!isEditing}
+                          placeholder="United Kingdom"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -1357,12 +1532,17 @@ export default function ProfilePage() {
                   compensation={{
                     compensation_min: profile.compensation_min,
                     compensation_max: profile.compensation_max,
-                    compensation_currency: profile.compensation_currency,
+                    compensation_currency: profile.compensation_currency as CompensationCurrency,
                     compensation_type: profile.compensation_type,
                     equity_interest: profile.equity_interest,
                     benefits_important: profile.benefits_important || [],
                   }}
-                  onUpdate={handleCompensationUpdate}
+                  onUpdate={(data) => {
+                    void handleCompensationUpdate({
+                      ...data,
+                      compensation_currency: data.compensation_currency as CompensationCurrency,
+                    });
+                  }}
                   isEditing={isEditing}
                 />
               </TabsContent>
@@ -1374,10 +1554,15 @@ export default function ProfilePage() {
                     availability_start_date: profile.availability_start_date,
                     time_commitment_preference:
                       profile.time_commitment_preference,
-                    travel_willingness: profile.travel_willingness,
+                    travel_willingness: profile.travel_willingness as TravelWillingness | null,
                     remote_work_preference: profile.remote_work_preference,
                   }}
-                  onUpdate={handleAvailabilityUpdate}
+                  onUpdate={(data) => {
+                    void handleAvailabilityUpdate({
+                      ...data,
+                      travel_willingness: data.travel_willingness as TravelWillingness | null,
+                    });
+                  }}
                   isEditing={isEditing}
                 />
               </TabsContent>
@@ -1406,7 +1591,7 @@ export default function ProfilePage() {
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {profile.sector_preferences &&
-                          profile.sector_preferences.length > 0 ? (
+                            profile.sector_preferences.length > 0 ? (
                             profile.sector_preferences.map((sector, index) => (
                               <Badge
                                 key={index}
@@ -1492,17 +1677,14 @@ export default function ProfilePage() {
                                 <SelectItem value="immediately_available">
                                   Immediately Available
                                 </SelectItem>
-                                <SelectItem value="available_3_months">
-                                  Available in 3 Months
+                                <SelectItem value="available_in_1_month">
+                                  Available in 1 Month
                                 </SelectItem>
-                                <SelectItem value="available_6_months">
-                                  Available in 6 Months
+                                <SelectItem value="available_in_3_months">
+                                  Available in 3 Months
                                 </SelectItem>
                                 <SelectItem value="not_available">
                                   Not Available
-                                </SelectItem>
-                                <SelectItem value="by_arrangement">
-                                  By Arrangement
                                 </SelectItem>
                               </SelectContent>
                             </Select>
@@ -1570,6 +1752,43 @@ export default function ProfilePage() {
                     <div className="space-y-4">
                       <div>
                         <Label className="text-base font-medium">
+                          Profile Visibility
+                        </Label>
+                        <div className="mt-2">
+                          {isEditing ? (
+                            <Select
+                              value={profile.visibility_status || 'public'}
+                              onValueChange={(value) =>
+                                handleInputChange('visibility_status', value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="public">Public</SelectItem>
+                                <SelectItem value="connections_only">
+                                  Connections Only
+                                </SelectItem>
+                                <SelectItem value="private">Private</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="outline">
+                              {profile.visibility_status
+                                ?.replace('_', ' ')
+                                .replace(/\b\w/g, (l) => l.toUpperCase()) ||
+                                'Public'}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Control who can see your profile and contact you
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label className="text-base font-medium">
                           Languages
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -1589,22 +1808,22 @@ export default function ProfilePage() {
 
                       {(profile.compensation_min ||
                         profile.compensation_max) && (
-                        <div>
-                          <Label className="text-base font-medium">
-                            Compensation Expectations
-                          </Label>
-                          <div className="mt-2">
-                            <Badge variant="outline">
-                              {profile.compensation_min &&
-                              profile.compensation_max
-                                ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
-                                : profile.compensation_min
-                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
-                                  : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
-                            </Badge>
+                          <div>
+                            <Label className="text-base font-medium">
+                              Compensation Expectations
+                            </Label>
+                            <div className="mt-2">
+                              <Badge variant="outline">
+                                {profile.compensation_min &&
+                                  profile.compensation_max
+                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
+                                  : profile.compensation_min
+                                    ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
+                                    : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </CardContent>
                 </Card>

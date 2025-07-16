@@ -108,40 +108,11 @@ export const coreNavigation: NavigationItem[] = [
 /**
  * Additional navigation items for authenticated users
  * These appear alongside core navigation when logged in
+ * Note: Personal dashboard items are handled via user menu dropdown to avoid redundancy
  */
 export const authenticatedNavigation: NavigationItem[] = [
-  {
-    title: 'My Space',
-    href: '/dashboard',
-    description: 'Your personal dashboard and tools',
-    items: [
-      {
-        title: 'Dashboard',
-        href: '/dashboard',
-        description: 'Overview and quick actions',
-        requiresAuth: true,
-      },
-      {
-        title: 'My Profile',
-        href: '/profile',
-        description: 'Manage your professional profile',
-        requiresAuth: true,
-      },
-      {
-        title: 'Applications',
-        href: '/applications',
-        description: 'Track your applications',
-        requiresAuth: true,
-        roles: ['candidate'],
-      },
-      {
-        title: 'Saved Items',
-        href: '/saved',
-        description: 'Your saved opportunities and candidates',
-        requiresAuth: true,
-      },
-    ],
-  },
+  // Personal dashboard items moved to user menu dropdown
+  // to avoid duplication and reduce navbar clutter
 ];
 
 /**

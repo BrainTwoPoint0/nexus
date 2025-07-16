@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -27,7 +28,6 @@ import {
   Building,
   Calendar,
   MapPin,
-  Users,
   TrendingUp,
   Clock,
 } from 'lucide-react';
@@ -47,7 +47,7 @@ interface WorkHistory {
   key_responsibilities: string | null;
   major_achievements: string | null;
   reporting_to: string | null;
-  team_size: number | null;
+  total_team_size: number | null;
   reason_for_leaving: string | null;
 }
 
@@ -65,16 +65,6 @@ const EMPLOYMENT_TYPES = [
   'Interim',
   'Board Position',
   'Advisory Role',
-];
-
-const COMPANY_SIZES = [
-  'Startup (1-50)',
-  'Small (51-200)',
-  'Medium (201-1000)',
-  'Large (1001-5000)',
-  'Enterprise (5000+)',
-  'Government',
-  'Non-Profit',
 ];
 
 const SECTORS = [
@@ -118,7 +108,7 @@ export function WorkHistoryManager({
     key_responsibilities: '',
     major_achievements: '',
     reporting_to: '',
-    team_size: undefined,
+    total_team_size: undefined,
     reason_for_leaving: '',
   });
 
@@ -137,7 +127,7 @@ export function WorkHistoryManager({
       key_responsibilities: '',
       major_achievements: '',
       reporting_to: '',
-      team_size: undefined,
+      total_team_size: undefined,
       reason_for_leaving: '',
     });
   };
@@ -163,7 +153,7 @@ export function WorkHistoryManager({
       position_title: formData.position_title,
       department: formData.department || null,
       employment_type: formData.employment_type || '',
-      company_size: formData.company_size || null,
+      company_size: null, // Temporarily disabled until enum issue is resolved
       sector: formData.sector || null,
       location: formData.location || null,
       start_date: formData.start_date || '',
@@ -172,7 +162,7 @@ export function WorkHistoryManager({
       key_responsibilities: formData.key_responsibilities || null,
       major_achievements: formData.major_achievements || null,
       reporting_to: formData.reporting_to || null,
-      team_size: formData.team_size || null,
+      total_team_size: formData.total_team_size || null,
       reason_for_leaving: formData.reason_for_leaving || null,
     };
 
@@ -388,16 +378,18 @@ export function WorkHistoryManager({
                                 {history.employment_type}
                               </Badge>
                             </div>
+                            {/* Temporarily disabled until enum issue is resolved
                             {history.company_size && (
                               <div className="flex items-center space-x-1">
                                 <Users className="h-3 w-3" />
-                                <span>{history.company_size}</span>
+                                <span>{getCompanySizeLabel(history.company_size)}</span>
                               </div>
                             )}
-                            {history.team_size && (
+                            */}
+                            {history.total_team_size && (
                               <div className="flex items-center space-x-1">
                                 <TrendingUp className="h-3 w-3" />
-                                <span>Team: {history.team_size}</span>
+                                <span>Team: {history.total_team_size}</span>
                               </div>
                             )}
                           </div>
@@ -505,6 +497,7 @@ export function WorkHistoryManager({
                 </Select>
               </div>
 
+              {/* Temporarily disabled until enum issue is resolved
               <div className="space-y-2">
                 <Label htmlFor="companySize">Company Size</Label>
                 <Select
@@ -518,40 +511,38 @@ export function WorkHistoryManager({
                   </SelectTrigger>
                   <SelectContent>
                     {COMPANY_SIZES.map((size) => (
-                      <SelectItem key={size} value={size}>
-                        {size}
+                      <SelectItem key={size.value} value={size.value}>
+                        {size.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              */}
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input
-                  id="startDate"
-                  type="month"
-                  value={formData.start_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, start_date: e.target.value })
-                  }
-                />
-              </div>
+              <DatePicker
+                id="startDate"
+                label="Start Date"
+                value={formData.start_date}
+                onChange={(value) =>
+                  setFormData({ ...formData, start_date: value })
+                }
+                placeholder="e.g., 22/05/2022"
+                required
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="month"
-                  value={formData.end_date || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, end_date: e.target.value })
-                  }
-                  disabled={formData.is_current}
-                />
-              </div>
+              <DatePicker
+                id="endDate"
+                label="End Date"
+                value={formData.end_date || ''}
+                onChange={(value) =>
+                  setFormData({ ...formData, end_date: value })
+                }
+                placeholder="e.g., 15/08/2024"
+                disabled={formData.is_current}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="current">Current Position</Label>
@@ -631,11 +622,11 @@ export function WorkHistoryManager({
                 <Input
                   id="teamSize"
                   type="number"
-                  value={formData.team_size || ''}
+                  value={formData.total_team_size || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      team_size: parseInt(e.target.value) || undefined,
+                      total_team_size: parseInt(e.target.value) || undefined,
                     })
                   }
                   placeholder="Number of direct reports"

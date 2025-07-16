@@ -17,6 +17,8 @@ import {
   ExternalLink,
   Sparkles,
   RefreshCw,
+  Building,
+  Settings,
 } from 'lucide-react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -39,26 +41,41 @@ interface Profile {
   location: string | null;
 }
 
+interface OrganizationMembership {
+  id: string;
+  organization_id: string;
+  role: 'owner' | 'admin' | 'hr' | 'member';
+  can_post_jobs: boolean;
+  can_manage_applications: boolean;
+  can_manage_organization: boolean;
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+    sector: string;
+    current_openings: number;
+  };
+}
+
 interface Job {
   id: string;
   title: string;
-  organization: {
+  organizations: {
     name: string;
   };
-  sector: string;
   location: string;
   created_at: string;
   compensation_min: number | null;
   compensation_max: number | null;
-  employment_type: string;
   status: string;
 }
 
 interface Application {
   id: string;
   status: string;
-  submitted_at: string;
-  job: Job;
+  applied_at: string;
+  job_id: string;
+  jobs: Job;
 }
 
 interface DashboardStats {
@@ -78,6 +95,9 @@ export default function DashboardPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [recommendations, setRecommendations] = useState<JobMatch[]>([]);
+  const [organizationMemberships, setOrganizationMemberships] = useState<
+    OrganizationMembership[]
+  >([]);
   const [stats, setStats] = useState<DashboardStats>({
     applications_count: 0,
     profile_views: 0,
@@ -195,31 +215,68 @@ export default function DashboardPage() {
 
         if (profileData) setProfile(profileData as Profile);
 
-        // Fetch user's applications with job details
-        const { data: applicationsData } = await supabase
-          .from('applications')
+        // Get user's organization memberships
+        if (!user) return;
+        const { data: orgMembershipsData } = await supabase
+          .from('organization_members')
           .select(
             `
+              id,
+              organization_id,
+              role,
+              can_post_jobs,
+              can_manage_applications,
+              can_manage_organization,
+              organization:organization_id(*)
+            `
+          )
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        if (orgMembershipsData) {
+          // Ensure organization is an object, not an array
+          const fixedMemberships = (orgMembershipsData as Record<string, unknown>[]).map(m => {
+            const org = m.organization;
+            return {
+              ...m,
+              organization: Array.isArray(org) ? org[0] : org,
+            };
+          });
+          setOrganizationMemberships(
+            fixedMemberships as OrganizationMembership[]
+          );
+        }
+
+        // Fetch user's applications with job details
+        const { data: applicationsData, error: applicationsError } =
+          await supabase
+            .from('applications')
+            .select(
+              `
             id,
             status,
-            submitted_at,
-            job:jobs(
+            applied_at,
+            job_id,
+            jobs!inner(
               id,
               title,
-              sector,
               location,
               created_at,
               compensation_min,
               compensation_max,
-              employment_type,
               status,
-              organization:organizations(name)
+              organization_id,
+              organizations!inner(name)
             )
           `
-          )
-          .eq('candidate_id', user?.id)
-          .order('submitted_at', { ascending: false })
-          .limit(10);
+            )
+            .eq('candidate_id', user?.id)
+            .order('applied_at', { ascending: false })
+            .limit(10);
+
+        if (applicationsError) {
+          console.error('Error fetching applications:', applicationsError);
+        }
 
         if (applicationsData) {
           setApplications(applicationsData as unknown as Application[]);
@@ -230,25 +287,28 @@ export default function DashboardPage() {
         }
 
         // Fetch recent job opportunities (active jobs)
-        const { data: jobsData } = await supabase
+        const { data: jobsData, error: jobsError } = await supabase
           .from('jobs')
           .select(
             `
             id,
             title,
-            sector,
             location,
             created_at,
             compensation_min,
             compensation_max,
-            employment_type,
             status,
-            organization:organizations(name)
+            organization_id,
+            organizations!inner(name)
           `
           )
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(6);
+
+        if (jobsError) {
+          console.error('Error fetching jobs:', jobsError);
+        }
 
         if (jobsData) {
           setRecentJobs(jobsData as unknown as Job[]);
@@ -388,13 +448,12 @@ export default function DashboardPage() {
         title: 'Applications Sent',
         value: stats.applications_count.toString(),
         icon: FileText,
-        change: `${
-          applications.filter((app) => {
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-            return new Date(app.submitted_at) > oneWeekAgo;
-          }).length
-        } this week`,
+        change: `${applications.filter((app) => {
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+          return new Date(app.applied_at) > oneWeekAgo;
+        }).length
+          } this week`,
       },
       {
         title: 'Profile Views',
@@ -406,13 +465,12 @@ export default function DashboardPage() {
         title: 'Opportunities Available',
         value: stats.matched_jobs_count.toString(),
         icon: TrendingUp,
-        change: `${
-          recentJobs.filter((job) => {
-            const threeDaysAgo = new Date();
-            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-            return new Date(job.created_at) > threeDaysAgo;
-          }).length
-        } new this week`,
+        change: `${recentJobs.filter((job) => {
+          const threeDaysAgo = new Date();
+          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+          return new Date(job.created_at) > threeDaysAgo;
+        }).length
+          } new this week`,
       },
       {
         title: 'Upcoming Events',
@@ -474,6 +532,18 @@ export default function DashboardPage() {
                 <Bell className="mr-2 h-4 w-4" />
                 Notifications
               </Button>
+              {organizationMemberships.length === 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-initial"
+                  onClick={() => router.push('/organizations/create')}
+                >
+                  <Building className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Create Organization</span>
+                  <span className="sm:hidden">Create Org</span>
+                </Button>
+              )}
             </div>
           </motion.div>
 
@@ -516,6 +586,111 @@ export default function DashboardPage() {
               })}
             </motion.div>
           </section>
+
+          {/* Organization Management - LinkedIn Style */}
+          {organizationMemberships.length > 0 && (
+            <section aria-labelledby="organization-management-heading">
+              <h2 id="organization-management-heading" className="sr-only">
+                Organization Management
+              </h2>
+              <motion.div variants={itemVariants}>
+                <Card>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Building className="h-5 w-5 text-primary" />
+                        My Organizations
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push('/organizations/create')}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Organization
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {organizationMemberships.map((membership) => (
+                        <Card
+                          key={membership.id}
+                          className="cursor-pointer transition-shadow hover:shadow-md"
+                          onClick={() =>
+                            router.push(
+                              `/organizations/${membership.organization.slug}`
+                            )
+                          }
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="font-semibold text-foreground">
+                                  {membership.organization.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {membership.organization.sector}
+                                </p>
+                                <div className="mt-2 flex items-center gap-2">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {membership.role}
+                                  </Badge>
+                                  {membership.organization.current_openings >
+                                    0 && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {membership.organization.current_openings}{' '}
+                                        openings
+                                      </Badge>
+                                    )}
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                {membership.can_post_jobs && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(
+                                        `/organizations/${membership.organization.slug}/jobs/create`
+                                      );
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {membership.can_manage_organization && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(
+                                        `/organizations/${membership.organization.slug}/settings`
+                                      );
+                                    }}
+                                  >
+                                    <Settings className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </section>
+          )}
 
           <div className="grid grid-cols-1 gap-6 lg:gap-8 xl:grid-cols-3">
             {/* AI-Powered Recommendations */}
@@ -746,12 +921,12 @@ export default function DashboardPage() {
                           <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
                           <div className="flex-1 space-y-1">
                             <p className="text-sm text-foreground">
-                              You applied for {app.job.title} at{' '}
-                              {app.job.organization.name}
+                              You applied for {app.jobs.title} at{' '}
+                              {app.jobs.organizations.name}
                             </p>
                             <div className="flex items-center space-x-2">
                               <p className="text-xs text-muted-foreground">
-                                {formatDate(app.submitted_at)}
+                                {formatDate(app.applied_at)}
                               </p>
                               <Badge
                                 variant={getStatusBadgeVariant(app.status)}

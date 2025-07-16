@@ -49,7 +49,7 @@ function SignInForm() {
     }
 
     // Supabase sign-in
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password,
     });
@@ -60,43 +60,8 @@ function SignInForm() {
       return;
     }
 
-    // Determine redirect path based on user type
-    let redirectPath = searchParams.get('redirect');
-
-    if (!redirectPath && authData.user) {
-      // Check user type from auth metadata
-      const userType = authData.user.user_metadata?.user_type;
-
-      if (userType === 'organization') {
-        // For organizations, check if they have an organization membership
-        try {
-          const { data: orgMember, error: memberError } = await supabase
-            .from('organization_members')
-            .select('organization_id, role')
-            .eq('user_id', authData.user.id)
-            .eq('status', 'active')
-            .single();
-
-          if (memberError || !orgMember) {
-            // No organization membership found, send to setup
-            redirectPath = '/org-setup';
-          } else {
-            // Has organization membership, send to dashboard
-            redirectPath = '/org-dashboard';
-          }
-        } catch (error) {
-          console.error('Error checking organization membership:', error);
-          // On error, send to setup to be safe
-          redirectPath = '/org-setup';
-        }
-      } else {
-        // For candidates or undefined user type, default to candidate dashboard
-        redirectPath = '/dashboard';
-      }
-    } else if (!redirectPath) {
-      // Fallback if no user data
-      redirectPath = '/dashboard';
-    }
+    // LinkedIn-style: Everyone goes to unified dashboard
+    const redirectPath = searchParams.get('redirect') || '/dashboard';
 
     // Add a small delay to ensure auth state is properly set
     setTimeout(() => {
@@ -186,7 +151,7 @@ function SignInForm() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       disabled={isLoading}
                     >
                       {showPassword ? (
@@ -199,7 +164,7 @@ function SignInForm() {
                 </div>
 
                 {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
@@ -208,6 +173,7 @@ function SignInForm() {
                         handleInputChange('rememberMe', checked as boolean)
                       }
                       disabled={isLoading}
+                      className="h-4 w-4"
                     />
                     <Label htmlFor="remember" className="text-sm">
                       Remember me

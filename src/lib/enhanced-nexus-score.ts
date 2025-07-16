@@ -630,8 +630,9 @@ function calculateGeographicPreference(
 
   // Travel willingness consideration
   if (
-    candidate.travel_willingness === 'high' ||
-    candidate.travel_willingness === 'medium'
+    candidate.travel_willingness === 'international' ||
+    candidate.travel_willingness === 'global' ||
+    candidate.travel_willingness === 'european'
   ) {
     return 60;
   }

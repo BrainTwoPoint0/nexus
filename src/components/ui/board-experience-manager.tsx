@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -35,6 +36,7 @@ interface BoardExperience {
   position_title: string;
   organization_type: string;
   organization_sector: string | null;
+  organization_size: string | null;
   start_date: string;
   end_date: string | null;
   is_current: boolean;
@@ -119,6 +121,7 @@ export function BoardExperienceManager({
     position_title: '',
     organization_type: '',
     organization_sector: '',
+    organization_size: '',
     start_date: '',
     end_date: '',
     is_current: false,
@@ -134,6 +137,7 @@ export function BoardExperienceManager({
       position_title: '',
       organization_type: '',
       organization_sector: '',
+      organization_size: '',
       start_date: '',
       end_date: '',
       is_current: false,
@@ -168,6 +172,7 @@ export function BoardExperienceManager({
       position_title: formData.position_title,
       organization_type: formData.organization_type || '',
       organization_sector: formData.organization_sector || null,
+      organization_size: formData.organization_size || null,
       start_date: formData.start_date || '',
       end_date: formData.is_current ? null : formData.end_date || null,
       is_current: formData.is_current || false,
@@ -418,7 +423,7 @@ export function BoardExperienceManager({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="orgType">Organization Type</Label>
                 <Select
@@ -460,33 +465,51 @@ export function BoardExperienceManager({
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="orgSize">Organization Size</Label>
+                <Select
+                  value={formData.organization_size || ''}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, organization_size: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select size" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="startup">Startup</SelectItem>
+                    <SelectItem value="small">Small</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="large">Large</SelectItem>
+                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input
-                  id="startDate"
-                  type="month"
-                  value={formData.start_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, start_date: e.target.value })
-                  }
-                />
-              </div>
+              <DatePicker
+                id="startDate"
+                label="Start Date"
+                value={formData.start_date}
+                onChange={(value) =>
+                  setFormData({ ...formData, start_date: value })
+                }
+                placeholder="e.g., 22/05/2022"
+                required
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="month"
-                  value={formData.end_date || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, end_date: e.target.value })
-                  }
-                  disabled={formData.is_current}
-                />
-              </div>
+              <DatePicker
+                id="endDate"
+                label="End Date"
+                value={formData.end_date || ''}
+                onChange={(value) =>
+                  setFormData({ ...formData, end_date: value })
+                }
+                placeholder="e.g., 15/08/2024"
+                disabled={formData.is_current}
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="current">Current Position</Label>
