@@ -146,52 +146,36 @@ interface BoardExperience {
 
 interface Certification {
   id: string;
-  certification_name: string;
-  issuing_organization: string;
+  name: string;
+  issuer: string;
   issue_date: string;
   expiry_date: string | null;
-  is_active: boolean;
   credential_id: string | null;
   verification_url: string | null;
-  description: string | null;
 }
 
 interface WorkHistory {
   id: string;
-  company_name: string;
-  position_title: string;
-  department: string | null;
-  employment_type: string;
+  company: string;
+  title: string;
   company_size: string | null;
-  sector: string | null;
   location: string | null;
   start_date: string;
   end_date: string | null;
   is_current: boolean;
-  key_responsibilities: string | null;
-  major_achievements: string | null;
-  reporting_to: string | null;
-  total_team_size: number | null;
-  reason_for_leaving: string | null;
+  description: string | null;
+  key_achievements: string[] | null;
 }
 
 interface Education {
   id: string;
-  institution_name: string;
-  institution_country: string | null;
-  degree_type: string;
-  degree_name: string | null;
+  institution: string;
+  degree: string;
   field_of_study: string | null;
-  specialization: string | null;
-  grade_classification: string | null;
-  gpa: number | null;
-  start_year: number | null;
   graduation_year: number | null;
-  is_ongoing: boolean;
-  thesis_title: string | null;
-  honors_awards: string[] | null;
-  relevant_coursework: string[] | null;
-  extracurricular_activities: string[] | null;
+  gpa: string | null;
+  honors: string[] | null;
+  description: string | null;
 }
 
 interface Document {
@@ -290,7 +274,10 @@ export default function ProfilePage() {
 
   // Calculate profile completeness
   const { completeness, suggestions } = useProfileCompleteness(
-    profile as Record<string, string | number | boolean | string[] | null> | null,
+    profile as Record<
+      string,
+      string | number | boolean | string[] | null
+    > | null,
     boardExperience,
     workHistory,
     education,
@@ -328,12 +315,11 @@ export default function ProfilePage() {
             .from('certifications')
             .select('*')
             .eq('profile_id', user.id)
-            .eq('is_active', true)
             .order('issue_date', { ascending: false }),
 
           // Load work history
           supabase
-            .from('work_history')
+            .from('work_experience')
             .select('*')
             .eq('profile_id', user.id)
             .order('start_date', { ascending: false }),
@@ -341,9 +327,7 @@ export default function ProfilePage() {
           // Load education
           supabase
             .from('education')
-            .select(
-              'id, institution_name, institution_country, degree_type, degree_name, field_of_study, specialization, grade_classification, gpa, start_year, graduation_year, is_ongoing, thesis_title, honors_awards, relevant_coursework, extracurricular_activities'
-            )
+            .select('*')
             .eq('profile_id', user.id)
             .order('graduation_year', { ascending: false }),
 
@@ -521,15 +505,20 @@ export default function ProfilePage() {
       // Save work history if there are changes
       if (workHistory.length > 0) {
         // Delete existing work history
-        await supabase.from('work_history').delete().eq('profile_id', user.id);
+        await supabase
+          .from('work_experience')
+          .delete()
+          .eq('profile_id', user.id);
 
         // Insert updated work history
-        const { error: workError } = await supabase.from('work_history').insert(
-          workHistory.map((hist) => ({
-            ...hist,
-            profile_id: user.id,
-          }))
-        );
+        const { error: workError } = await supabase
+          .from('work_experience')
+          .insert(
+            workHistory.map((hist) => ({
+              ...hist,
+              profile_id: user.id,
+            }))
+          );
 
         if (workError) throw workError;
       }
@@ -620,9 +609,9 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-          ...prev,
-          skills: [...prev.skills, newSkill.trim()],
-        }
+            ...prev,
+            skills: [...prev.skills, newSkill.trim()],
+          }
         : null
     );
     setNewSkill('');
@@ -633,9 +622,9 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-          ...prev,
-          skills: prev.skills.filter((skill) => skill !== skillToRemove),
-        }
+            ...prev,
+            skills: prev.skills.filter((skill) => skill !== skillToRemove),
+          }
         : null
     );
   };
@@ -651,9 +640,9 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-          ...prev,
-          sector_preferences: [...prev.sector_preferences, newSector.trim()],
-        }
+            ...prev,
+            sector_preferences: [...prev.sector_preferences, newSector.trim()],
+          }
         : null
     );
     setNewSector('');
@@ -664,11 +653,11 @@ export default function ProfilePage() {
     setProfile((prev) =>
       prev
         ? {
-          ...prev,
-          sector_preferences: prev.sector_preferences.filter(
-            (sector) => sector !== sectorToRemove
-          ),
-        }
+            ...prev,
+            sector_preferences: prev.sector_preferences.filter(
+              (sector) => sector !== sectorToRemove
+            ),
+          }
         : null
     );
   };
@@ -721,11 +710,14 @@ export default function ProfilePage() {
     if (!isEditing && user) {
       try {
         // Delete existing work history
-        await supabase.from('work_history').delete().eq('profile_id', user.id);
+        await supabase
+          .from('work_experience')
+          .delete()
+          .eq('profile_id', user.id);
 
         // Insert new work history
         if (updatedHistory.length > 0) {
-          const { error } = await supabase.from('work_history').insert(
+          const { error } = await supabase.from('work_experience').insert(
             updatedHistory.map((hist) => ({
               ...hist,
               profile_id: user.id,
@@ -782,14 +774,14 @@ export default function ProfilePage() {
       setProfile((prev) =>
         prev
           ? {
-            ...prev,
-            compensation_min: compensationData.compensation_min,
-            compensation_max: compensationData.compensation_max,
-            compensation_currency: compensationData.compensation_currency,
-            compensation_type: compensationData.compensation_type,
-            equity_interest: compensationData.equity_interest,
-            benefits_important: compensationData.benefits_important,
-          }
+              ...prev,
+              compensation_min: compensationData.compensation_min,
+              compensation_max: compensationData.compensation_max,
+              compensation_currency: compensationData.compensation_currency,
+              compensation_type: compensationData.compensation_type,
+              equity_interest: compensationData.equity_interest,
+              benefits_important: compensationData.benefits_important,
+            }
           : null
       );
 
@@ -832,13 +824,13 @@ export default function ProfilePage() {
       setProfile((prev) =>
         prev
           ? {
-            ...prev,
-            availability_start_date: availabilityData.availability_start_date,
-            time_commitment_preference:
-              availabilityData.time_commitment_preference,
-            travel_willingness: availabilityData.travel_willingness,
-            remote_work_preference: availabilityData.remote_work_preference,
-          }
+              ...prev,
+              availability_start_date: availabilityData.availability_start_date,
+              time_commitment_preference:
+                availabilityData.time_commitment_preference,
+              travel_willingness: availabilityData.travel_willingness,
+              remote_work_preference: availabilityData.remote_work_preference,
+            }
           : null
       );
 
@@ -1532,7 +1524,8 @@ export default function ProfilePage() {
                   compensation={{
                     compensation_min: profile.compensation_min,
                     compensation_max: profile.compensation_max,
-                    compensation_currency: profile.compensation_currency as CompensationCurrency,
+                    compensation_currency:
+                      profile.compensation_currency as CompensationCurrency,
                     compensation_type: profile.compensation_type,
                     equity_interest: profile.equity_interest,
                     benefits_important: profile.benefits_important || [],
@@ -1540,7 +1533,8 @@ export default function ProfilePage() {
                   onUpdate={(data) => {
                     void handleCompensationUpdate({
                       ...data,
-                      compensation_currency: data.compensation_currency as CompensationCurrency,
+                      compensation_currency:
+                        data.compensation_currency as CompensationCurrency,
                     });
                   }}
                   isEditing={isEditing}
@@ -1554,13 +1548,15 @@ export default function ProfilePage() {
                     availability_start_date: profile.availability_start_date,
                     time_commitment_preference:
                       profile.time_commitment_preference,
-                    travel_willingness: profile.travel_willingness as TravelWillingness | null,
+                    travel_willingness:
+                      profile.travel_willingness as TravelWillingness | null,
                     remote_work_preference: profile.remote_work_preference,
                   }}
                   onUpdate={(data) => {
                     void handleAvailabilityUpdate({
                       ...data,
-                      travel_willingness: data.travel_willingness as TravelWillingness | null,
+                      travel_willingness:
+                        data.travel_willingness as TravelWillingness | null,
                     });
                   }}
                   isEditing={isEditing}
@@ -1591,7 +1587,7 @@ export default function ProfilePage() {
                         </Label>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {profile.sector_preferences &&
-                            profile.sector_preferences.length > 0 ? (
+                          profile.sector_preferences.length > 0 ? (
                             profile.sector_preferences.map((sector, index) => (
                               <Badge
                                 key={index}
@@ -1808,22 +1804,22 @@ export default function ProfilePage() {
 
                       {(profile.compensation_min ||
                         profile.compensation_max) && (
-                          <div>
-                            <Label className="text-base font-medium">
-                              Compensation Expectations
-                            </Label>
-                            <div className="mt-2">
-                              <Badge variant="outline">
-                                {profile.compensation_min &&
-                                  profile.compensation_max
-                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
-                                  : profile.compensation_min
-                                    ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
-                                    : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
-                              </Badge>
-                            </div>
+                        <div>
+                          <Label className="text-base font-medium">
+                            Compensation Expectations
+                          </Label>
+                          <div className="mt-2">
+                            <Badge variant="outline">
+                              {profile.compensation_min &&
+                              profile.compensation_max
+                                ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
+                                : profile.compensation_min
+                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
+                                  : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
+                            </Badge>
                           </div>
-                        )}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

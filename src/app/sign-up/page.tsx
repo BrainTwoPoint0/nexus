@@ -14,6 +14,7 @@ import { ErrorMessage } from '@/components/ui/error-states';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import { useSupabase } from '@/components/providers/supabase-provider';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useOAuth } from '@/hooks/use-oauth';
 
 function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +31,11 @@ function SignUpForm() {
   const supabase = useSupabase();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const {
+    signInWithOAuth,
+    isLoading: oauthLoading,
+    error: oauthError,
+  } = useOAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,14 +89,22 @@ function SignUpForm() {
       return;
     }
 
-    // Redirect to dashboard (single unified dashboard)
-    const redirectPath = searchParams.get('redirect') || '/dashboard';
+    // Redirect new users to onboarding first
+    const redirectPath = searchParams.get('redirect') || '/onboarding';
     router.push(redirectPath);
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors.length > 0) setErrors([]);
+  };
+
+  const handleOAuthSignUp = async () => {
+    try {
+      await signInWithOAuth('linkedin_oidc');
+    } catch (error) {
+      console.error('LinkedIn sign-up error:', error);
+    }
   };
 
   return (
@@ -104,9 +118,6 @@ function SignUpForm() {
         >
           {/* Header */}
           <div className="text-center">
-            <Link href="/" className="inline-block">
-              <h1 className="gradient-text text-3xl font-bold">Nexus</h1>
-            </Link>
             <h2 className="mt-6 text-3xl font-bold text-foreground">
               Join Nexus today
             </h2>
@@ -123,11 +134,12 @@ function SignUpForm() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Error Messages */}
-                {errors.length > 0 && (
+                {(errors.length > 0 || oauthError) && (
                   <div className="space-y-2">
                     {errors.map((error, index) => (
                       <ErrorMessage key={index} message={error} />
                     ))}
+                    {oauthError && <ErrorMessage message={oauthError} />}
                   </div>
                 )}
 
@@ -270,7 +282,11 @@ function SignUpForm() {
                 </div>
 
                 {/* Submit Button */}
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading || oauthLoading}
+                >
                   {isLoading ? (
                     <>
                       <LoadingSpinner size="sm" className="mr-2" />
@@ -279,6 +295,40 @@ function SignUpForm() {
                   ) : (
                     'Create Account'
                   )}
+                </Button>
+
+                {/* Divider */}
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
+                </div>
+
+                {/* Social Sign Up */}
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={handleOAuthSignUp}
+                  disabled={isLoading || oauthLoading}
+                  className="w-full"
+                >
+                  {oauthLoading ? (
+                    <LoadingSpinner size="sm" className="mr-2" />
+                  ) : (
+                    <svg
+                      className="mr-2 h-4 w-4"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                    </svg>
+                  )}
+                  Continue with LinkedIn
                 </Button>
               </form>
             </CardContent>

@@ -34,21 +34,19 @@ import {
 
 interface WorkHistory {
   id: string;
-  company_name: string;
-  position_title: string;
-  department: string | null;
-  employment_type: string;
+  company: string;
+  title: string;
+  department?: string;
+  employment_type?: string;
+  sector?: string;
   company_size: string | null;
-  sector: string | null;
   location: string | null;
   start_date: string;
   end_date: string | null;
   is_current: boolean;
-  key_responsibilities: string | null;
-  major_achievements: string | null;
-  reporting_to: string | null;
-  total_team_size: number | null;
-  reason_for_leaving: string | null;
+  description: string | null;
+  key_achievements: string[] | null;
+  total_team_size?: number;
 }
 
 interface WorkHistoryManagerProps {
@@ -69,20 +67,20 @@ const EMPLOYMENT_TYPES = [
 
 const SECTORS = [
   'Technology',
+  'Financial Services',
   'Healthcare',
-  'Finance',
-  'Education',
-  'Real Estate',
-  'Energy',
   'Manufacturing',
   'Retail',
-  'Media',
-  'Consulting',
-  'Legal',
-  'Transportation',
-  'Hospitality',
-  'Government',
+  'Energy',
+  'Telecommunications',
+  'Media & Entertainment',
+  'Real Estate',
+  'Education',
   'Non-Profit',
+  'Government',
+  'Consulting',
+  'Legal Services',
+  'Other',
 ];
 
 export function WorkHistoryManager({
@@ -95,40 +93,28 @@ export function WorkHistoryManager({
     null
   );
   const [formData, setFormData] = useState<Partial<WorkHistory>>({
-    company_name: '',
-    position_title: '',
-    department: '',
-    employment_type: '',
+    company: '',
+    title: '',
     company_size: '',
-    sector: '',
     location: '',
     start_date: '',
     end_date: '',
     is_current: false,
-    key_responsibilities: '',
-    major_achievements: '',
-    reporting_to: '',
-    total_team_size: undefined,
-    reason_for_leaving: '',
+    description: '',
+    key_achievements: [],
   });
 
   const resetForm = () => {
     setFormData({
-      company_name: '',
-      position_title: '',
-      department: '',
-      employment_type: '',
+      company: '',
+      title: '',
       company_size: '',
-      sector: '',
       location: '',
       start_date: '',
       end_date: '',
       is_current: false,
-      key_responsibilities: '',
-      major_achievements: '',
-      reporting_to: '',
-      total_team_size: undefined,
-      reason_for_leaving: '',
+      description: '',
+      key_achievements: [],
     });
   };
 
@@ -145,25 +131,19 @@ export function WorkHistoryManager({
   };
 
   const handleSave = () => {
-    if (!formData.company_name || !formData.position_title) return;
+    if (!formData.company || !formData.title) return;
 
     const newHistory: WorkHistory = {
       id: editingHistory?.id || crypto.randomUUID(),
-      company_name: formData.company_name,
-      position_title: formData.position_title,
-      department: formData.department || null,
-      employment_type: formData.employment_type || '',
-      company_size: null, // Temporarily disabled until enum issue is resolved
-      sector: formData.sector || null,
+      company: formData.company,
+      title: formData.title,
+      company_size: formData.company_size || null,
       location: formData.location || null,
       start_date: formData.start_date || '',
       end_date: formData.is_current ? null : formData.end_date || null,
       is_current: formData.is_current || false,
-      key_responsibilities: formData.key_responsibilities || null,
-      major_achievements: formData.major_achievements || null,
-      reporting_to: formData.reporting_to || null,
-      total_team_size: formData.total_team_size || null,
-      reason_for_leaving: formData.reason_for_leaving || null,
+      description: formData.description || null,
+      key_achievements: formData.key_achievements || [],
     };
 
     const updatedHistory = [...workHistory];
@@ -280,7 +260,7 @@ export function WorkHistoryManager({
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <h4 className="text-lg font-semibold">
-                                  {history.position_title}
+                                  {history.title}
                                 </h4>
                                 {history.is_current && (
                                   <Badge variant="default">Current</Badge>
@@ -289,7 +269,7 @@ export function WorkHistoryManager({
                               <div className="mt-1 flex items-center space-x-2">
                                 <Building className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium">
-                                  {history.company_name}
+                                  {history.company}
                                 </span>
                                 {history.sector && (
                                   <>
@@ -350,27 +330,32 @@ export function WorkHistoryManager({
                             )}
                           </div>
 
-                          {history.key_responsibilities && (
+                          {history.description && (
                             <div>
                               <h5 className="mb-2 text-sm font-medium">
-                                Key Responsibilities
+                                Description
                               </h5>
                               <p className="text-sm text-muted-foreground">
-                                {history.key_responsibilities}
+                                {history.description}
                               </p>
                             </div>
                           )}
 
-                          {history.major_achievements && (
-                            <div>
-                              <h5 className="mb-2 text-sm font-medium">
-                                Major Achievements
-                              </h5>
-                              <p className="text-sm text-muted-foreground">
-                                {history.major_achievements}
-                              </p>
-                            </div>
-                          )}
+                          {history.key_achievements &&
+                            history.key_achievements.length > 0 && (
+                              <div>
+                                <h5 className="mb-2 text-sm font-medium">
+                                  Key Achievements
+                                </h5>
+                                <ul className="list-inside list-disc text-sm text-muted-foreground">
+                                  {history.key_achievements.map(
+                                    (achievement, index) => (
+                                      <li key={index}>{achievement}</li>
+                                    )
+                                  )}
+                                </ul>
+                              </div>
+                            )}
 
                           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                             <div className="flex items-center space-x-1">
@@ -419,9 +404,9 @@ export function WorkHistoryManager({
                 <Label htmlFor="company">Company Name *</Label>
                 <Input
                   id="company"
-                  value={formData.company_name}
+                  value={formData.company}
                   onChange={(e) =>
-                    setFormData({ ...formData, company_name: e.target.value })
+                    setFormData({ ...formData, company: e.target.value })
                   }
                   placeholder="e.g. Microsoft Corporation"
                 />
@@ -431,9 +416,9 @@ export function WorkHistoryManager({
                 <Label htmlFor="position">Position Title *</Label>
                 <Input
                   id="position"
-                  value={formData.position_title}
+                  value={formData.title}
                   onChange={(e) =>
-                    setFormData({ ...formData, position_title: e.target.value })
+                    setFormData({ ...formData, title: e.target.value })
                   }
                   placeholder="e.g. Chief Executive Officer"
                 />
@@ -573,65 +558,19 @@ export function WorkHistoryManager({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="responsibilities">Key Responsibilities</Label>
+              <Label htmlFor="description">Job Description</Label>
               <Textarea
-                id="responsibilities"
-                value={formData.key_responsibilities || ''}
+                id="description"
+                value={formData.description || ''}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    key_responsibilities: e.target.value,
+                    description: e.target.value,
                   })
                 }
                 placeholder="Describe your main responsibilities and areas of oversight..."
                 rows={3}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="achievements">Major Achievements</Label>
-              <Textarea
-                id="achievements"
-                value={formData.major_achievements || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    major_achievements: e.target.value,
-                  })
-                }
-                placeholder="Highlight key accomplishments and outcomes..."
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="reporting">Reporting To</Label>
-                <Input
-                  id="reporting"
-                  value={formData.reporting_to || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reporting_to: e.target.value })
-                  }
-                  placeholder="e.g. Board of Directors, CEO"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="teamSize">Team Size</Label>
-                <Input
-                  id="teamSize"
-                  type="number"
-                  value={formData.total_team_size || ''}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      total_team_size: parseInt(e.target.value) || undefined,
-                    })
-                  }
-                  placeholder="Number of direct reports"
-                />
-              </div>
             </div>
 
             <div className="flex justify-end space-x-3">

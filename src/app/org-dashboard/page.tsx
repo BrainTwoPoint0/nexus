@@ -60,9 +60,12 @@ function OrganizationDashboardContent() {
 
       if (error) throw error;
       // Fix application_deadline type
-      const fixedJobs = (data || []).map(job => ({
+      const fixedJobs = (data || []).map((job) => ({
         ...job,
-        application_deadline: job.application_deadline === null ? undefined : job.application_deadline,
+        application_deadline:
+          job.application_deadline === null
+            ? undefined
+            : job.application_deadline,
       }));
       setJobs(fixedJobs as Job[]);
     } catch (error) {
@@ -199,7 +202,7 @@ function OrganizationDashboardContent() {
           status: jobData.status,
           published_at:
             jobData.status === 'active' &&
-              !jobs.find((j) => j.id === jobId)?.applications_count
+            !jobs.find((j) => j.id === jobId)?.applications_count
               ? new Date().toISOString()
               : undefined,
           updated_at: new Date().toISOString(),
@@ -407,19 +410,21 @@ function OrganizationDashboardContent() {
               <div className="flex space-x-1 rounded-lg bg-muted p-1">
                 <button
                   onClick={() => setActiveTab('dashboard')}
-                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${activeTab === 'dashboard'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                    activeTab === 'dashboard'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   Dashboard
                 </button>
                 <button
                   onClick={() => setActiveTab('jobs')}
-                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${activeTab === 'jobs'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                  className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                    activeTab === 'jobs'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   Jobs ({jobs.length})
                 </button>
@@ -630,54 +635,54 @@ function OrganizationDashboardContent() {
           initialData={
             editingJob
               ? {
-                title: editingJob.title,
-                description: editingJob.description,
-                responsibilities: Array.isArray(editingJob.responsibilities)
-                  ? editingJob.responsibilities[0] || ''
-                  : editingJob.responsibilities || '',
-                requirements:
-                  editingJob.requirements &&
+                  title: editingJob.title,
+                  description: editingJob.description,
+                  responsibilities: Array.isArray(editingJob.responsibilities)
+                    ? editingJob.responsibilities[0] || ''
+                    : editingJob.responsibilities || '',
+                  requirements:
+                    editingJob.requirements &&
                     Array.isArray(editingJob.requirements)
-                    ? editingJob.requirements[0] || ''
-                    : editingJob.requirements || '',
-                role_type: editingJob.role_type as
-                  | 'board_director'
-                  | 'non_executive'
-                  | 'chair'
-                  | 'committee_chair'
-                  | 'advisory',
-                engagement_level: editingJob.engagement_level as
-                  | 'full_time'
-                  | 'part_time'
-                  | 'project_based'
-                  | 'consulting',
-                compensation_min: editingJob.compensation_min,
-                compensation_max: editingJob.compensation_max,
-                compensation_currency: editingJob.compensation_currency as
-                  | 'GBP'
-                  | 'USD'
-                  | 'EUR'
-                  | 'CAD'
-                  | 'AUD'
-                  | 'CHF'
-                  | 'SGD',
-                compensation_type: editingJob.compensation_type as
-                  | 'annual'
-                  | 'daily'
-                  | 'hourly'
-                  | 'retainer',
-                equity_offered: editingJob.equity_offered,
-                location: editingJob.location,
-                remote_work_allowed: editingJob.remote_work_allowed,
-                travel_required: editingJob.travel_required,
-                application_deadline: editingJob.application_deadline,
-                start_date: editingJob.start_date,
-                contract_duration: editingJob.contract_duration,
-                required_skills: editingJob.required_skills || [],
-                preferred_qualifications:
-                  editingJob.preferred_qualifications || [],
-                status: editingJob.status,
-              }
+                      ? editingJob.requirements[0] || ''
+                      : editingJob.requirements || '',
+                  role_type: editingJob.role_type as
+                    | 'board_director'
+                    | 'non_executive'
+                    | 'chair'
+                    | 'committee_chair'
+                    | 'advisory',
+                  engagement_level: editingJob.engagement_level as
+                    | 'full_time'
+                    | 'part_time'
+                    | 'project_based'
+                    | 'consulting',
+                  compensation_min: editingJob.compensation_min,
+                  compensation_max: editingJob.compensation_max,
+                  compensation_currency: editingJob.compensation_currency as
+                    | 'GBP'
+                    | 'USD'
+                    | 'EUR'
+                    | 'CAD'
+                    | 'AUD'
+                    | 'CHF'
+                    | 'SGD',
+                  compensation_type: editingJob.compensation_type as
+                    | 'annual'
+                    | 'daily'
+                    | 'hourly'
+                    | 'retainer',
+                  equity_offered: editingJob.equity_offered,
+                  location: editingJob.location,
+                  remote_work_allowed: editingJob.remote_work_allowed,
+                  travel_required: editingJob.travel_required,
+                  application_deadline: editingJob.application_deadline,
+                  start_date: editingJob.start_date,
+                  contract_duration: editingJob.contract_duration,
+                  required_skills: editingJob.required_skills || [],
+                  preferred_qualifications:
+                    editingJob.preferred_qualifications || [],
+                  status: editingJob.status,
+                }
               : undefined
           }
           isEditing={!!editingJob}

@@ -405,10 +405,11 @@ export default function OrganizationSettingsPage() {
                     onClick={() =>
                       setActiveTab(tab.id as 'general' | 'members')
                     }
-                    className={`flex flex-1 items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                      }`}
+                    className={`flex flex-1 items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
                   >
                     <Icon className="h-4 w-4" />
                     {tab.label}

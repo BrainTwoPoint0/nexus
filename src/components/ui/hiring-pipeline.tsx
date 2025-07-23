@@ -313,8 +313,8 @@ export function HiringPipeline({ applications, jobId }: HiringPipelineProps) {
         const nextStage = stages[index + 1];
         const conversionRate = nextStage
           ? (nextStage.applications.length /
-            Math.max(stage.applications.length, 1)) *
-          100
+              Math.max(stage.applications.length, 1)) *
+            100
           : 0;
 
         return (

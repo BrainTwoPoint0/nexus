@@ -60,7 +60,7 @@ export type ApplicationStatus =
 export interface Application {
   id: string;
   job_id: string;
-  candidate_id: string;
+  profile_id: string;
   cover_letter: string;
   status: ApplicationStatus;
   nexus_score: number;

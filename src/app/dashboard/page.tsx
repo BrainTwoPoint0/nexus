@@ -235,7 +235,9 @@ export default function DashboardPage() {
 
         if (orgMembershipsData) {
           // Ensure organization is an object, not an array
-          const fixedMemberships = (orgMembershipsData as Record<string, unknown>[]).map(m => {
+          const fixedMemberships = (
+            orgMembershipsData as Record<string, unknown>[]
+          ).map((m) => {
             const org = m.organization;
             return {
               ...m,
@@ -270,7 +272,7 @@ export default function DashboardPage() {
             )
           `
             )
-            .eq('candidate_id', user?.id)
+            .eq('profile_id', user?.id)
             .order('applied_at', { ascending: false })
             .limit(10);
 
@@ -369,7 +371,7 @@ export default function DashboardPage() {
           event: '*',
           schema: 'public',
           table: 'applications',
-          filter: `candidate_id=eq.${user?.id}`,
+          filter: `profile_id=eq.${user?.id}`,
         },
         (payload) => {
           console.log('Application change received:', payload);
@@ -448,12 +450,13 @@ export default function DashboardPage() {
         title: 'Applications Sent',
         value: stats.applications_count.toString(),
         icon: FileText,
-        change: `${applications.filter((app) => {
-          const oneWeekAgo = new Date();
-          oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-          return new Date(app.applied_at) > oneWeekAgo;
-        }).length
-          } this week`,
+        change: `${
+          applications.filter((app) => {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            return new Date(app.applied_at) > oneWeekAgo;
+          }).length
+        } this week`,
       },
       {
         title: 'Profile Views',
@@ -465,12 +468,13 @@ export default function DashboardPage() {
         title: 'Opportunities Available',
         value: stats.matched_jobs_count.toString(),
         icon: TrendingUp,
-        change: `${recentJobs.filter((job) => {
-          const threeDaysAgo = new Date();
-          threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-          return new Date(job.created_at) > threeDaysAgo;
-        }).length
-          } new this week`,
+        change: `${
+          recentJobs.filter((job) => {
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            return new Date(job.created_at) > threeDaysAgo;
+          }).length
+        } new this week`,
       },
       {
         title: 'Upcoming Events',
@@ -641,14 +645,14 @@ export default function DashboardPage() {
                                   </Badge>
                                   {membership.organization.current_openings >
                                     0 && (
-                                      <Badge
-                                        variant="outline"
-                                        className="text-xs"
-                                      >
-                                        {membership.organization.current_openings}{' '}
-                                        openings
-                                      </Badge>
-                                    )}
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      {membership.organization.current_openings}{' '}
+                                      openings
+                                    </Badge>
+                                  )}
                                 </div>
                               </div>
                               <div className="flex flex-col gap-1">

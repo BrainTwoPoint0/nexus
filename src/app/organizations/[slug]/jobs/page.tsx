@@ -60,9 +60,12 @@ export default function OrganizationJobsPage({
       if (jobsError) throw jobsError;
 
       // Fix application_deadline type
-      const fixedJobs = (jobsData || []).map(job => ({
+      const fixedJobs = (jobsData || []).map((job) => ({
         ...job,
-        application_deadline: job.application_deadline === null ? undefined : job.application_deadline,
+        application_deadline:
+          job.application_deadline === null
+            ? undefined
+            : job.application_deadline,
       }));
       setJobs(fixedJobs as Job[]);
     } catch (error) {

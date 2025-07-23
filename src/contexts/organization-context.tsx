@@ -1,6 +1,12 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from 'react';
 import { useUser } from '@supabase/auth-helpers-react';
 import { useRouter } from 'next/navigation';
 

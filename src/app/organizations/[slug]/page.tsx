@@ -372,10 +372,11 @@ export default function OrganizationPage() {
                   onClick={() =>
                     setActiveTab(tab.id as 'overview' | 'jobs' | 'team')
                   }
-                  className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.id
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                  className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
                 >
                   {tab.label}
                 </button>

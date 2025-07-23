@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
           title,
           role_type
         ),
-        candidate:candidate_id(
+        candidate:profile_id(
           id,
           first_name,
           last_name,

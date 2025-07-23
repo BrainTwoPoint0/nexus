@@ -577,7 +577,11 @@ export function NotificationSystem({
                   onChange={(e) =>
                     setPreferences((prev) => ({
                       ...prev,
-                      digest_frequency: e.target.value as 'immediate' | 'daily' | 'weekly' | 'none',
+                      digest_frequency: e.target.value as
+                        | 'immediate'
+                        | 'daily'
+                        | 'weekly'
+                        | 'none',
                     }))
                   }
                   className="w-full rounded border p-2"
@@ -753,7 +757,7 @@ export function NotificationSystem({
                 <h3 className="mb-2 text-lg font-semibold">No notifications</h3>
                 <p className="text-muted-foreground">
                   {filter === 'all'
-                    ? "You don&apos;t have any notifications yet."
+                    ? 'You don&apos;t have any notifications yet.'
                     : `No ${filter} notifications found.`}
                 </p>
               </CardContent>

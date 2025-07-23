@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           id,
           status,
           applied_at,
-          candidate:candidate_id(
+          candidate:profile_id(
             id,
             first_name,
             last_name,

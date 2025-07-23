@@ -52,7 +52,7 @@ export type InterviewStatus =
 export interface Interview {
   id: string;
   application_id: string;
-  candidate_id: string;
+  profile_id: string;
   job_id: string;
   type: InterviewType;
   status: InterviewStatus;
@@ -100,11 +100,11 @@ const INTERVIEW_TYPES: {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-    { value: 'phone', label: 'Phone Call', icon: Phone },
-    { value: 'video', label: 'Video Call', icon: Video },
-    { value: 'in_person', label: 'In Person', icon: MapPin },
-    { value: 'panel', label: 'Panel Interview', icon: Users },
-  ];
+  { value: 'phone', label: 'Phone Call', icon: Phone },
+  { value: 'video', label: 'Video Call', icon: Video },
+  { value: 'in_person', label: 'In Person', icon: MapPin },
+  { value: 'panel', label: 'Panel Interview', icon: Users },
+];
 
 const INTERVIEW_STATUS: Record<
   InterviewStatus,
@@ -182,7 +182,7 @@ export function InterviewScheduler({
     const interview: Interview = {
       id: Math.random().toString(36).substr(2, 9),
       application_id: selectedApplication.id,
-      candidate_id: selectedApplication.candidate_id,
+      profile_id: selectedApplication.profile_id,
       job_id: selectedApplication.job_id,
       type: newInterview.type,
       status: 'scheduled',
@@ -253,13 +253,13 @@ export function InterviewScheduler({
       prev.map((i) =>
         i.id === interview.id
           ? {
-            ...i,
-            feedback,
-            rating,
-            recommended_next_steps: nextSteps,
-            status: 'completed',
-            updated_at: new Date().toISOString(),
-          }
+              ...i,
+              feedback,
+              rating,
+              recommended_next_steps: nextSteps,
+              status: 'completed',
+              updated_at: new Date().toISOString(),
+            }
           : i
       )
     );
@@ -386,17 +386,17 @@ export function InterviewScheduler({
               )}
               {(interview.status === 'scheduled' ||
                 interview.status === 'confirmed') && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      updateInterviewStatus(interview.id, 'completed')
-                    }
-                  >
-                    <CalendarCheck className="mr-1 h-3 w-3" />
-                    Complete
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    updateInterviewStatus(interview.id, 'completed')
+                  }
+                >
+                  <CalendarCheck className="mr-1 h-3 w-3" />
+                  Complete
+                </Button>
+              )}
             </div>
             <div className="flex space-x-2">
               <Button variant="ghost" size="sm">
@@ -803,21 +803,21 @@ export function InterviewScheduler({
 
             {(newInterview.type === 'video' ||
               newInterview.type === 'panel') && (
-                <div>
-                  <Label htmlFor="meeting-link">Meeting Link</Label>
-                  <Input
-                    id="meeting-link"
-                    value={newInterview.meeting_link}
-                    onChange={(e) =>
-                      setNewInterview((prev) => ({
-                        ...prev,
-                        meeting_link: e.target.value,
-                      }))
-                    }
-                    placeholder="Zoom, Teams, or other meeting link"
-                  />
-                </div>
-              )}
+              <div>
+                <Label htmlFor="meeting-link">Meeting Link</Label>
+                <Input
+                  id="meeting-link"
+                  value={newInterview.meeting_link}
+                  onChange={(e) =>
+                    setNewInterview((prev) => ({
+                      ...prev,
+                      meeting_link: e.target.value,
+                    }))
+                  }
+                  placeholder="Zoom, Teams, or other meeting link"
+                />
+              </div>
+            )}
 
             <div>
               <Label htmlFor="prep-notes">Preparation Notes</Label>
