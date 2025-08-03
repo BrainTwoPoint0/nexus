@@ -690,18 +690,31 @@ export async function parseCVWithOpenAI(
       'CV_PARSER'
     );
 
-    // Debug: Check if languages and certifications sections are in the text
+    // Debug: Check if important sections are in the text
     const hasLanguagesSection = truncatedCVText
       .toUpperCase()
       .includes('LANGUAGE');
     const hasCertificationsSection =
       truncatedCVText.toUpperCase().includes('CERTIF') ||
       truncatedCVText.toUpperCase().includes('AWS');
+    const hasSkillsSection = 
+      truncatedCVText.toUpperCase().includes('SKILL') ||
+      truncatedCVText.toUpperCase().includes('COMPETENC') ||
+      truncatedCVText.toUpperCase().includes('TECHNICAL');
+    const hasEducationSection = 
+      truncatedCVText.toUpperCase().includes('EDUCATION') ||
+      truncatedCVText.toUpperCase().includes('UNIVERSITY') ||
+      truncatedCVText.toUpperCase().includes('DEGREE');
+    
     logger.debug(
       'Text analysis',
       {
         hasLanguagesSection,
         hasCertificationsSection,
+        hasSkillsSection,
+        hasEducationSection,
+        textLength: truncatedCVText.length,
+        wasTruncated: cvText.length > maxCVLength,
         lastChars: truncatedCVText.slice(-200),
       },
       'CV_PARSER'
@@ -939,9 +952,17 @@ REMEMBER: Only extract actual information from the above CV text. Do not add any
         {
           keys: Object.keys(parsedData),
           languages: parsedData.languages,
+          languagesCount: parsedData.languages?.length || 0,
           certifications: parsedData.certifications,
+          certificationsCount: parsedData.certifications?.length || 0,
           skills: parsedData.skills,
+          skillsCount: parsedData.skills?.length || 0,
+          skillsRaw: JSON.stringify(parsedData.skills),
           achievements: parsedData.achievements?.slice(0, 3),
+          achievementsCount: parsedData.achievements?.length || 0,
+          workHistoryCount: parsedData.workHistory?.length || 0,
+          boardExperienceCount: parsedData.boardExperience?.length || 0,
+          educationCount: parsedData.education?.length || 0,
         },
         'CV_PARSER'
       );
@@ -1226,27 +1247,7 @@ export function mapCVDataToProfile(
     profileData.languages = cvData.languages;
   }
 
-  // Extract current company from board experience or work history
-  const allRoles = [
-    ...(cvData.boardExperience || []),
-    ...(cvData.workHistory || []),
-  ];
-  if (allRoles.length > 0) {
-    // Find current job (isCurrent true) or most recent job
-    const currentJob = allRoles.find((job) => job.is_current);
-    if (currentJob) {
-      profileData.company =
-        'organization' in currentJob
-          ? currentJob.organization
-          : currentJob.company;
-    } else if (allRoles.length > 0) {
-      const mostRecent = allRoles[0];
-      profileData.company =
-        'organization' in mostRecent
-          ? mostRecent.organization
-          : mostRecent.company;
-    }
-  }
+  // Note: Current company info is stored in work_experience table, not profile
 
   // Mark as imported from CV
   profileData.data_sources = {

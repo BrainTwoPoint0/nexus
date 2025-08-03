@@ -18,7 +18,7 @@ import {
   MapPin,
   ExternalLink,
 } from 'lucide-react';
-import { ExtractedCVData } from '@/lib/cv-parser-robust';
+import { ExtractedCVData } from '@/lib/cv-parser';
 
 interface CVDataReviewProps {
   cvData: ExtractedCVData & Record<string, any>; // Allow additional fields from merging
@@ -69,19 +69,26 @@ export function CVDataReview({
 
     // Try multiple possible field names for dates
     const startDate =
-      experience.startDate ||
       experience.start_date ||
+      experience.startDate ||
       experience.from ||
       experience.startYear;
     const endDate =
-      experience.endDate ||
       experience.end_date ||
+      experience.endDate ||
       experience.to ||
       experience.endYear;
 
+    // Check if current position
+    const isCurrent = experience.is_current === true || 
+                     (typeof experience.is_current === 'string' && experience.is_current.toLowerCase() === 'true') ||
+                     endDate === null ||
+                     endDate === 'Present' ||
+                     endDate === 'Current';
+
     // If we have valid dates, format them
-    if (startDate && startDate !== 'Unknown') {
-      const end = endDate && endDate !== 'Unknown' ? endDate : 'Present';
+    if (startDate && startDate !== 'Unknown' && startDate !== null) {
+      const end = !isCurrent && endDate && endDate !== 'Unknown' && endDate !== null ? endDate : 'Present';
       return `${startDate} - ${end}`;
     }
 
@@ -107,7 +114,7 @@ export function CVDataReview({
     }
 
     // Final fallback
-    return 'Employment Period Not Specified';
+    return 'Not provided';
   };
 
   const formatEducation = (education: {
@@ -164,63 +171,108 @@ export function CVDataReview({
           </CardHeader>
           <CardContent className="space-y-3">
             {(cvData.firstName || cvData.lastName) && (
-              <div className="flex items-center gap-2">
-                <span className="font-medium">Name:</span>
-                <span>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Full Name</span>
+                  <Badge variant="outline" className="text-sm">
+                    CV
+                  </Badge>
+                </div>
+                <div className="font-medium">
                   {cvData.firstName} {cvData.lastName}
-                </span>
-              </div>
+                </div>
+              </>
             )}
             {cvData.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{cvData.email}</span>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Email</span>
+                  <Badge variant="outline" className="text-sm">
+                    CV
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span>{cvData.email}</span>
+                </div>
+              </>
             )}
             {cvData.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{cvData.phone}</span>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Phone</span>
+                  <Badge variant="outline" className="text-sm">
+                    CV
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span>{cvData.phone}</span>
+                </div>
+              </>
             )}
             {cvData.location && (
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{cvData.location}</span>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Location</span>
+                  <Badge variant="outline" className="text-sm">
+                    CV
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span>{cvData.location}</span>
+                </div>
+              </>
             )}
             {cvData.linkedInUrl && (
-              <div className="flex items-center gap-2">
-                <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                <a
-                  href={cvData.linkedInUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  LinkedIn Profile
-                </a>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">LinkedIn</span>
+                  <Badge variant="outline" className="text-sm">
+                    CV
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  <a
+                    href={cvData.linkedInUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    LinkedIn Profile
+                  </a>
+                </div>
+              </>
             )}
             {cvData.website && (
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-muted-foreground" />
-                <a
-                  href={cvData.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  {cvData.website}
-                </a>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Website</span>
+                  <Badge variant="outline" className="text-sm">
+                    CV
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <a
+                    href={cvData.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {cvData.website}
+                  </a>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
       )}
 
       {/* Professional Summary */}
-      {(cvData.title || cvData.summary) && (
+      {(cvData.title || cvData.currentRole || cvData.currentCompany || cvData.summary) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -229,12 +281,22 @@ export function CVDataReview({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {cvData.title && (
-              <div>
-                <span className="font-medium">Current Title:</span>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {cvData.title}
-                </p>
+            {(cvData.currentRole || cvData.title) && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Current Role</span>
+                <Badge variant="outline" className="text-sm">
+                  CV
+                </Badge>
+                <span className="font-medium">{cvData.currentRole || cvData.title}</span>
+              </div>
+            )}
+            {cvData.currentCompany && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Current Company</span>
+                <Badge variant="outline" className="text-sm">
+                  CV
+                </Badge>
+                <span className="font-medium">{cvData.currentCompany}</span>
               </div>
             )}
             {cvData.summary && (
@@ -249,17 +311,23 @@ export function CVDataReview({
         </Card>
       )}
 
-      {/* AI-Generated Professional Bio */}
+      {/* Professional Bio */}
       {cvData.professionalBio && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              AI-Generated Professional Bio
+              Professional Bio
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Professional Bio</span>
+                <Badge variant="outline" className="text-sm">
+                  CV
+                </Badge>
+              </div>
               <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                 <p className="text-sm leading-relaxed text-green-800">
                   {cvData.professionalBio}
@@ -310,19 +378,54 @@ export function CVDataReview({
                       className="space-y-2 border-l-2 border-muted pl-4"
                     >
                       <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Job Title</span>
+                          <Badge variant="outline" className="text-sm">
+                            CV
+                          </Badge>
+                        </div>
                         <h4 className="font-semibold">
                           {job.position || job.title || job.role}
                         </h4>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Company</span>
+                          <Badge variant="outline" className="text-sm">
+                            CV
+                          </Badge>
+                        </div>
                         <p className="text-sm text-muted-foreground">
                           {job.company || job.organization || job.employer}
                         </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Start Date</span>
+                          <Badge variant="outline" className="text-sm">
+                            CV
+                          </Badge>
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          {formatWorkExperience(job)}
+                          {job.start_date || job.startDate || 'Not provided'}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">End Date</span>
+                          <Badge variant="outline" className="text-sm">
+                            CV
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {job.end_date || job.endDate || 'Not provided'}
                         </p>
                         {(job.location || job.city) && (
-                          <p className="text-xs text-muted-foreground">
-                            {job.location || job.city}
-                          </p>
+                          <>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">Location</span>
+                              <Badge variant="outline" className="text-sm">
+                                CV
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {job.location || job.city}
+                            </p>
+                          </>
                         )}
                       </div>
                       {job.description && (
@@ -366,6 +469,87 @@ export function CVDataReview({
             </CardContent>
           </Card>
         )}
+
+      {/* Board Experience */}
+      {cvData.boardExperience && cvData.boardExperience.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              Board Experience ({cvData.boardExperience.length} roles)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {cvData.boardExperience
+                .slice(0, expandedSections.has('board') ? undefined : 3)
+                .map((board: any, index: number) => (
+                  <div
+                    key={index}
+                    className="space-y-2 border-l-2 border-muted pl-4"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Board Role</span>
+                        <Badge variant="outline" className="text-sm">
+                          CV
+                        </Badge>
+                      </div>
+                      <h4 className="font-semibold">
+                        {board.role}
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Organization</span>
+                        <Badge variant="outline" className="text-sm">
+                          CV
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {board.organization}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Start Date</span>
+                        <Badge variant="outline" className="text-sm">
+                          CV
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {board.start_date || 'Not provided'}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">End Date</span>
+                        <Badge variant="outline" className="text-sm">
+                          CV
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {board.end_date || 'Not provided'}
+                      </p>
+                    </div>
+                    {board.key_contributions && (
+                      <div>
+                        <span className="text-sm font-medium">Key Contributions:</span>
+                        <p className="text-sm text-muted-foreground">{board.key_contributions}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+              {cvData.boardExperience.length > 3 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => toggleSection('board')}
+                >
+                  {expandedSections.has('board')
+                    ? 'Show Less'
+                    : `Show ${cvData.boardExperience.length - 3} More`}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Education */}
       {cvData.education && cvData.education.length > 0 && (

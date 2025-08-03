@@ -24,7 +24,7 @@ import {
   Languages,
   ScrollText,
 } from 'lucide-react';
-import { ExtractedCVData } from '@/lib/cv-parser-robust';
+import { ExtractedCVData } from '@/lib/cv-parser';
 
 interface CVDataPreviewProps {
   cvData: ExtractedCVData;

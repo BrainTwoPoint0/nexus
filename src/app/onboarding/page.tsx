@@ -12,7 +12,6 @@ import { CheckCircle, Upload, User } from 'lucide-react';
 import { useSupabase } from '@/components/providers/supabase-provider';
 import { CVUploadWithProgress } from '@/components/ui/cv-upload-with-progress';
 import { CVDataPreview } from '@/components/ui/cv-data-preview';
-import { CVDataReviewEditable } from '@/components/ui/cv-data-review-editable';
 import { logger } from '@/lib/logger';
 
 export default function OnboardingPage() {
@@ -91,8 +90,12 @@ export default function OnboardingPage() {
     setCurrentStep('cv-preview');
   };
 
-  const handleCVPreviewContinue = () => {
-    setCurrentStep('review');
+  const handleCVPreviewContinue = async () => {
+    // Skip review step and automatically submit the CV data
+    if (cvData) {
+      setFinalProfileData(cvData);
+      await handleProfileSubmit(cvData);
+    }
   };
 
   const handleCVError = (error: string) => {
@@ -307,32 +310,26 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Step 2: Review & Submit */}
+                {/* Step 2: Create Profile */}
                 <div
                   className={`flex items-start gap-4 rounded-lg border p-4 ${
-                    currentStep === 'review'
-                      ? 'border-primary bg-primary/5'
-                      : currentStep === 'complete'
-                        ? 'border-green-200 bg-green-50'
-                        : 'border-gray-200'
+                    currentStep === 'complete'
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-gray-200'
                   }`}
                 >
                   <div
                     className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                      currentStep === 'review'
-                        ? 'bg-primary text-white'
-                        : currentStep === 'complete'
-                          ? 'bg-green-100'
-                          : 'bg-gray-100'
+                      currentStep === 'complete'
+                        ? 'bg-green-100'
+                        : 'bg-gray-100'
                     }`}
                   >
                     <CheckCircle
                       className={`h-4 w-4 ${
-                        currentStep === 'review'
-                          ? 'text-white'
-                          : currentStep === 'complete'
-                            ? 'text-green-600'
-                            : 'text-gray-400'
+                        currentStep === 'complete'
+                          ? 'text-green-600'
+                          : 'text-gray-400'
                       }`}
                     />
                   </div>
@@ -340,7 +337,7 @@ export default function OnboardingPage() {
                     <h3 className="flex items-center gap-2 font-semibold">
                       {currentStep === 'complete'
                         ? 'Profile Complete'
-                        : 'Review & Submit'}
+                        : 'Create Profile'}
                       <span
                         className={`rounded-full px-2 py-1 text-xs ${
                           currentStep === 'complete'
@@ -354,14 +351,12 @@ export default function OnboardingPage() {
                     <p className="mt-1 text-sm text-muted-foreground">
                       {currentStep === 'complete'
                         ? 'Your board-ready profile has been successfully created'
-                        : 'Review your complete profile before submission'}
+                        : 'Automatically create your profile from CV data'}
                     </p>
                   </div>
                   <div className="text-sm font-medium">
                     {currentStep === 'complete' ? (
                       <span className="text-green-600">✓ Complete</span>
-                    ) : currentStep === 'review' ? (
-                      <span className="text-primary">Active</span>
                     ) : cvData ? (
                       <span className="text-gray-500">Ready</span>
                     ) : (
@@ -391,16 +386,6 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {currentStep === 'review' && (
-                <div className="mt-6">
-                  <CVDataReviewEditable
-                    cvData={cvData}
-                    onSave={handleReviewSave}
-                    onCancel={handleReviewCancel}
-                    isLoading={isLoading}
-                  />
-                </div>
-              )}
 
               {currentStep === 'complete' && (
                 <div className="mt-6 text-center">

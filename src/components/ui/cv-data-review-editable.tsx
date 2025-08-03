@@ -19,7 +19,7 @@ import {
   Award,
   AlertTriangle,
 } from 'lucide-react';
-import { ExtractedCVData } from '@/lib/cv-parser-robust';
+import { ExtractedCVData } from '@/lib/cv-parser';
 import {
   FieldSuggestionEngine,
   QuickFillPatterns,

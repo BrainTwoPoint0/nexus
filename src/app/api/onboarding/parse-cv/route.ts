@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
-import { processCVInMemory } from '@/lib/cv-parser-robust';
+import { processCVInMemory } from '@/lib/cv-parser';
 
 /**
  * In-memory CV processing for onboarding

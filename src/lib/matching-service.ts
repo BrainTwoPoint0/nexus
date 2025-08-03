@@ -4,7 +4,7 @@ import {
   calculateEnhancedNexusScore,
   EnhancedNexusScoreResult,
   getEnhancedNexusScore,
-} from './enhanced-nexus-score';
+} from './nexus-score';
 
 export interface MatchingOptions {
   includeScores?: boolean;

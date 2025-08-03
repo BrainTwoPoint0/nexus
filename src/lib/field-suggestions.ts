@@ -233,9 +233,7 @@ export class FieldSuggestionEngine {
   /**
    * Generate smart suggestions for common missing fields
    */
-  static getCommonMissingFields(
-    data: any
-  ): Array<{
+  static getCommonMissingFields(data: any): Array<{
     field: string;
     section: string;
     priority: 'high' | 'medium' | 'low';

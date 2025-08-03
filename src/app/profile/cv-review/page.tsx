@@ -4,9 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { CVDataReview } from '@/components/ui/cv-data-review';
 import { useSupabase } from '@/components/providers/supabase-provider';
-import { ExtractedCVData } from '@/lib/cv-parser-robust';
+import { ExtractedCVData } from '@/lib/cv-parser';
 import { useToast } from '@/hooks/use-toast';
 
 interface CVUploadData {
@@ -16,16 +15,8 @@ interface CVUploadData {
 }
 
 function CVReviewContent() {
-  const [cvData, setCVData] = useState<CVUploadData | null>(null);
-  const [parsedData, setParsedData] = useState<ExtractedCVData | null>(null);
-  const [confidence, setConfidence] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isApplying, setIsApplying] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [originalFileData, setOriginalFileData] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +25,7 @@ function CVReviewContent() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const loadCVData = async () => {
+    const autoApplyCVData = async () => {
       try {
         const {
           data: { user },
@@ -44,6 +35,9 @@ function CVReviewContent() {
           router.push('/sign-in');
           return;
         }
+
+        let parsedData: ExtractedCVData | null = null;
+        let originalFileData: Record<string, unknown> | null = null;
 
         // First try to load from enhanced onboarding data
         const onboardingData = sessionStorage.getItem('onboardingProfileData');
@@ -56,71 +50,40 @@ function CVReviewContent() {
               Date.now() - profileData.timestamp < 60 * 60 * 1000;
 
             if (isDataFresh && profileData.data) {
-              console.log(
-                'Loading merged profile data from enhanced onboarding'
-              );
-
-              // Create a mock CVUploadData for compatibility
-              const mockCVData: CVUploadData = {
-                content_extracted: JSON.stringify(profileData.data),
-                file_path: 'ai-fusion',
-                original_filename: 'merged-profile-data',
-              };
-
-              setCVData(mockCVData);
-              setParsedData(profileData.data);
-              setConfidence(
-                profileData.data.completeness
-                  ? profileData.data.completeness / 100
-                  : 0.8
-              );
-              setOriginalFileData(profileData.dataSources || null);
-              setIsLoading(false);
-              return;
+              console.log('Auto-applying merged profile data from enhanced onboarding');
+              parsedData = profileData.data;
+              originalFileData = profileData.dataSources || null;
             }
           } catch (parseError) {
             console.error('Error parsing onboarding data:', parseError);
           }
         }
 
-        // Try legacy sessionStorage format
-        const sessionData = sessionStorage.getItem('cvReviewData');
-        if (sessionData) {
-          try {
-            const reviewData = JSON.parse(sessionData);
+        // Try legacy sessionStorage format if no onboarding data
+        if (!parsedData) {
+          const sessionData = sessionStorage.getItem('cvReviewData');
+          if (sessionData) {
+            try {
+              const reviewData = JSON.parse(sessionData);
 
-            // Check if data is still fresh (within 1 hour)
-            const isDataFresh =
-              Date.now() - reviewData.timestamp < 60 * 60 * 1000;
+              // Check if data is still fresh (within 1 hour)
+              const isDataFresh =
+                Date.now() - reviewData.timestamp < 60 * 60 * 1000;
 
-            if (isDataFresh && reviewData.data) {
-              console.log('Loading CV data from sessionStorage');
-
-              // Create a mock CVUploadData for compatibility
-              const mockCVData: CVUploadData = {
-                content_extracted: JSON.stringify(reviewData.data),
-                file_path: 'in-memory',
-                original_filename: reviewData.filename || 'uploaded-cv',
-              };
-
-              setCVData(mockCVData);
-              setParsedData(reviewData.data);
-              setConfidence(reviewData.confidence || 0);
-              setOriginalFileData(reviewData.originalFileData || null);
-              setIsLoading(false);
-              return;
+              if (isDataFresh && reviewData.data) {
+                console.log('Auto-applying CV data from sessionStorage');
+                parsedData = reviewData.data;
+                originalFileData = reviewData.originalFileData || null;
+              }
+            } catch (parseError) {
+              console.error('Error parsing sessionStorage data:', parseError);
             }
-          } catch (parseError) {
-            console.error('Error parsing sessionStorage data:', parseError);
           }
         }
 
         // Fallback to old system if filePath is provided
-        if (filePath) {
-          console.log(
-            'Falling back to database lookup for filePath:',
-            filePath
-          );
+        if (!parsedData && filePath) {
+          console.log('Auto-applying CV data from database lookup for filePath:', filePath);
 
           // Get the CV upload data from database (old system)
           const { data: cvUpload, error: cvError } = await supabase
@@ -133,6 +96,7 @@ function CVReviewContent() {
 
           if (cvError || !cvUpload) {
             setError('CV data not found or not parsed yet');
+            setIsProcessing(false);
             return;
           }
 
@@ -144,6 +108,7 @@ function CVReviewContent() {
 
             if (extractedContent.status === 'failed') {
               setError(extractedContent.error || 'CV parsing failed');
+              setIsProcessing(false);
               return;
             }
 
@@ -151,109 +116,93 @@ function CVReviewContent() {
               extractedContent.status !== 'completed' ||
               !extractedContent.parsed_data
             ) {
-              setError(
-                'CV parsing is not yet complete. Please wait and try again.'
-              );
+              setError('CV parsing is not yet complete. Please wait and try again.');
+              setIsProcessing(false);
               return;
             }
 
-            setCVData(cvUpload);
-            setParsedData(extractedContent.parsed_data);
-            setConfidence(extractedContent.parsing_confidence || 0);
+            parsedData = extractedContent.parsed_data;
           } catch (parseError) {
             console.error('Error parsing CV data:', parseError);
             setError('Invalid CV data format');
+            setIsProcessing(false);
             return;
           }
-        } else {
-          setError(
-            'No CV data found. Please go back and upload your CV again.'
-          );
+        }
+
+        if (!parsedData) {
+          setError('No CV data found. Please go back and upload your CV again.');
+          setIsProcessing(false);
           return;
         }
+
+        // Automatically apply the CV data
+        console.log('Automatically applying CV data to profile...');
+        
+        const response = await fetch('/api/profile/apply-cv-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ parsedData, originalFileData }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          toast({
+            title: 'Profile Updated',
+            description: result.message || 'Successfully applied CV data to your profile.',
+          });
+
+          // Clean up sessionStorage since data has been applied
+          sessionStorage.removeItem('cvReviewData');
+          sessionStorage.removeItem('onboardingProfileData');
+
+          // Redirect to dashboard since onboarding is now complete
+          router.push('/dashboard');
+        } else {
+          setError(result.error || 'Failed to apply CV data to profile');
+          setIsProcessing(false);
+        }
       } catch (error) {
-        console.error('Error loading CV data:', error);
-        setError('Failed to load CV data');
-      } finally {
-        setIsLoading(false);
+        console.error('Error auto-applying CV data:', error);
+        setError('Failed to apply CV data to profile');
+        setIsProcessing(false);
       }
     };
 
-    loadCVData();
-  }, [filePath, supabase, router]);
+    autoApplyCVData();
+  }, [filePath, supabase, router, toast]);
 
-  const handleApprove = async () => {
-    if (!cvData || !parsedData) return;
-
-    setIsApplying(true);
-    try {
-      const response = await fetch('/api/profile/apply-cv-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ parsedData, originalFileData }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: 'Profile Updated',
-          description:
-            result.message || 'Successfully applied CV data to your profile.',
-        });
-
-        // Clean up sessionStorage since data has been applied
-        sessionStorage.removeItem('cvReviewData');
-
-        // Redirect to dashboard since onboarding is now complete
-        router.push('/dashboard');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to Update Profile',
-          description: result.error || 'Unknown error occurred',
-        });
-      }
-    } catch (error) {
-      console.error('Error applying CV data:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to apply CV data to profile',
-      });
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  const handleReject = () => {
-    // Redirect back to onboarding or profile
-    router.push('/onboarding');
-  };
-
-  if (isLoading) {
+  if (isProcessing) {
     return (
       <MainLayout>
         <div className="flex min-h-screen items-center justify-center">
-          <LoadingSpinner size="lg" />
+          <div className="space-y-4 text-center">
+            <LoadingSpinner size="lg" />
+            <h1 className="text-2xl font-bold text-foreground">
+              Applying CV Data
+            </h1>
+            <p className="text-muted-foreground">
+              We're automatically applying your CV data to your profile...
+            </p>
+          </div>
         </div>
       </MainLayout>
     );
   }
 
-  if (error || !cvData) {
+  if (error) {
     return (
       <MainLayout>
         <div className="flex min-h-screen items-center justify-center">
           <div className="space-y-4 text-center">
             <h1 className="text-2xl font-bold text-foreground">
-              {error || 'CV Data Not Found'}
+              Error Applying CV Data
             </h1>
             <p className="text-muted-foreground">
-              The CV data could not be loaded. Please try uploading your CV
-              again.
+              {error}
             </p>
             <button
               onClick={() => router.push('/onboarding')}
@@ -267,29 +216,11 @@ function CVReviewContent() {
     );
   }
 
+  // This should never be reached since we either redirect or show error
   return (
     <MainLayout>
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold text-foreground">
-            Review Your CV Data
-          </h1>
-          <p className="text-muted-foreground">
-            We&apos;ve extracted information from your CV. Review the details
-            below and apply them to your profile.
-          </p>
-        </div>
-
-        {parsedData && (
-          <CVDataReview
-            cvData={parsedData}
-            confidence={confidence}
-            filePath={cvData.file_path}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            isApplying={isApplying}
-          />
-        )}
+      <div className="flex min-h-screen items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     </MainLayout>
   );
