@@ -156,7 +156,7 @@ export function mapOAuthToProfile(normalizedProfile: NormalizedProfile) {
 
   // Add optional fields if they exist
   if (normalizedProfile.title) {
-    profileData.title = normalizedProfile.title;
+    profileData.professional_headline = normalizedProfile.title;
   }
 
   if (normalizedProfile.bio) {
@@ -175,11 +175,21 @@ export function mapOAuthToProfile(normalizedProfile: NormalizedProfile) {
 }
 
 /**
- * Get OAuth redirect URL for development/production
+ * Get OAuth redirect URL for development/production (2025 best practices)
  */
 export function getOAuthRedirectUrl(): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  return `${baseUrl}/auth/callback`;
+  let url =
+    process?.env?.NEXT_PUBLIC_SITE_URL ??
+    process?.env?.NEXT_PUBLIC_VERCEL_URL ??
+    'http://localhost:3000/';
+
+  // Ensure URL has protocol
+  url = url.startsWith('http') ? url : `https://${url}`;
+  // Ensure URL has trailing slash
+  url = url.endsWith('/') ? url : `${url}/`;
+
+  // Add auth callback path
+  return `${url}auth/callback`;
 }
 
 /**

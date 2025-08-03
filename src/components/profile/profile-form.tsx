@@ -16,7 +16,7 @@ interface Profile {
   first_name: string;
   last_name: string;
   email: string;
-  title: string;
+  professional_headline: string;
   company: string;
   bio: string;
   location: string;
@@ -88,7 +88,7 @@ export function ProfileForm({ profileId }: { profileId: string }) {
           first_name: profile.first_name,
           last_name: profile.last_name,
           email: profile.email,
-          title: profile.title,
+          professional_headline: profile.professional_headline,
           company: profile.company,
           bio: profile.bio,
           location: profile.location,
@@ -248,8 +248,10 @@ export function ProfileForm({ profileId }: { profileId: string }) {
               <Label htmlFor="title">Current Title</Label>
               <Input
                 id="title"
-                value={profile.title || ''}
-                onChange={(e) => updateProfile('title', e.target.value)}
+                value={profile.professional_headline || ''}
+                onChange={(e) =>
+                  updateProfile('professional_headline', e.target.value)
+                }
                 placeholder="e.g., Chief Technology Officer"
               />
             </div>

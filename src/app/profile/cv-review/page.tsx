@@ -45,7 +45,45 @@ function CVReviewContent() {
           return;
         }
 
-        // First try to load from sessionStorage (new in-memory system)
+        // First try to load from enhanced onboarding data
+        const onboardingData = sessionStorage.getItem('onboardingProfileData');
+        if (onboardingData) {
+          try {
+            const profileData = JSON.parse(onboardingData);
+
+            // Check if data is still fresh (within 1 hour)
+            const isDataFresh =
+              Date.now() - profileData.timestamp < 60 * 60 * 1000;
+
+            if (isDataFresh && profileData.data) {
+              console.log(
+                'Loading merged profile data from enhanced onboarding'
+              );
+
+              // Create a mock CVUploadData for compatibility
+              const mockCVData: CVUploadData = {
+                content_extracted: JSON.stringify(profileData.data),
+                file_path: 'ai-fusion',
+                original_filename: 'merged-profile-data',
+              };
+
+              setCVData(mockCVData);
+              setParsedData(profileData.data);
+              setConfidence(
+                profileData.data.completeness
+                  ? profileData.data.completeness / 100
+                  : 0.8
+              );
+              setOriginalFileData(profileData.dataSources || null);
+              setIsLoading(false);
+              return;
+            }
+          } catch (parseError) {
+            console.error('Error parsing onboarding data:', parseError);
+          }
+        }
+
+        // Try legacy sessionStorage format
         const sessionData = sessionStorage.getItem('cvReviewData');
         if (sessionData) {
           try {

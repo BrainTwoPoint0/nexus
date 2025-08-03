@@ -27,19 +27,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Validate file type and size
+    // Validate file type - support what we can actually process
     const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'text/plain',
+      'application/pdf', // Processed with OpenAI Vision API
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx - text extracted with mammoth, then processed with OpenAI
+      'application/msword', // .doc - text extracted with mammoth, then processed with OpenAI
+      'text/plain', // .txt - processed directly
+      'image/jpeg', // .jpg, .jpeg - processed with Vision API
+      'image/png', // .png - processed with Vision API
+      'image/webp', // .webp - processed with Vision API
+      'image/gif', // .gif - processed with Vision API
     ];
 
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         {
           error:
-            'Invalid file type. Please upload PDF, DOCX, or TXT files only.',
+            'Invalid file type. Please upload TXT, PDF, DOCX, or image files (JPG, PNG, WEBP, GIF).',
         },
         { status: 400 }
       );
@@ -64,18 +68,18 @@ export async function POST(request: NextRequest) {
       console.error('CV processing failed:', result.error);
       return NextResponse.json(
         {
-          error: `Parsing failed: ${JSON.stringify({ error: result.error })}`,
+          error: result.error,
         },
         { status: 400 }
       );
     }
 
-    console.log('CV processed successfully, confidence:', result.confidence);
+    console.log('CV processed successfully');
 
     return NextResponse.json({
       success: true,
       data: result.data,
-      confidence: result.confidence,
+      completenessAnalysis: result.completenessAnalysis,
       filename: file.name,
     });
   } catch (error) {

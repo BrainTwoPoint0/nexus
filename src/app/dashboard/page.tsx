@@ -35,8 +35,7 @@ import { containerVariants, itemVariants } from '@/lib/animation-variants';
 interface Profile {
   first_name: string | null;
   last_name: string | null;
-  title: string | null;
-  company: string | null;
+  professional_headline: string | null;
   role: string | null;
   location: string | null;
 }
@@ -209,7 +208,9 @@ export default function DashboardPage() {
         // Fetch profile
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('first_name, last_name, title, company, role, location')
+          .select(
+            'first_name, last_name, professional_headline, role, location'
+          )
           .eq('id', user?.id)
           .single();
 
@@ -325,8 +326,7 @@ export default function DashboardPage() {
         const profileCompletenessScore = [
           profileData?.first_name,
           profileData?.last_name,
-          profileData?.title,
-          profileData?.company,
+          profileData?.professional_headline,
           profileData?.location,
         ].filter(Boolean).length;
 
@@ -439,9 +439,7 @@ export default function DashboardPage() {
   const initials =
     (profile?.first_name?.[0] ?? '') + (profile?.last_name?.[0] ?? '') ||
     (user?.email?.[0] ?? 'U');
-  const titleAndCompany = profile?.title
-    ? `${profile.title}${profile.company ? ' at ' + profile.company : ''}`
-    : '';
+  const professionalHeadline = profile?.professional_headline || '';
 
   // Memoize expensive stats calculations
   const dynamicStats = useMemo(
@@ -513,7 +511,7 @@ export default function DashboardPage() {
                   Welcome back, {displayName.split(' ')[0]}
                 </h1>
                 <p className="truncate text-muted-foreground" role="text">
-                  {titleAndCompany}
+                  {professionalHeadline}
                 </p>
               </div>
             </div>

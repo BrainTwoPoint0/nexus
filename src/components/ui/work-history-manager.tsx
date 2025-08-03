@@ -28,17 +28,14 @@ import {
   Building,
   Calendar,
   MapPin,
-  TrendingUp,
   Clock,
+  Briefcase,
 } from 'lucide-react';
 
 interface WorkHistory {
   id: string;
   company: string;
   title: string;
-  department?: string;
-  employment_type?: string;
-  sector?: string;
   company_size: string | null;
   location: string | null;
   start_date: string;
@@ -46,7 +43,6 @@ interface WorkHistory {
   is_current: boolean;
   description: string | null;
   key_achievements: string[] | null;
-  total_team_size?: number;
 }
 
 interface WorkHistoryManagerProps {
@@ -55,32 +51,12 @@ interface WorkHistoryManagerProps {
   isEditing: boolean;
 }
 
-const EMPLOYMENT_TYPES = [
-  'Full-time',
-  'Part-time',
-  'Contract',
-  'Consulting',
-  'Interim',
-  'Board Position',
-  'Advisory Role',
-];
-
-const SECTORS = [
-  'Technology',
-  'Financial Services',
-  'Healthcare',
-  'Manufacturing',
-  'Retail',
-  'Energy',
-  'Telecommunications',
-  'Media & Entertainment',
-  'Real Estate',
-  'Education',
-  'Non-Profit',
-  'Government',
-  'Consulting',
-  'Legal Services',
-  'Other',
+const COMPANY_SIZES = [
+  { value: 'startup', label: 'Startup (1-10 employees)' },
+  { value: 'small', label: 'Small (11-50 employees)' },
+  { value: 'medium', label: 'Medium (51-200 employees)' },
+  { value: 'large', label: 'Large (201-1000 employees)' },
+  { value: 'enterprise', label: 'Enterprise (1000+ employees)' },
 ];
 
 export function WorkHistoryManager({
@@ -104,7 +80,36 @@ export function WorkHistoryManager({
     key_achievements: [],
   });
 
-  const resetForm = () => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const calculateDuration = (startDate: string, endDate: string | null) => {
+    const start = new Date(startDate);
+    const end = endDate ? new Date(endDate) : new Date();
+    const months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+
+    if (months < 12) {
+      return `${months} ${months === 1 ? 'month' : 'months'}`;
+    } else {
+      const years = Math.floor(months / 12);
+      const remainingMonths = months % 12;
+      if (remainingMonths === 0) {
+        return `${years} ${years === 1 ? 'year' : 'years'}`;
+      } else {
+        return `${years} ${years === 1 ? 'year' : 'years'} ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
+      }
+    }
+  };
+
+  const handleAdd = () => {
+    setEditingHistory(null);
     setFormData({
       company: '',
       title: '',
@@ -116,11 +121,6 @@ export function WorkHistoryManager({
       description: '',
       key_achievements: [],
     });
-  };
-
-  const handleAdd = () => {
-    setEditingHistory(null);
-    resetForm();
     setIsAddModalOpen(true);
   };
 
@@ -131,86 +131,49 @@ export function WorkHistoryManager({
   };
 
   const handleSave = () => {
-    if (!formData.company || !formData.title) return;
+    if (!formData.company || !formData.title || !formData.start_date) return;
 
     const newHistory: WorkHistory = {
       id: editingHistory?.id || crypto.randomUUID(),
-      company: formData.company,
-      title: formData.title,
+      company: formData.company!,
+      title: formData.title!,
       company_size: formData.company_size || null,
       location: formData.location || null,
-      start_date: formData.start_date || '',
+      start_date: formData.start_date!,
       end_date: formData.is_current ? null : formData.end_date || null,
       is_current: formData.is_current || false,
       description: formData.description || null,
-      key_achievements: formData.key_achievements || [],
+      key_achievements: formData.key_achievements || null,
     };
 
-    const updatedHistory = [...workHistory];
-
     if (editingHistory) {
-      const index = updatedHistory.findIndex(
-        (hist) => hist.id === editingHistory.id
+      onUpdate(
+        workHistory.map((h) => (h.id === editingHistory.id ? newHistory : h))
       );
-      if (index !== -1) {
-        updatedHistory[index] = newHistory;
-      }
     } else {
-      updatedHistory.push(newHistory);
+      onUpdate([...workHistory, newHistory]);
     }
 
-    // Sort by start date (most recent first)
-    updatedHistory.sort(
-      (a, b) =>
-        new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-    );
-
-    onUpdate(updatedHistory);
     setIsAddModalOpen(false);
-    resetForm();
   };
 
-  const handleDelete = (historyId: string) => {
-    const updatedHistory = workHistory.filter((hist) => hist.id !== historyId);
-    onUpdate(updatedHistory);
+  const handleDelete = (id: string) => {
+    onUpdate(workHistory.filter((h) => h.id !== id));
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-    });
-  };
-
-  const calculateDuration = (startDate: string, endDate: string | null) => {
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : new Date();
-    const months =
-      (end.getFullYear() - start.getFullYear()) * 12 +
-      (end.getMonth() - start.getMonth());
-    const years = Math.floor(months / 12);
-    const remainingMonths = months % 12;
-
-    if (years === 0) {
-      return `${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
-    } else if (remainingMonths === 0) {
-      return `${years} year${years !== 1 ? 's' : ''}`;
-    } else {
-      return `${years} year${years !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`;
-    }
-  };
-
+  // Sort by start date (most recent first)
   const sortedHistory = [...workHistory].sort(
     (a, b) =>
       new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Work History</h3>
+        <h3 className="flex items-center gap-2 text-lg font-semibold">
+          <Briefcase className="h-5 w-5" />
+          Work History
+        </h3>
         {isEditing && (
           <Button variant="outline" size="sm" onClick={handleAdd}>
             <Plus className="mr-2 h-4 w-4" />
@@ -221,171 +184,142 @@ export function WorkHistoryManager({
 
       {sortedHistory.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center">
-            <Building className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">
+          <CardContent className="py-8 text-center text-muted-foreground">
+            <Briefcase className="mx-auto mb-2 h-8 w-8 opacity-50" />
+            <p className="text-sm">
               {isEditing
-                ? 'Add your work history to showcase your professional experience'
-                : 'No work history added yet'}
+                ? 'Add your work experience'
+                : 'No work experience added yet'}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Timeline */}
-          <div className="relative">
-            {sortedHistory.map((history, index) => (
-              <div key={history.id} className="relative">
-                {/* Timeline line */}
-                {index < sortedHistory.length - 1 && (
-                  <div className="absolute left-6 top-12 h-full w-0.5 bg-border" />
-                )}
-
-                <div className="flex items-start space-x-4 pb-8">
-                  {/* Timeline dot */}
-                  <div className="relative flex-shrink-0">
-                    <div
-                      className={`flex h-3 w-3 items-center justify-center rounded-full ${
-                        history.is_current ? 'bg-blue-500' : 'bg-gray-300'
-                      }`}
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <Card className="flex-1">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <h4 className="text-lg font-semibold">
-                                  {history.title}
-                                </h4>
-                                {history.is_current && (
-                                  <Badge variant="default">Current</Badge>
-                                )}
-                              </div>
-                              <div className="mt-1 flex items-center space-x-2">
-                                <Building className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">
-                                  {history.company}
-                                </span>
-                                {history.sector && (
-                                  <>
-                                    <span className="text-muted-foreground">
-                                      •
-                                    </span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {history.sector}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                              <div className="mt-2 flex items-center space-x-4 text-sm text-muted-foreground">
-                                <div className="flex items-center space-x-1">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>
-                                    {formatDate(history.start_date)} -{' '}
-                                    {history.is_current
-                                      ? 'Present'
-                                      : formatDate(history.end_date || '')}
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <Clock className="h-3 w-3" />
-                                  <span>
-                                    {calculateDuration(
-                                      history.start_date,
-                                      history.end_date
-                                    )}
-                                  </span>
-                                </div>
-                                {history.location && (
-                                  <div className="flex items-center space-x-1">
-                                    <MapPin className="h-3 w-3" />
-                                    <span>{history.location}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {isEditing && (
-                              <div className="flex space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEdit(history)}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDelete(history.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          {history.description && (
-                            <div>
-                              <h5 className="mb-2 text-sm font-medium">
-                                Description
-                              </h5>
-                              <p className="text-sm text-muted-foreground">
-                                {history.description}
-                              </p>
-                            </div>
+          {sortedHistory.map((history, index) => (
+            <Card key={history.id} className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="text-lg font-semibold">
+                          {history.title}
+                        </h4>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Building className="h-4 w-4" />
+                          <span className="font-medium">{history.company}</span>
+                          {history.company_size && (
+                            <>
+                              <span>•</span>
+                              <span className="capitalize">
+                                {COMPANY_SIZES.find(
+                                  (s) => s.value === history.company_size
+                                )?.label || history.company_size}
+                              </span>
+                            </>
                           )}
-
-                          {history.key_achievements &&
-                            history.key_achievements.length > 0 && (
-                              <div>
-                                <h5 className="mb-2 text-sm font-medium">
-                                  Key Achievements
-                                </h5>
-                                <ul className="list-inside list-disc text-sm text-muted-foreground">
-                                  {history.key_achievements.map(
-                                    (achievement, index) => (
-                                      <li key={index}>{achievement}</li>
-                                    )
-                                  )}
-                                </ul>
-                              </div>
-                            )}
-
-                          <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                            <div className="flex items-center space-x-1">
-                              <Badge variant="outline">
-                                {history.employment_type}
-                              </Badge>
-                            </div>
-                            {/* Temporarily disabled until enum issue is resolved
-                            {history.company_size && (
-                              <div className="flex items-center space-x-1">
-                                <Users className="h-3 w-3" />
-                                <span>{getCompanySizeLabel(history.company_size)}</span>
-                              </div>
-                            )}
-                            */}
-                            {history.total_team_size && (
-                              <div className="flex items-center space-x-1">
-                                <TrendingUp className="h-3 w-3" />
-                                <span>Team: {history.total_team_size}</span>
-                              </div>
-                            )}
-                          </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                      {history.is_current && (
+                        <Badge
+                          variant="default"
+                          className="bg-green-100 text-green-800"
+                        >
+                          Current
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Date and Location */}
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {formatDate(history.start_date)} -{' '}
+                          {history.end_date
+                            ? formatDate(history.end_date)
+                            : 'Present'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          {calculateDuration(
+                            history.start_date,
+                            history.end_date
+                          )}
+                        </span>
+                      </div>
+                      {history.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          <span>{history.location}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    {history.description && (
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        {history.description}
+                      </p>
+                    )}
+
+                    {/* Key Achievements */}
+                    {history.key_achievements &&
+                      history.key_achievements.length > 0 && (
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium">
+                            Key Achievements
+                          </h5>
+                          <ul className="space-y-1">
+                            {history.key_achievements.map(
+                              (achievement, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-2 text-sm text-muted-foreground"
+                                >
+                                  <span className="mt-1 text-primary">•</span>
+                                  <span>{achievement}</span>
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Actions */}
+                  {isEditing && (
+                    <div className="ml-4 flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(history)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(history.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
-          </div>
+
+                {/* Timeline connector */}
+                {index < sortedHistory.length - 1 && (
+                  <div className="relative mt-4">
+                    <div className="absolute left-6 top-0 h-4 w-px bg-border"></div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -401,90 +335,33 @@ export function WorkHistoryManager({
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="company">Company Name *</Label>
+                <Label htmlFor="title">Job Title *</Label>
                 <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={(e) =>
-                    setFormData({ ...formData, company: e.target.value })
-                  }
-                  placeholder="e.g. Microsoft Corporation"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="position">Position Title *</Label>
-                <Input
-                  id="position"
-                  value={formData.title}
+                  id="title"
+                  value={formData.title || ''}
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  placeholder="e.g. Chief Executive Officer"
+                  placeholder="e.g. Senior Software Engineer"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
+                <Label htmlFor="company">Company *</Label>
                 <Input
-                  id="department"
-                  value={formData.department || ''}
+                  id="company"
+                  value={formData.company || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, department: e.target.value })
+                    setFormData({ ...formData, company: e.target.value })
                   }
-                  placeholder="e.g. Operations, Technology"
+                  placeholder="e.g. Google"
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="employment">Employment Type</Label>
-                <Select
-                  value={formData.employment_type}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, employment_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EMPLOYMENT_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="sector">Sector</Label>
-                <Select
-                  value={formData.sector || ''}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, sector: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select sector" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SECTORS.map((sector) => (
-                      <SelectItem key={sector} value={sector}>
-                        {sector}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Temporarily disabled until enum issue is resolved
-              <div className="space-y-2">
-                <Label htmlFor="companySize">Company Size</Label>
+                <Label htmlFor="company_size">Company Size</Label>
                 <Select
                   value={formData.company_size || ''}
                   onValueChange={(value) =>
@@ -492,7 +369,7 @@ export function WorkHistoryManager({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select size" />
+                    <SelectValue placeholder="Select company size" />
                   </SelectTrigger>
                   <SelectContent>
                     {COMPANY_SIZES.map((size) => (
@@ -503,73 +380,93 @@ export function WorkHistoryManager({
                   </SelectContent>
                 </Select>
               </div>
-              */}
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <DatePicker
-                id="startDate"
-                label="Start Date"
-                value={formData.start_date}
-                onChange={(value) =>
-                  setFormData({ ...formData, start_date: value })
-                }
-                placeholder="e.g., 22/05/2022"
-                required
-              />
-
-              <DatePicker
-                id="endDate"
-                label="End Date"
-                value={formData.end_date || ''}
-                onChange={(value) =>
-                  setFormData({ ...formData, end_date: value })
-                }
-                placeholder="e.g., 15/08/2024"
-                disabled={formData.is_current}
-              />
 
               <div className="space-y-2">
-                <Label htmlFor="current">Current Position</Label>
-                <div className="flex items-center space-x-2">
-                  <input
-                    id="current"
-                    type="checkbox"
-                    checked={formData.is_current}
-                    onChange={(e) =>
-                      setFormData({ ...formData, is_current: e.target.checked })
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={formData.location || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  placeholder="e.g. London, UK"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="start_date">Start Date *</Label>
+                <DatePicker
+                  value={formData.start_date || ''}
+                  onChange={(value) =>
+                    setFormData({ ...formData, start_date: value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="end_date">End Date</Label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_current"
+                      checked={formData.is_current}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          is_current: e.target.checked,
+                          end_date: e.target.checked ? '' : formData.end_date,
+                        })
+                      }
+                    />
+                    <Label htmlFor="is_current" className="text-sm">
+                      Current role
+                    </Label>
+                  </div>
+                </div>
+                {!formData.is_current && (
+                  <DatePicker
+                    value={formData.end_date || ''}
+                    onChange={(value) =>
+                      setFormData({ ...formData, end_date: value })
                     }
                   />
-                  <span className="text-sm">I currently work here</span>
-                </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={formData.location || ''}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="e.g. London, UK"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Job Description</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 value={formData.description || ''}
                 onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                placeholder="Brief description of your role and responsibilities..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="achievements">
+                Key Achievements (one per line)
+              </Label>
+              <Textarea
+                id="achievements"
+                value={formData.key_achievements?.join('\n') || ''}
+                onChange={(e) =>
                   setFormData({
                     ...formData,
-                    description: e.target.value,
+                    key_achievements: e.target.value
+                      .split('\n')
+                      .filter(Boolean),
                   })
                 }
-                placeholder="Describe your main responsibilities and areas of oversight..."
-                rows={3}
+                placeholder="• Led a team of 10 engineers&#10;• Increased revenue by 25%&#10;• Launched 3 major product features"
+                rows={4}
               />
             </div>
 
@@ -580,8 +477,13 @@ export function WorkHistoryManager({
               >
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
-                {editingHistory ? 'Update Experience' : 'Add Experience'}
+              <Button
+                onClick={handleSave}
+                disabled={
+                  !formData.company || !formData.title || !formData.start_date
+                }
+              >
+                {editingHistory ? 'Update' : 'Add'} Experience
               </Button>
             </div>
           </div>

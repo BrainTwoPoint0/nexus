@@ -374,9 +374,9 @@ export function useProfileCompleteness(
       updatedSuggestions.find((s) => s.id === 'phone')!.completed = true;
     }
     if (
-      profile.title &&
-      typeof profile.title === 'string' &&
-      profile.title.trim()
+      profile.professional_headline &&
+      typeof profile.professional_headline === 'string' &&
+      profile.professional_headline.trim()
     )
       score += 5;
     if (
@@ -396,12 +396,6 @@ export function useProfileCompleteness(
       profile.location.trim()
     )
       score += 3;
-    if (
-      profile.company &&
-      typeof profile.company === 'string' &&
-      profile.company.trim()
-    )
-      score += 2;
 
     // Professional details (15 points)
     if (

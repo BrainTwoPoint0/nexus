@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useRouter } from 'next/navigation';
 
 export type UserRole =
   | 'candidate'
@@ -42,21 +43,10 @@ const mapProfileData = (data: Record<string, unknown>): UserProfile => ({
   role_display_name: 'Candidate',
 });
 
-// Get display name for user role
-// const getRoleDisplayName = (role: UserRole): string => {
-//   const roleNames: Record<UserRole, string> = {
-//     candidate: 'Candidate',
-//     organization_admin: 'Organization Admin',
-//     organization_employee: 'Organization Employee',
-//     consultant: 'Consultant',
-//     platform_admin: 'Platform Admin',
-//   };
-//   return roleNames[role] || 'Candidate';
-// };
-
 export const useUserRole = () => {
   const user = useUser();
   const supabase = useSupabaseClient();
+  const router = useRouter();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,12 +58,38 @@ export const useUserRole = () => {
       return;
     }
 
+    // Skip profile loading entirely during onboarding
+    const currentPath = window.location.pathname;
+    const isOnboardingPath =
+      currentPath === '/onboarding' ||
+      currentPath === '/auth/callback' ||
+      currentPath.startsWith('/auth/');
+
+    if (isOnboardingPath) {
+      console.log('Skipping profile loading during onboarding');
+      // Return minimal profile for onboarding
+      const onboardingProfile: UserProfile = {
+        id: user.id,
+        first_name: user.user_metadata?.first_name || null,
+        last_name: user.user_metadata?.last_name || null,
+        email: user.email || null,
+        role: 'candidate',
+        onboarding_completed: false,
+        onboarding_step: 0,
+        permissions: {},
+        role_display_name: 'Candidate',
+      };
+      setUserProfile(onboardingProfile);
+      setLoading(false);
+      return;
+    }
+
     const fetchUserProfile = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get user profile with role information
+        // Get user profile with role information (may not exist for new users)
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -81,52 +97,41 @@ export const useUserRole = () => {
           .single();
 
         if (profileError) {
-          // If profile doesn't exist, create one for this user
+          // If profile doesn't exist, user needs to complete onboarding
           if (profileError.code === 'PGRST116') {
             console.log(
-              'Profile not found, creating profile for user:',
-              user.id
+              'Profile not found for user:',
+              user.id,
+              '- User needs to complete onboarding'
             );
 
-            // Create profile for user (using upsert to handle duplicates)
-            const { error: createError } = await supabase
-              .from('profiles')
-              .upsert(
-                {
-                  id: user.id,
-                  email: user.email,
-                  first_name: user.user_metadata?.first_name || '',
-                  last_name: user.user_metadata?.last_name || '',
-                  onboarding_completed: false,
-                },
-                {
-                  onConflict: 'id',
-                }
-              );
+            // Check if we're already on an onboarding-related page
+            const currentPath = window.location.pathname;
+            const isOnboardingPath =
+              currentPath === '/onboarding' ||
+              currentPath === '/auth/callback' ||
+              currentPath.startsWith('/auth/');
 
-            if (createError) {
-              console.error('Failed to create profile:', createError);
-              // Don't throw error for duplicate key - profile already exists
-              if (createError.code !== '23505') {
-                throw new Error('Failed to create user profile');
-              }
-            }
-
-            // Retry fetching the profile
-            const { data: retryData, error: retryError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', user.id)
-              .single();
-
-            if (retryError) {
-              throw retryError;
-            }
-
-            if (retryData) {
-              setUserProfile(mapProfileData(retryData));
+            if (!isOnboardingPath) {
+              console.log('🚀 Redirecting to onboarding - no profile exists');
+              router.push('/onboarding');
               return;
             }
+
+            // Return a fallback profile that indicates onboarding is required
+            const fallbackProfile: UserProfile = {
+              id: user.id,
+              first_name: user.user_metadata?.first_name || null,
+              last_name: user.user_metadata?.last_name || null,
+              email: user.email || null,
+              role: 'candidate',
+              onboarding_completed: false,
+              onboarding_step: 0,
+              permissions: {},
+              role_display_name: 'Candidate',
+            };
+            setUserProfile(fallbackProfile);
+            return;
           }
 
           throw profileError;
@@ -158,7 +163,7 @@ export const useUserRole = () => {
     };
 
     fetchUserProfile();
-  }, [user, supabase]);
+  }, [user, supabase, router]);
 
   // Check if user has specific permission
   const hasPermission = async (permission: string): Promise<boolean> => {
@@ -226,8 +231,6 @@ export const useUserRole = () => {
     needsOnboarding: userProfile ? !userProfile.onboarding_completed : false,
   };
 };
-
-// Navigation is now handled by the unified navigation system in /lib/navigation-config.ts
 
 // Default permission checking fallback
 const getDefaultPermission = (role: UserRole, permission: string): boolean => {

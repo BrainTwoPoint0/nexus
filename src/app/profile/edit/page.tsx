@@ -28,7 +28,7 @@ interface Profile {
   first_name: string;
   last_name: string;
   email: string;
-  title: string;
+  professional_headline: string;
   company: string;
   bio: string;
   location: string;
@@ -332,9 +332,12 @@ export default function EditProfilePage() {
                 <Label htmlFor="title">Current Title</Label>
                 <Input
                   id="title"
-                  value={profile.title || ''}
+                  value={profile.professional_headline || ''}
                   onChange={(e) =>
-                    setProfile({ ...profile, title: e.target.value })
+                    setProfile({
+                      ...profile,
+                      professional_headline: e.target.value,
+                    })
                   }
                   placeholder="Chief Technology Officer"
                 />

@@ -18,10 +18,10 @@ import {
   MapPin,
   ExternalLink,
 } from 'lucide-react';
-import { ExtractedCVData } from '@/lib/cv-parser';
+import { ExtractedCVData } from '@/lib/cv-parser-robust';
 
 interface CVDataReviewProps {
-  cvData: ExtractedCVData;
+  cvData: ExtractedCVData & Record<string, any>; // Allow additional fields from merging
   confidence: number;
   filePath: string;
   onApprove: () => void;
@@ -64,13 +64,50 @@ export function CVDataReview({
     setExpandedSections(newExpanded);
   };
 
-  const formatWorkExperience = (experience: {
-    startDate?: string;
-    endDate?: string;
-  }) => {
-    const startDate = experience.startDate || 'Unknown';
-    const endDate = experience.endDate || 'Present';
-    return `${startDate} - ${endDate}`;
+  const formatWorkExperience = (experience: any) => {
+    console.log('🔍 Formatting work experience:', experience);
+
+    // Try multiple possible field names for dates
+    const startDate =
+      experience.startDate ||
+      experience.start_date ||
+      experience.from ||
+      experience.startYear;
+    const endDate =
+      experience.endDate ||
+      experience.end_date ||
+      experience.to ||
+      experience.endYear;
+
+    // If we have valid dates, format them
+    if (startDate && startDate !== 'Unknown') {
+      const end = endDate && endDate !== 'Unknown' ? endDate : 'Present';
+      return `${startDate} - ${end}`;
+    }
+
+    // If we still have 'Unknown', try to use the period field
+    if (experience.period) {
+      return experience.period;
+    }
+
+    // Try to extract dates from other fields
+    if (experience.duration) {
+      return experience.duration;
+    }
+
+    // Last resort - check if there are any date-like patterns in the object
+    const datePattern = /(\d{4}|\w{3}\s\d{4}|\w+\s\d{4})/;
+    const allValues = Object.values(experience).join(' ');
+    const dateMatches = allValues.match(new RegExp(datePattern, 'g'));
+
+    if (dateMatches && dateMatches.length >= 2) {
+      return `${dateMatches[0]} - ${dateMatches[1]}`;
+    } else if (dateMatches && dateMatches.length === 1) {
+      return `${dateMatches[0]} - Present`;
+    }
+
+    // Final fallback
+    return 'Employment Period Not Specified';
   };
 
   const formatEducation = (education: {
@@ -212,73 +249,123 @@ export function CVDataReview({
         </Card>
       )}
 
-      {/* Work Experience */}
-      {cvData.workExperience && cvData.workExperience.length > 0 && (
+      {/* AI-Generated Professional Bio */}
+      {cvData.professionalBio && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Briefcase className="h-5 w-5" />
-              Work Experience ({cvData.workExperience.length} positions)
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              AI-Generated Professional Bio
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {cvData.workExperience
-                .slice(0, expandedSections.has('work') ? undefined : 3)
-                .map((job, index) => (
-                  <div
-                    key={index}
-                    className="space-y-2 border-l-2 border-muted pl-4"
-                  >
-                    <div>
-                      <h4 className="font-semibold">{job.position}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {job.company}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatWorkExperience(job)}
-                      </p>
-                      {job.location && (
-                        <p className="text-xs text-muted-foreground">
-                          {job.location}
-                        </p>
-                      )}
-                    </div>
-                    {job.description && (
-                      <p className="text-sm">{job.description}</p>
-                    )}
-                    {job.achievements && job.achievements.length > 0 && (
-                      <div className="space-y-1">
-                        <span className="text-sm font-medium">
-                          Key Achievements:
-                        </span>
-                        <ul className="ml-4 space-y-1 text-sm text-muted-foreground">
-                          {job.achievements.map((achievement, achIndex) => (
-                            <li key={achIndex} className="list-disc">
-                              {achievement}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-              {cvData.workExperience.length > 3 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => toggleSection('work')}
-                >
-                  {expandedSections.has('work')
-                    ? 'Show Less'
-                    : `Show ${cvData.workExperience.length - 3} More`}
-                </Button>
-              )}
+            <div className="space-y-3">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <p className="text-sm leading-relaxed text-green-800">
+                  {cvData.professionalBio}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ✨ This professional bio was automatically generated from your
+                CV content and will be added to your profile.
+              </p>
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Work Experience */}
+      {(cvData.workExperience || cvData.workHistory || cvData.work_history) &&
+        ((cvData.workExperience?.length || 0) > 0 ||
+          (cvData.workHistory?.length || 0) > 0 ||
+          (cvData.work_history?.length || 0) > 0) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Work Experience (
+                {(
+                  (cvData.workExperience ||
+                    cvData.workHistory ||
+                    cvData.work_history) as any[]
+                )?.length || 0}{' '}
+                positions)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(() => {
+                  const workData =
+                    cvData.workExperience ||
+                    cvData.workHistory ||
+                    cvData.work_history ||
+                    [];
+                  console.log('🔍 Work experience data to display:', workData);
+                  return workData;
+                })()
+                  .slice(0, expandedSections.has('work') ? undefined : 3)
+                  .map((job: any, index: number) => (
+                    <div
+                      key={index}
+                      className="space-y-2 border-l-2 border-muted pl-4"
+                    >
+                      <div>
+                        <h4 className="font-semibold">
+                          {job.position || job.title || job.role}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {job.company || job.organization || job.employer}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatWorkExperience(job)}
+                        </p>
+                        {(job.location || job.city) && (
+                          <p className="text-xs text-muted-foreground">
+                            {job.location || job.city}
+                          </p>
+                        )}
+                      </div>
+                      {job.description && (
+                        <p className="text-sm">{job.description}</p>
+                      )}
+                      {job.achievements && job.achievements.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-sm font-medium">
+                            Key Achievements:
+                          </span>
+                          <ul className="ml-4 space-y-1 text-sm text-muted-foreground">
+                            {job.achievements.map(
+                              (achievement: any, achIndex: number) => (
+                                <li key={achIndex} className="list-disc">
+                                  {achievement}
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                {((
+                  (cvData.workExperience ||
+                    cvData.workHistory ||
+                    cvData.work_history) as any[]
+                )?.length || 0) > 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleSection('work')}
+                  >
+                    {expandedSections.has('work')
+                      ? 'Show Less'
+                      : `Show ${(((cvData.workExperience || cvData.workHistory || cvData.work_history) as any[])?.length || 0) - 3} More`}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Education */}
       {cvData.education && cvData.education.length > 0 && (

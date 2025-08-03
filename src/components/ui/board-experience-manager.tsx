@@ -32,18 +32,16 @@ import {
 
 interface BoardExperience {
   id: string;
-  organization_name: string;
-  position_title: string;
-  organization_type: string;
-  organization_sector: string | null;
-  organization_size: string | null;
+  organization: string;
+  role: string;
+  sector: string | null;
   start_date: string;
   end_date: string | null;
   is_current: boolean;
-  key_responsibilities: string | null;
-  notable_achievements: string | null;
-  board_size?: number;
-  committee_memberships?: string[];
+  organization_size: string | null;
+  key_contributions: string | null;
+  compensation_disclosed: boolean;
+  annual_fee: number | null;
 }
 
 interface BoardExperienceManagerProps {
@@ -52,18 +50,12 @@ interface BoardExperienceManagerProps {
   isEditing: boolean;
 }
 
-const ORGANIZATION_TYPES = [
-  'Public Company',
-  'Private Company',
-  'Non-Profit',
-  'Government',
-  'Educational Institution',
-  'Healthcare Organization',
-  'Financial Services',
-  'Technology Company',
-  'Manufacturing',
-  'Retail',
-  'Other',
+const ORGANIZATION_SIZES = [
+  { value: 'startup', label: 'Startup (1-10 employees)' },
+  { value: 'small', label: 'Small (11-50 employees)' },
+  { value: 'medium', label: 'Medium (51-200 employees)' },
+  { value: 'large', label: 'Large (201-1000 employees)' },
+  { value: 'public', label: 'Public Company (1000+ employees)' },
 ];
 
 const SECTORS = [
@@ -82,9 +74,10 @@ const SECTORS = [
   'Legal',
   'Transportation',
   'Hospitality',
+  'Other',
 ];
 
-const BOARD_POSITIONS = [
+const BOARD_ROLES = [
   'Chair/Chairman',
   'Vice Chair',
   'Non-Executive Director',
@@ -93,19 +86,8 @@ const BOARD_POSITIONS = [
   'Lead Director',
   'Committee Chair',
   'Committee Member',
-];
-
-const COMMITTEE_TYPES = [
-  'Audit',
-  'Compensation',
-  'Governance',
-  'Nominating',
-  'Risk',
-  'Technology',
-  'Finance',
-  'Strategy',
-  'ESG/Sustainability',
-  'Investment',
+  'Advisory Board Member',
+  'Observer',
 ];
 
 export function BoardExperienceManager({
@@ -117,34 +99,30 @@ export function BoardExperienceManager({
   const [editingExperience, setEditingExperience] =
     useState<BoardExperience | null>(null);
   const [formData, setFormData] = useState<Partial<BoardExperience>>({
-    organization_name: '',
-    position_title: '',
-    organization_type: '',
-    organization_sector: '',
+    organization: '',
+    role: '',
+    sector: '',
     organization_size: '',
     start_date: '',
     end_date: '',
     is_current: false,
-    key_responsibilities: '',
-    notable_achievements: '',
-    board_size: undefined,
-    committee_memberships: [],
+    key_contributions: '',
+    compensation_disclosed: false,
+    annual_fee: null,
   });
 
   const resetForm = () => {
     setFormData({
-      organization_name: '',
-      position_title: '',
-      organization_type: '',
-      organization_sector: '',
+      organization: '',
+      role: '',
+      sector: '',
       organization_size: '',
       start_date: '',
       end_date: '',
       is_current: false,
-      key_responsibilities: '',
-      notable_achievements: '',
-      board_size: undefined,
-      committee_memberships: [],
+      key_contributions: '',
+      compensation_disclosed: false,
+      annual_fee: null,
     });
   };
 
@@ -156,30 +134,25 @@ export function BoardExperienceManager({
 
   const handleEdit = (experience: BoardExperience) => {
     setEditingExperience(experience);
-    setFormData({
-      ...experience,
-      committee_memberships: experience.committee_memberships || [],
-    });
+    setFormData(experience);
     setIsAddModalOpen(true);
   };
 
   const handleSave = () => {
-    if (!formData.organization_name || !formData.position_title) return;
+    if (!formData.organization || !formData.role) return;
 
     const newExperience: BoardExperience = {
       id: editingExperience?.id || crypto.randomUUID(),
-      organization_name: formData.organization_name,
-      position_title: formData.position_title,
-      organization_type: formData.organization_type || '',
-      organization_sector: formData.organization_sector || null,
+      organization: formData.organization!,
+      role: formData.role!,
+      sector: formData.sector || null,
       organization_size: formData.organization_size || null,
       start_date: formData.start_date || '',
       end_date: formData.is_current ? null : formData.end_date || null,
       is_current: formData.is_current || false,
-      key_responsibilities: formData.key_responsibilities || null,
-      notable_achievements: formData.notable_achievements || null,
-      board_size: formData.board_size,
-      committee_memberships: formData.committee_memberships || [],
+      key_contributions: formData.key_contributions || null,
+      compensation_disclosed: formData.compensation_disclosed || false,
+      annual_fee: formData.annual_fee || null,
     };
 
     const updatedExperience = [...boardExperience];
@@ -216,21 +189,6 @@ export function BoardExperienceManager({
     });
   };
 
-  const toggleCommittee = (committee: string) => {
-    const current = formData.committee_memberships || [];
-    if (current.includes(committee)) {
-      setFormData({
-        ...formData,
-        committee_memberships: current.filter((c) => c !== committee),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        committee_memberships: [...current, committee],
-      });
-    }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -265,22 +223,27 @@ export function BoardExperienceManager({
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <h4 className="text-lg font-semibold">
-                            {experience.position_title}
+                            {experience.role}
                           </h4>
                           {experience.is_current && (
-                            <Badge variant="default">Current</Badge>
+                            <Badge
+                              variant="default"
+                              className="bg-green-100 text-green-800"
+                            >
+                              Current
+                            </Badge>
                           )}
                         </div>
                         <div className="mt-1 flex items-center space-x-2">
                           <Building className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
-                            {experience.organization_name}
+                            {experience.organization}
                           </span>
-                          {experience.organization_sector && (
+                          {experience.sector && (
                             <>
                               <span className="text-muted-foreground">•</span>
                               <span className="text-sm text-muted-foreground">
-                                {experience.organization_sector}
+                                {experience.sector}
                               </span>
                             </>
                           )}
@@ -316,56 +279,39 @@ export function BoardExperienceManager({
                       )}
                     </div>
 
-                    {experience.key_responsibilities && (
+                    {experience.key_contributions && (
                       <div>
                         <h5 className="mb-2 text-sm font-medium">
-                          Key Responsibilities
+                          Key Contributions
                         </h5>
                         <p className="text-sm text-muted-foreground">
-                          {experience.key_responsibilities}
+                          {experience.key_contributions}
                         </p>
                       </div>
                     )}
 
-                    {experience.notable_achievements && (
-                      <div>
-                        <h5 className="mb-2 text-sm font-medium">
-                          Notable Achievements
-                        </h5>
-                        <p className="text-sm text-muted-foreground">
-                          {experience.notable_achievements}
-                        </p>
-                      </div>
-                    )}
-
-                    {experience.committee_memberships &&
-                      experience.committee_memberships.length > 0 && (
-                        <div>
-                          <h5 className="mb-2 text-sm font-medium">
-                            Committee Memberships
-                          </h5>
-                          <div className="flex flex-wrap gap-2">
-                            {experience.committee_memberships.map(
-                              (committee) => (
-                                <Badge key={committee} variant="secondary">
-                                  {committee}
-                                </Badge>
-                              )
-                            )}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center space-x-4">
+                        {experience.organization_size && (
+                          <div className="flex items-center space-x-1">
+                            <Users className="h-3 w-3" />
+                            <span>
+                              {ORGANIZATION_SIZES.find(
+                                (s) => s.value === experience.organization_size
+                              )?.label || experience.organization_size}
+                            </span>
                           </div>
-                        </div>
-                      )}
-
-                    <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                      <div className="flex items-center space-x-1">
-                        <Users className="h-3 w-3" />
-                        <span>{experience.organization_type}</span>
+                        )}
                       </div>
-                      {experience.board_size && (
-                        <div className="flex items-center space-x-1">
-                          <span>Board Size: {experience.board_size}</span>
-                        </div>
-                      )}
+                      {experience.compensation_disclosed &&
+                        experience.annual_fee && (
+                          <div className="flex items-center space-x-1">
+                            <span>
+                              Annual Fee: £
+                              {experience.annual_fee.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
                     </div>
                   </div>
                 </div>
@@ -390,11 +336,11 @@ export function BoardExperienceManager({
                 <Label htmlFor="organization">Organization Name *</Label>
                 <Input
                   id="organization"
-                  value={formData.organization_name}
+                  value={formData.organization || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      organization_name: e.target.value,
+                      organization: e.target.value,
                     })
                   }
                   placeholder="e.g. TechCorp Ltd"
@@ -402,20 +348,20 @@ export function BoardExperienceManager({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="position">Position Title *</Label>
+                <Label htmlFor="role">Board Role *</Label>
                 <Select
-                  value={formData.position_title}
+                  value={formData.role || ''}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, position_title: value })
+                    setFormData({ ...formData, role: value })
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select position" />
+                    <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BOARD_POSITIONS.map((position) => (
-                      <SelectItem key={position} value={position}>
-                        {position}
+                    {BOARD_ROLES.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -423,34 +369,13 @@ export function BoardExperienceManager({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="orgType">Organization Type</Label>
-                <Select
-                  value={formData.organization_type}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, organization_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORGANIZATION_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="sector">Sector</Label>
                 <Select
-                  value={formData.organization_sector || ''}
+                  value={formData.sector || ''}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, organization_sector: value })
+                    setFormData({ ...formData, sector: value })
                   }
                 >
                   <SelectTrigger>
@@ -478,11 +403,11 @@ export function BoardExperienceManager({
                     <SelectValue placeholder="Select size" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="startup">Startup</SelectItem>
-                    <SelectItem value="small">Small</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="large">Large</SelectItem>
-                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                    {ORGANIZATION_SIZES.map((size) => (
+                      <SelectItem key={size.value} value={size.value}>
+                        {size.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -530,53 +455,60 @@ export function BoardExperienceManager({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="committees">Committee Memberships</Label>
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
-                {COMMITTEE_TYPES.map((committee) => (
-                  <div key={committee} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.committee_memberships?.includes(
-                        committee
-                      )}
-                      onChange={() => toggleCommittee(committee)}
-                    />
-                    <span className="text-sm">{committee}</span>
-                  </div>
-                ))}
+              <Label htmlFor="contributions">Key Contributions</Label>
+              <Textarea
+                id="contributions"
+                value={formData.key_contributions || ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    key_contributions: e.target.value,
+                  })
+                }
+                placeholder="Describe your main contributions and impact..."
+                rows={4}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="compensation_disclosed"
+                    type="checkbox"
+                    checked={formData.compensation_disclosed || false}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        compensation_disclosed: e.target.checked,
+                      })
+                    }
+                  />
+                  <Label htmlFor="compensation_disclosed" className="text-sm">
+                    Disclose compensation information
+                  </Label>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="responsibilities">Key Responsibilities</Label>
-              <Textarea
-                id="responsibilities"
-                value={formData.key_responsibilities || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    key_responsibilities: e.target.value,
-                  })
-                }
-                placeholder="Describe your main responsibilities and oversight areas..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="achievements">Notable Achievements</Label>
-              <Textarea
-                id="achievements"
-                value={formData.notable_achievements || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    notable_achievements: e.target.value,
-                  })
-                }
-                placeholder="Highlight key accomplishments and outcomes..."
-                rows={3}
-              />
+              {formData.compensation_disclosed && (
+                <div className="space-y-2">
+                  <Label htmlFor="annual_fee">Annual Fee (£)</Label>
+                  <Input
+                    id="annual_fee"
+                    type="number"
+                    value={formData.annual_fee || ''}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        annual_fee: e.target.value
+                          ? parseInt(e.target.value)
+                          : null,
+                      })
+                    }
+                    placeholder="e.g. 50000"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-3">
@@ -586,7 +518,10 @@ export function BoardExperienceManager({
               >
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
+              <Button
+                onClick={handleSave}
+                disabled={!formData.organization || !formData.role}
+              >
                 {editingExperience ? 'Update Position' : 'Add Position'}
               </Button>
             </div>

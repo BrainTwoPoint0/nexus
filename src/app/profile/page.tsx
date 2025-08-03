@@ -29,6 +29,8 @@ import { WorkHistoryManager } from '@/components/ui/work-history-manager';
 import { DocumentManager } from '@/components/ui/document-manager';
 import { CompensationManager } from '@/components/ui/compensation-manager';
 import { AvailabilityManager } from '@/components/ui/availability-manager';
+import { EducationManager } from '@/components/ui/education-manager';
+import { CertificationsManager } from '@/components/ui/certifications-manager';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import {
@@ -36,7 +38,6 @@ import {
   MapPin,
   Phone,
   Mail,
-  Building,
   Briefcase,
   Settings,
   Upload,
@@ -44,6 +45,10 @@ import {
   X,
   AlertCircle,
   CheckCircle,
+  Award,
+  DollarSign,
+  Calendar,
+  FileText,
 } from 'lucide-react';
 
 const containerVariants = {
@@ -74,7 +79,6 @@ type TravelWillingness =
   | 'global';
 type CompensationCurrency = 'GBP' | 'USD' | 'EUR';
 type VisibilityStatus = 'public' | 'private' | 'connections_only';
-type UserRole = 'candidate' | 'organization' | 'admin';
 
 interface Profile {
   id: string;
@@ -82,21 +86,14 @@ interface Profile {
   last_name: string | null;
   email: string | null;
   phone: string | null;
-  title: string | null;
+  professional_headline: string | null;
   bio: string | null;
   location: string | null;
-  company: string | null;
   linkedin_url: string | null;
   website: string | null;
-  website_url: string | null;
-  portfolio_url: string | null;
-  twitter_handle: string | null;
   avatar_url: string | null;
   skills: string[];
-  sector_preferences: string[];
   languages: string[];
-  nationality: string | null;
-  residence_country: string | null;
   availability_status: AvailabilityStatus;
   available_from: string | null;
   availability_start_date: string | null;
@@ -110,45 +107,34 @@ interface Profile {
   compensation_currency: CompensationCurrency;
   compensation_type: string;
   equity_interest: boolean;
-  board_fee_expectation: number | null;
   benefits_important: string[];
   profile_completeness: number;
-  profile_verified: boolean;
   is_verified: boolean;
-  premium_member: boolean;
-  member_since: string | null;
-  last_login: string | null;
-  login_count: number;
   onboarding_completed: boolean;
-  onboarding_step: number;
-  permissions: Record<string, boolean>;
-  role: UserRole;
   visibility_status: VisibilityStatus;
-  verification_date: string | null;
-  last_profile_update: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface BoardExperience {
   id: string;
-  organization_name: string;
-  position_title: string;
-  organization_type: string;
-  organization_sector: string | null;
-  organization_size: string | null;
+  organization: string;
+  role: string;
+  sector: string | null;
   start_date: string;
   end_date: string | null;
   is_current: boolean;
-  key_responsibilities: string | null;
-  notable_achievements: string | null;
+  organization_size: string | null;
+  key_contributions: string | null;
+  compensation_disclosed: boolean;
+  annual_fee: number | null;
 }
 
 interface Certification {
   id: string;
   name: string;
   issuer: string;
-  issue_date: string;
+  issue_date: string | null;
   expiry_date: string | null;
   credential_id: string | null;
   verification_url: string | null;
@@ -174,7 +160,7 @@ interface Education {
   field_of_study: string | null;
   graduation_year: number | null;
   gpa: string | null;
-  honors: string[] | null;
+  honors: string[];
   description: string | null;
 }
 
@@ -210,25 +196,6 @@ interface Document {
   created_at: string;
   updated_at: string;
 }
-
-// Available sectors for selection
-const AVAILABLE_SECTORS = [
-  'Technology',
-  'Healthcare',
-  'Finance',
-  'Education',
-  'Real Estate',
-  'Energy',
-  'Manufacturing',
-  'Retail',
-  'Media',
-  'Non-Profit',
-  'Government',
-  'Consulting',
-  'Legal',
-  'Transportation',
-  'Hospitality',
-];
 
 // Available skills for selection
 const AVAILABLE_SKILLS = [
@@ -269,8 +236,8 @@ export default function ProfilePage() {
   const [education, setEducation] = useState<Education[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [newSkill, setNewSkill] = useState('');
-  const [newSector, setNewSector] = useState('');
   const [activeTab, setActiveTab] = useState('personal');
+  const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
   // Calculate profile completeness
   const { completeness, suggestions } = useProfileCompleteness(
@@ -358,21 +325,14 @@ export default function ProfilePage() {
             last_name: user.user_metadata?.last_name || null,
             email: user.email || null,
             phone: null,
-            title: null,
+            professional_headline: null,
             bio: null,
             location: null,
-            company: null,
             linkedin_url: null,
             website: null,
-            website_url: null,
-            portfolio_url: null,
-            twitter_handle: null,
             avatar_url: null,
             skills: [],
-            sector_preferences: [],
             languages: ['English'],
-            nationality: null,
-            residence_country: null,
             availability_status: 'immediately_available',
             available_from: null,
             availability_start_date: null,
@@ -386,22 +346,11 @@ export default function ProfilePage() {
             compensation_currency: 'USD',
             compensation_type: 'annual',
             equity_interest: false,
-            board_fee_expectation: null,
             benefits_important: [],
             profile_completeness: 0,
-            profile_verified: false,
             is_verified: false,
-            premium_member: false,
-            member_since: null,
-            last_login: null,
-            login_count: 0,
             onboarding_completed: false,
-            onboarding_step: 0,
-            permissions: {},
-            role: 'candidate',
             visibility_status: 'public',
-            verification_date: null,
-            last_profile_update: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -463,20 +412,19 @@ export default function ProfilePage() {
         first_name: profile.first_name,
         last_name: profile.last_name,
         phone: profile.phone,
-        title: profile.title,
+        professional_headline: profile.professional_headline,
         bio: profile.bio,
         location: profile.location,
-        company: profile.company,
         linkedin_url: profile.linkedin_url,
+        website: profile.website,
         skills: profile.skills,
-        sector_preferences: profile.sector_preferences,
         languages: profile.languages,
         availability_status: profile.availability_status,
         compensation_min: profile.compensation_min,
         compensation_max: profile.compensation_max,
         compensation_currency: profile.compensation_currency,
         travel_willingness: profile.travel_willingness,
-        last_profile_update: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
 
       if (error) throw error;
@@ -624,39 +572,6 @@ export default function ProfilePage() {
         ? {
             ...prev,
             skills: prev.skills.filter((skill) => skill !== skillToRemove),
-          }
-        : null
-    );
-  };
-
-  const addSector = () => {
-    if (
-      !profile ||
-      !newSector.trim() ||
-      profile.sector_preferences.includes(newSector.trim())
-    )
-      return;
-
-    setProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            sector_preferences: [...prev.sector_preferences, newSector.trim()],
-          }
-        : null
-    );
-    setNewSector('');
-  };
-
-  const removeSector = (sectorToRemove: string) => {
-    if (!profile) return;
-    setProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            sector_preferences: prev.sector_preferences.filter(
-              (sector) => sector !== sectorToRemove
-            ),
           }
         : null
     );
@@ -848,6 +763,43 @@ export default function ProfilePage() {
     }
   };
 
+  const handleGenerateBio = async () => {
+    if (!user) return;
+
+    setIsGeneratingBio(true);
+    try {
+      const response = await fetch('/api/profile/generate-bio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate bio');
+      }
+
+      const result = await response.json();
+
+      if (result.bio) {
+        setProfile((prev) => (prev ? { ...prev, bio: result.bio } : null));
+        toast({
+          title: 'Success',
+          description: 'Professional bio generated successfully!',
+        });
+      }
+    } catch (error) {
+      console.error('Error generating bio:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate bio',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingBio(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -913,7 +865,8 @@ export default function ProfilePage() {
                     'User'}
                 </h1>
                 <p className="text-lg text-muted-foreground">
-                  {profile.title || 'Add your professional title'}
+                  {profile.professional_headline ||
+                    'Add your professional headline'}
                 </p>
                 <div className="mt-2 flex flex-col space-y-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
                   {profile.location && (
@@ -922,18 +875,12 @@ export default function ProfilePage() {
                       <span>{profile.location}</span>
                     </div>
                   )}
-                  {profile.company && (
-                    <div className="flex items-center space-x-1">
-                      <Building className="h-4 w-4" />
-                      <span>{profile.company}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
             <div className="flex flex-col items-stretch space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0">
               <div className="flex items-center space-x-2 text-sm">
-                {profile.profile_verified ? (
+                {profile.is_verified ? (
                   <Badge
                     variant="default"
                     className="bg-green-100 text-green-800"
@@ -1092,45 +1039,48 @@ export default function ProfilePage() {
               className="space-y-6"
             >
               <div className="overflow-x-auto">
-                <TabsList className="inline-flex h-auto w-max min-w-full justify-start p-1 md:grid md:w-full md:grid-cols-7">
+                <TabsList className="inline-flex h-auto w-max min-w-full justify-start p-1 md:grid md:w-full md:grid-cols-6">
                   <TabsTrigger
                     value="personal"
-                    className="flex-shrink-0 text-sm"
+                    className="flex flex-shrink-0 items-center gap-2 text-sm"
                   >
-                    Personal
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">Personal</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="experience"
-                    className="flex-shrink-0 text-sm"
+                    className="flex flex-shrink-0 items-center gap-2 text-sm"
                   >
-                    Experience
+                    <Briefcase className="h-4 w-4" />
+                    <span className="hidden sm:inline">Experience</span>
                   </TabsTrigger>
-                  <TabsTrigger value="skills" className="flex-shrink-0 text-sm">
-                    Skills
+                  <TabsTrigger
+                    value="skills"
+                    className="flex flex-shrink-0 items-center gap-2 text-sm"
+                  >
+                    <Award className="h-4 w-4" />
+                    <span className="hidden sm:inline">Skills</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="compensation"
-                    className="flex-shrink-0 text-sm"
+                    className="flex flex-shrink-0 items-center gap-2 text-sm"
                   >
-                    Compensation
+                    <DollarSign className="h-4 w-4" />
+                    <span className="hidden sm:inline">Compensation</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="availability"
-                    className="flex-shrink-0 text-sm"
+                    className="flex flex-shrink-0 items-center gap-2 text-sm"
                   >
-                    Availability
+                    <Calendar className="h-4 w-4" />
+                    <span className="hidden sm:inline">Availability</span>
                   </TabsTrigger>
                   <TabsTrigger
                     value="documents"
-                    className="flex-shrink-0 text-sm"
+                    className="flex flex-shrink-0 items-center gap-2 text-sm"
                   >
-                    Documents
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="preferences"
-                    className="flex-shrink-0 text-sm"
-                  >
-                    Preferences
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Documents</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1172,20 +1122,29 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="title">Professional Title</Label>
+                      <Label htmlFor="professional_headline">
+                        Professional Headline
+                      </Label>
                       <div className="relative">
                         <Briefcase className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
-                          id="title"
-                          value={profile.title || ''}
+                          id="professional_headline"
+                          value={profile.professional_headline || ''}
                           onChange={(e) =>
-                            handleInputChange('title', e.target.value)
+                            handleInputChange(
+                              'professional_headline',
+                              e.target.value
+                            )
                           }
                           className="pl-10"
                           disabled={!isEditing}
-                          placeholder="e.g., Former CEO, Board Chair"
+                          placeholder="e.g., Former CEO & Non-Executive Director | Tech & Financial Services"
                         />
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        This headline appears prominently on your profile and in
+                        search results
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -1267,71 +1226,28 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="portfolio_url">Portfolio URL</Label>
-                        <Input
-                          id="portfolio_url"
-                          name="portfolio_url"
-                          value={profile.portfolio_url || ''}
-                          onChange={(e) =>
-                            handleInputChange('portfolio_url', e.target.value)
-                          }
-                          disabled={!isEditing}
-                          placeholder="https://portfolio.example.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="twitter_handle">Twitter Handle</Label>
-                        <Input
-                          id="twitter_handle"
-                          name="twitter_handle"
-                          value={profile.twitter_handle || ''}
-                          onChange={(e) =>
-                            handleInputChange('twitter_handle', e.target.value)
-                          }
-                          disabled={!isEditing}
-                          placeholder="@yourhandle"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="nationality">Nationality</Label>
-                        <Input
-                          id="nationality"
-                          name="nationality"
-                          value={profile.nationality || ''}
-                          onChange={(e) =>
-                            handleInputChange('nationality', e.target.value)
-                          }
-                          disabled={!isEditing}
-                          placeholder="British"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="residence_country">
-                          Country of Residence
-                        </Label>
-                        <Input
-                          id="residence_country"
-                          name="residence_country"
-                          value={profile.residence_country || ''}
-                          onChange={(e) =>
-                            handleInputChange(
-                              'residence_country',
-                              e.target.value
-                            )
-                          }
-                          disabled={!isEditing}
-                          placeholder="United Kingdom"
-                        />
-                      </div>
-                    </div>
-
                     <div className="space-y-2">
-                      <Label htmlFor="bio">Professional Bio</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="bio">Professional Bio</Label>
+                        {isEditing && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleGenerateBio}
+                            disabled={isGeneratingBio}
+                          >
+                            {isGeneratingBio ? (
+                              <>
+                                <LoadingSpinner size="sm" className="mr-2" />
+                                Generating...
+                              </>
+                            ) : (
+                              '✨ Generate Bio'
+                            )}
+                          </Button>
+                        )}
+                      </div>
                       <Textarea
                         id="bio"
                         name="bio"
@@ -1343,6 +1259,89 @@ export default function ProfilePage() {
                         disabled={!isEditing}
                         placeholder="Tell us about your professional background, board interests, and what value you bring to governance roles..."
                       />
+                      {isEditing && !profile.bio && (
+                        <p className="text-xs text-muted-foreground">
+                          💡 Tip: Click &quot;Generate Bio&quot; to create a
+                          professional bio from your work experience and skills
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-base font-medium">
+                          Profile Visibility
+                        </Label>
+                        <div className="mt-2">
+                          {isEditing ? (
+                            <Select
+                              value={profile.visibility_status || 'public'}
+                              onValueChange={(value) =>
+                                handleInputChange('visibility_status', value)
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="public">Public</SelectItem>
+                                <SelectItem value="connections_only">
+                                  Connections Only
+                                </SelectItem>
+                                <SelectItem value="private">Private</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="outline">
+                              {profile.visibility_status
+                                ?.replace('_', ' ')
+                                .replace(/\b\w/g, (l) => l.toUpperCase()) ||
+                                'Public'}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Control who can see your profile and contact you
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label className="text-base font-medium">
+                          Languages
+                        </Label>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {profile.languages && profile.languages.length > 0 ? (
+                            profile.languages.map((language, index) => (
+                              <Badge key={index} variant="outline">
+                                {language}
+                              </Badge>
+                            ))
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              No languages specified
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {(profile.compensation_min ||
+                        profile.compensation_max) && (
+                        <div>
+                          <Label className="text-base font-medium">
+                            Compensation Expectations
+                          </Label>
+                          <div className="mt-2">
+                            <Badge variant="outline">
+                              {profile.compensation_min &&
+                              profile.compensation_max
+                                ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
+                                : profile.compensation_min
+                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
+                                  : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
+                            </Badge>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1355,39 +1354,6 @@ export default function ProfilePage() {
                     <CardTitle>Professional Experience</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="company">Current/Recent Company</Label>
-                        <div className="relative">
-                          <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="company"
-                            value={profile.company || ''}
-                            onChange={(e) =>
-                              handleInputChange('company', e.target.value)
-                            }
-                            className="pl-10"
-                            disabled={!isEditing}
-                            placeholder="Your current or most recent company"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="experience">Years of Experience</Label>
-                        <Input
-                          value={
-                            (profile as Profile & { experience?: string })
-                              .experience || ''
-                          }
-                          onChange={(e) =>
-                            handleInputChange('experience', e.target.value)
-                          }
-                          disabled={!isEditing}
-                          placeholder="15+ years"
-                        />
-                      </div>
-                    </div>
-
                     {/* Board Experience Section */}
                     <BoardExperienceManager
                       data-section="board-experience"
@@ -1413,15 +1379,30 @@ export default function ProfilePage() {
                 {/* Education Section */}
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="rounded-lg border p-4">
-                      <h3 className="mb-2 font-semibold">Education</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Education management is being updated for the new
-                        database schema.
-                        {education.length > 0 &&
-                          ` You have ${education.length} education record(s).`}
-                      </p>
-                    </div>
+                    <EducationManager
+                      data-section="education"
+                      education={education}
+                      onUpdate={(updatedEducation) => {
+                        setEducation(updatedEducation);
+                        if (!isEditing && user) {
+                          supabase
+                            .from('education')
+                            .delete()
+                            .eq('profile_id', user.id);
+                          supabase.from('education').insert(
+                            updatedEducation.map((edu) => ({
+                              ...edu,
+                              profile_id: user.id,
+                            }))
+                          );
+                          toast({
+                            title: 'Success',
+                            description: 'Education updated successfully!',
+                          });
+                        }
+                      }}
+                      isEditing={isEditing}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1505,15 +1486,30 @@ export default function ProfilePage() {
 
                 <Card>
                   <CardContent className="pt-6">
-                    <div className="rounded-lg border p-4">
-                      <h3 className="mb-2 font-semibold">Certifications</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Certifications management is being updated for the new
-                        database schema.
-                        {certifications.length > 0 &&
-                          ` You have ${certifications.length} certification(s).`}
-                      </p>
-                    </div>
+                    <CertificationsManager
+                      data-section="certifications"
+                      certifications={certifications}
+                      onUpdate={(updatedCertifications) => {
+                        setCertifications(updatedCertifications);
+                        if (!isEditing && user) {
+                          supabase
+                            .from('certifications')
+                            .delete()
+                            .eq('profile_id', user.id);
+                          supabase.from('certifications').insert(
+                            updatedCertifications.map((cert) => ({
+                              ...cert,
+                              profile_id: user.id,
+                            }))
+                          );
+                          toast({
+                            title: 'Success',
+                            description: 'Certifications updated successfully!',
+                          });
+                        }
+                      }}
+                      isEditing={isEditing}
+                    />
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1571,258 +1567,6 @@ export default function ProfilePage() {
                   onUpdate={handleDocumentsUpdate}
                   isEditing={isEditing}
                 />
-              </TabsContent>
-
-              {/* Preferences */}
-              <TabsContent value="preferences" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Opportunity Preferences</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-base font-medium">
-                          Preferred Sectors
-                        </Label>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {profile.sector_preferences &&
-                          profile.sector_preferences.length > 0 ? (
-                            profile.sector_preferences.map((sector, index) => (
-                              <Badge
-                                key={index}
-                                variant="outline"
-                                className="relative"
-                              >
-                                {sector}
-                                {isEditing && (
-                                  <button
-                                    onClick={() => removeSector(sector)}
-                                    className="ml-2 text-muted-foreground hover:text-foreground"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                )}
-                              </Badge>
-                            ))
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              {isEditing
-                                ? 'Add preferred sectors'
-                                : 'No sector preferences set'}
-                            </p>
-                          )}
-                        </div>
-                        {isEditing && (
-                          <div className="mt-3 space-y-2">
-                            <div className="flex space-x-2">
-                              <Input
-                                placeholder="Add a sector..."
-                                value={newSector}
-                                onChange={(e) => setNewSector(e.target.value)}
-                                onKeyPress={(e) =>
-                                  e.key === 'Enter' && addSector()
-                                }
-                              />
-                              <Button onClick={addSector} variant="outline">
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Suggested:{' '}
-                              {AVAILABLE_SECTORS.filter(
-                                (s) => !profile.sector_preferences?.includes(s)
-                              )
-                                .slice(0, 5)
-                                .map((sector) => (
-                                  <button
-                                    key={sector}
-                                    onClick={() => {
-                                      setNewSector(sector);
-                                      addSector();
-                                    }}
-                                    className="mr-2 underline hover:text-foreground"
-                                  >
-                                    {sector}
-                                  </button>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label className="text-base font-medium">
-                          Availability Status
-                        </Label>
-                        <div className="mt-2">
-                          {isEditing ? (
-                            <Select
-                              value={
-                                profile.availability_status ||
-                                'immediately_available'
-                              }
-                              onValueChange={(value) =>
-                                handleInputChange('availability_status', value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="immediately_available">
-                                  Immediately Available
-                                </SelectItem>
-                                <SelectItem value="available_in_1_month">
-                                  Available in 1 Month
-                                </SelectItem>
-                                <SelectItem value="available_in_3_months">
-                                  Available in 3 Months
-                                </SelectItem>
-                                <SelectItem value="not_available">
-                                  Not Available
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge variant="outline">
-                              {profile.availability_status
-                                ?.replace('_', ' ')
-                                .replace(/\b\w/g, (l) => l.toUpperCase()) ||
-                                'Not Set'}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-base font-medium">
-                          Travel Willingness
-                        </Label>
-                        <div className="mt-2">
-                          {isEditing ? (
-                            <Select
-                              value={
-                                profile.travel_willingness || 'domestic_only'
-                              }
-                              onValueChange={(value) =>
-                                handleInputChange('travel_willingness', value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="domestic_only">
-                                  Domestic Only
-                                </SelectItem>
-                                <SelectItem value="european">
-                                  European
-                                </SelectItem>
-                                <SelectItem value="international">
-                                  International
-                                </SelectItem>
-                                <SelectItem value="global">Global</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge variant="outline">
-                              {profile.travel_willingness
-                                ?.replace('_', ' ')
-                                .replace(/\b\w/g, (l) => l.toUpperCase()) ||
-                                'Not Set'}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Privacy & Notifications</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label className="text-base font-medium">
-                          Profile Visibility
-                        </Label>
-                        <div className="mt-2">
-                          {isEditing ? (
-                            <Select
-                              value={profile.visibility_status || 'public'}
-                              onValueChange={(value) =>
-                                handleInputChange('visibility_status', value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="public">Public</SelectItem>
-                                <SelectItem value="connections_only">
-                                  Connections Only
-                                </SelectItem>
-                                <SelectItem value="private">Private</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge variant="outline">
-                              {profile.visibility_status
-                                ?.replace('_', ' ')
-                                .replace(/\b\w/g, (l) => l.toUpperCase()) ||
-                                'Public'}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Control who can see your profile and contact you
-                        </p>
-                      </div>
-
-                      <div>
-                        <Label className="text-base font-medium">
-                          Languages
-                        </Label>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {profile.languages && profile.languages.length > 0 ? (
-                            profile.languages.map((language, index) => (
-                              <Badge key={index} variant="outline">
-                                {language}
-                              </Badge>
-                            ))
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              No languages specified
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {(profile.compensation_min ||
-                        profile.compensation_max) && (
-                        <div>
-                          <Label className="text-base font-medium">
-                            Compensation Expectations
-                          </Label>
-                          <div className="mt-2">
-                            <Badge variant="outline">
-                              {profile.compensation_min &&
-                              profile.compensation_max
-                                ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
-                                : profile.compensation_min
-                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
-                                  : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
-                            </Badge>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           </motion.div>

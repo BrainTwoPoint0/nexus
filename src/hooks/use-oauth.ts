@@ -28,6 +28,7 @@ export function useOAuth(): UseOAuthReturn {
         setError(null);
 
         const redirectTo = getOAuthRedirectUrl();
+        console.log('🔗 OAuth redirect URL being used:', redirectTo);
 
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider: provider as Provider,

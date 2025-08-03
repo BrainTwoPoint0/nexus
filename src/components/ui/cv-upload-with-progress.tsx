@@ -25,6 +25,8 @@ interface CVUploadWithProgressProps {
     confidence: number;
     filename: string;
     originalFile?: File;
+    completenessAnalysis?: any;
+    voiceAIContext?: any;
   }) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
@@ -58,17 +60,18 @@ export function CVUploadWithProgress({
     steps: [
       {
         id: 'extract',
-        name: 'Extract Text',
+        name: 'AI Processing',
         status: 'pending',
-        icon: FileText,
-        description: 'Extracting text content from your CV',
+        icon: Brain,
+        description: 'Processing document with AI vision technology',
       },
       {
         id: 'parse',
-        name: 'AI Analysis',
+        name: 'Data Analysis',
         status: 'pending',
-        icon: Brain,
-        description: 'Analyzing CV with AI to extract structured information',
+        icon: FileText,
+        description:
+          'Analyzing completeness and planning Voice AI conversation',
       },
     ],
   });
@@ -124,16 +127,16 @@ export function CVUploadWithProgress({
           throw new Error('Not authenticated');
         }
 
-        // Step 1: Extract text and analyze with AI (in-memory processing)
+        // Step 1: AI Processing with vision technology
         updateStep('extract', 'active');
-        setUploadState((prev) => ({ ...prev, progress: 20 }));
+        setUploadState((prev) => ({ ...prev, progress: 30 }));
 
         const formData = new FormData();
         formData.append('file', file);
 
-        // Step 2: AI Analysis
+        // Step 2: Completeness analysis and Voice AI planning
         updateStep('parse', 'active');
-        setUploadState((prev) => ({ ...prev, progress: 60 }));
+        setUploadState((prev) => ({ ...prev, progress: 70 }));
 
         const response = await fetch('/api/onboarding/parse-cv', {
           method: 'POST',
@@ -141,8 +144,8 @@ export function CVUploadWithProgress({
         });
 
         if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`Processing failed: ${errorData}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Processing failed');
         }
 
         const result = await response.json();
@@ -158,17 +161,24 @@ export function CVUploadWithProgress({
           progress: 100,
         }));
 
+        const completenessPercentage =
+          result.completenessAnalysis?.overallCompleteness || 0;
+        const estimatedTime =
+          result.completenessAnalysis?.estimatedConversationTime || 5;
+
         toast({
           title: 'CV Processing Complete',
-          description: `Your CV has been analyzed with ${(result.confidence * 100).toFixed(1)}% confidence.`,
+          description: `Profile ${completenessPercentage}% complete. Voice interview: ~${estimatedTime} minutes.`,
         });
 
-        // Call completion callback with extracted data
+        // Call completion callback with extracted data and analysis
         onComplete({
           data: result.data,
           confidence: result.confidence,
           filename: result.filename,
           originalFile: file,
+          completenessAnalysis: result.completenessAnalysis,
+          voiceAIContext: result.voiceAIContext,
         });
       } catch (error) {
         const errorMessage =

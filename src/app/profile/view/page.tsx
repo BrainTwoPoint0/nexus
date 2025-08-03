@@ -28,7 +28,7 @@ interface Profile {
   first_name: string;
   last_name: string;
   email: string;
-  title: string;
+  professional_headline: string;
   company: string;
   bio: string;
   location: string;
@@ -222,7 +222,9 @@ export default function ProfileViewPage() {
                       <CheckCircle className="ml-2 inline h-5 w-5 text-blue-500" />
                     )}
                   </h2>
-                  <p className="mb-2 text-gray-600">{profile.title}</p>
+                  <p className="mb-2 text-gray-600">
+                    {profile.professional_headline}
+                  </p>
                   <p className="text-sm text-gray-500">{profile.company}</p>
                 </div>
 

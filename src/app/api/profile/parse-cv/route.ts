@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 import { getCVSignedUrl, updateCVParsingStatus } from '@/lib/cv-storage';
-import {
-  extractTextFromFile,
-  parseCVWithOpenAI,
-  mapCVDataToProfile,
-} from '@/lib/cv-parser';
+import { processCVInMemory, mapCVDataToProfile } from '@/lib/cv-parser-robust';
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,7 +53,6 @@ export async function POST(request: NextRequest) {
         filePath,
         'failed',
         undefined,
-        undefined,
         'Failed to get file URL'
       );
       return NextResponse.json(
@@ -75,7 +70,6 @@ export async function POST(request: NextRequest) {
         filePath,
         'failed',
         undefined,
-        undefined,
         'Failed to download file'
       );
       return NextResponse.json(
@@ -90,33 +84,14 @@ export async function POST(request: NextRequest) {
       type: cvUpload.mime_type,
     });
 
-    // Extract text from file
-    const { text, error: extractError } = await extractTextFromFile(file);
-    if (extractError || !text) {
-      await updateCVParsingStatus(
-        supabase,
-        user.id,
-        filePath,
-        'failed',
-        undefined,
-        undefined,
-        extractError
-      );
-      return NextResponse.json(
-        { error: extractError || 'Failed to extract text from file' },
-        { status: 400 }
-      );
-    }
-
-    // Parse with OpenAI
-    const parseResult = await parseCVWithOpenAI(text);
+    // Process CV with OpenAI (extraction + parsing + analysis)
+    const parseResult = await processCVInMemory(file);
     if (!parseResult.success) {
       await updateCVParsingStatus(
         supabase,
         user.id,
         filePath,
         'failed',
-        undefined,
         undefined,
         parseResult.error
       );
@@ -132,14 +107,13 @@ export async function POST(request: NextRequest) {
       user.id,
       filePath,
       'completed',
-      parseResult.data as Record<string, unknown>,
-      parseResult.confidence
+      parseResult.data as Record<string, unknown>
     );
 
     return NextResponse.json({
       success: true,
       data: parseResult.data,
-      confidence: parseResult.confidence,
+      completenessAnalysis: parseResult.completenessAnalysis,
       profileData,
     });
   } catch (error) {

@@ -226,7 +226,6 @@ export async function updateCVParsingStatus(
   filePath: string,
   status: 'pending' | 'processing' | 'completed' | 'failed',
   parsedData?: Record<string, unknown>,
-  confidence?: number,
   errorMessage?: string
 ) {
   try {
@@ -235,11 +234,10 @@ export async function updateCVParsingStatus(
     };
 
     // Use content_extracted to store both parsed data and status info
-    if (parsedData && confidence !== undefined) {
+    if (parsedData) {
       updateData.content_extracted = JSON.stringify({
         status: 'completed',
         parsed_data: parsedData,
-        parsing_confidence: confidence,
       });
     } else if (errorMessage) {
       updateData.content_extracted = JSON.stringify({
