@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { useSupabase } from '@/components/providers/supabase-provider';
-import { normalizeOAuthProfile, getOAuthRedirectUrl } from '../lib/oauth-utils';
+import { normalizeOAuthProfile, getOAuthRedirectUrl } from '@/lib/oauth-utils';
 import { Provider } from '@supabase/supabase-js';
 
 interface UseOAuthReturn {

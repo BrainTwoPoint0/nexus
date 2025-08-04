@@ -2,7 +2,7 @@ import { type EmailOtpType } from '@supabase/supabase-js';
 import { type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
-import { normalizeOAuthProfile, mapOAuthToProfile } from '../../../lib/oauth-utils';
+import { normalizeOAuthProfile, mapOAuthToProfile } from '@/lib/oauth-utils';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
