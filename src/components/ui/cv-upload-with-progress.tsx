@@ -144,11 +144,33 @@ export function CVUploadWithProgress({
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
+          console.error('❌ API Error - Status:', response.status);
+          let errorData;
+          try {
+            errorData = await response.json();
+            console.error('❌ API Error Data:', errorData);
+          } catch (jsonError) {
+            console.error(
+              '❌ Failed to parse error response as JSON:',
+              jsonError
+            );
+            throw new Error(
+              `Server error (${response.status}): ${response.statusText}`
+            );
+          }
           throw new Error(errorData.error || 'Processing failed');
         }
 
-        const result = await response.json();
+        let result;
+        try {
+          result = await response.json();
+        } catch (jsonError) {
+          console.error(
+            '❌ Failed to parse success response as JSON:',
+            jsonError
+          );
+          throw new Error('Invalid response from server');
+        }
 
         // Mark steps as completed
         updateStep('extract', 'completed');

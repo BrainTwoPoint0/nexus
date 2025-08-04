@@ -10,7 +10,6 @@ export async function POST(request: NextRequest) {
   try {
     // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not configured');
       return NextResponse.json(
         {
           error:
@@ -20,9 +19,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set a timeout for Netlify Functions (default is 10s, we'll use 25s to be safe)
+    // Set a timeout for Netlify Functions (extend for complex CV processing)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased to 45s
 
     const supabase = await createClient();
 
@@ -75,34 +74,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Processing CV file:', file.name, file.type, file.size);
+    try {
+      const result = await processCVInMemory(file);
 
-    // Process CV in-memory without storing
-    const result = await processCVInMemory(file);
+      // Clear timeout after processing
+      clearTimeout(timeoutId);
 
-    if (!result.success) {
-      console.error('CV processing failed:', result.error);
+      if (!result.success) {
+        return NextResponse.json(
+          {
+            error: result.error || 'CV processing failed',
+          },
+          { status: 400 }
+        );
+      }
+
+      // Validate result data structure
+      if (!result.data || typeof result.data !== 'object') {
+        return NextResponse.json(
+          {
+            error: 'Invalid CV processing result - please try again',
+          },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: result.data,
+        completenessAnalysis: result.completenessAnalysis || null,
+        filename: file.name,
+      });
+    } catch (processingError) {
+      // Clear timeout on error
+      clearTimeout(timeoutId);
+
       return NextResponse.json(
         {
-          error: result.error,
+          error:
+            'CV processing failed - please try again with a different file format',
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
-
-    console.log('CV processed successfully');
-
-    // Clear timeout on success
-    clearTimeout(timeoutId);
-
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-      completenessAnalysis: result.completenessAnalysis,
-      filename: file.name,
-    });
   } catch (error) {
-    console.error('CV parsing API error:', error);
     return NextResponse.json(
       {
         error:

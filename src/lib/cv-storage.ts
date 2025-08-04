@@ -26,6 +26,10 @@ const DEFAULT_OPTIONS: Required<CVUploadOptions> = {
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/plain',
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
   ],
 };
 
@@ -53,7 +57,7 @@ export async function uploadCV(
     if (!opts.allowedTypes.includes(file.type)) {
       return {
         success: false,
-        error: `File type "${file.type}" is not supported. Please upload PDF, DOC, DOCX, or TXT files.`,
+        error: `File type "${file.type}" is not supported. Please upload PDF, DOC, DOCX, TXT, or image files (JPG, PNG, WEBP, GIF).`,
       };
     }
 
@@ -291,7 +295,7 @@ export function validateFile(
   if (!opts.allowedTypes.includes(file.type)) {
     return {
       valid: false,
-      error: `File type "${file.type}" is not supported. Please upload PDF, DOC, DOCX, or TXT files.`,
+      error: `File type "${file.type}" is not supported. Please upload PDF, DOC, DOCX, TXT, or image files (JPG, PNG, WEBP, GIF).`,
     };
   }
 

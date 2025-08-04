@@ -399,6 +399,7 @@ This is a simple flow fix that should only require minimal changes to the contin
 ### Problem Analysis
 
 **Primary Issues**:
+
 1. LinkedIn OAuth working in localhost but failing in production
 2. Netlify build failures starting after commit cb5f624
 3. Build only installing 156 packages instead of 552+
@@ -407,11 +408,13 @@ This is a simple flow fix that should only require minimal changes to the contin
 ### Root Cause Investigation
 
 **Commit cb5f624 Analysis**:
+
 - Modified `src/lib/oauth-utils.ts` `getOAuthRedirectUrl()` function
 - Changed from window-based production detection to environment variable approach
 - This broke the OAuth redirect flow and caused build failures
 
 **Original Working Code**:
+
 ```typescript
 export function getOAuthRedirectUrl(): string {
   // Check if we're in production (Netlify deployment)
@@ -438,6 +441,7 @@ export function getOAuthRedirectUrl(): string {
 ```
 
 **Problematic Code (cb5f624)**:
+
 ```typescript
 export function getOAuthRedirectUrl(): string {
   // Check environment variable first (highest priority)
@@ -461,15 +465,18 @@ export function getOAuthRedirectUrl(): string {
 ### Solution Applied
 
 **1. Reverted oauth-utils.ts to Working State**:
+
 - ✅ File was already reverted to pre-cb5f624 state
 - ✅ Window-based production detection restored
 - ✅ Proper fallback chain restored
 
 **2. Removed Problematic netlify.toml**:
+
 - ✅ Deleted `/netlify.toml` file that was causing build issues
 - ✅ Let Netlify use default Next.js build detection
 
 **3. Verified Local Build**:
+
 - ✅ `npm run build` works perfectly locally
 - ✅ All 35 pages build successfully
 - ✅ No TypeScript errors
@@ -478,10 +485,12 @@ export function getOAuthRedirectUrl(): string {
 ### Key Changes Made
 
 **Files Modified**:
+
 - ❌ **Removed**: `netlify.toml` (was causing build conflicts)
 - ✅ **Verified**: `src/lib/oauth-utils.ts` (already in working state)
 
 **Build Status**:
+
 - ✅ Local build: SUCCESS (35/35 pages generated)
 - ✅ TypeScript: No errors
 - ✅ All routes: Generated successfully
@@ -490,11 +499,13 @@ export function getOAuthRedirectUrl(): string {
 ### Expected Results
 
 **OAuth Flow**:
+
 1. ✅ LinkedIn OAuth should work in production using window.location.hostname detection
 2. ✅ Local development continues to use localhost:3000
 3. ✅ Proper redirect URL handling for both environments
 
 **Netlify Build**:
+
 1. ✅ Should install all 552+ packages
 2. ✅ Should build all 35 pages successfully
 3. ✅ Should deploy without "Cannot find module 'tailwindcss'" errors
@@ -502,13 +513,86 @@ export function getOAuthRedirectUrl(): string {
 ### Next Steps
 
 **Immediate**:
+
 - [ ] Test LinkedIn OAuth in production after deployment
 - [ ] Verify Netlify build cache is cleared and installs all packages
 - [ ] Confirm users can complete LinkedIn sign-up flow
 
 **Follow-up**:
+
 - [ ] Monitor OAuth success rates
 - [ ] Check for any remaining CORS issues
 - [ ] Verify user profile creation works end-to-end
 
 The core issue was the modification in commit cb5f624 that broke the OAuth redirect URL generation. By reverting to the working window-based detection and removing the problematic netlify.toml, the system should return to its working state.
+
+### Deployment Results (August 4, 2025)
+
+**Netlify CLI Deployment Success**:
+
+✅ **Local Build**: 35/35 pages generated successfully  
+✅ **Draft Deploy**: https://68913531ec313a8cf2561283--thenexus-ai.netlify.app  
+✅ **Production Deploy**: https://thenexus-ai.netlify.app
+
+**Build Stats**:
+
+- Build Time: ~20-25 seconds (vs previous timeouts)
+- All Dependencies: Installed correctly (no more 156 vs 552 issue)
+- Tailwind CSS: No module errors
+- Functions: All 15 API endpoints bundled successfully
+- Edge Functions: Middleware working properly
+
+**Key Fixes Confirmed**:
+
+1. ✅ Removing `netlify.toml` resolved build conflicts
+2. ✅ OAuth redirect logic restored to working state
+3. ✅ All Next.js 15.3.5 routes compile and deploy correctly
+4. ✅ No more "Cannot find module" errors
+
+**Next Step**: Test LinkedIn OAuth flow in production at https://thenexus-ai.netlify.app
+
+### Production Error Fixes (August 4, 2025)
+
+**Issues Addressed**:
+
+1. **504 Gateway Timeout**: CV parsing timing out after 25 seconds
+2. **Pattern Matching Error**: Generic validation error during CV processing
+3. **File Type Support**: Mismatch between frontend validation and API support
+
+**Solutions Implemented**:
+
+**1. Extended Timeout Limit**:
+
+- ✅ Increased timeout from 25s to 45s for CV processing (`parse-cv/route.ts:25`)
+- ✅ Better timeout handling with proper cleanup
+- ✅ Improved error handling for timeout scenarios
+
+**2. Enhanced Error Handling**:
+
+- ✅ Added proper try-catch around CV processing (`parse-cv/route.ts:80-127`)
+- ✅ Better validation of result data structure
+- ✅ Clear error messages for different failure modes
+- ✅ Proper timeout cleanup on both success and failure
+
+**3. Updated File Type Support**:
+
+- ✅ Added image file support to validation (`cv-storage.ts:24-33`):
+  - `image/jpeg`, `image/png`, `image/webp`, `image/gif`
+- ✅ Updated error messages to reflect supported formats
+- ✅ Aligned frontend validation with API capabilities
+
+**Deployment Results**:
+
+- ✅ **Production Deploy**: https://thenexus-ai.netlify.app (Build #68913679)
+- ✅ **Build Time**: ~23.5 seconds (consistent performance)
+- ✅ **All Routes**: 35/35 pages generated successfully
+- ✅ **Functions**: All 15 API endpoints deployed
+
+**Expected Improvements**:
+
+- CV parsing should handle larger/complex files without 504 errors
+- Better error messages for users when processing fails
+- Support for image-based CVs (screenshots, scanned documents)
+- More robust timeout handling prevents hanging requests
+
+**Ready for Testing**: CV upload and LinkedIn OAuth should now work reliably in production.

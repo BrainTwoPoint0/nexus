@@ -28,7 +28,6 @@ export function useOAuth(): UseOAuthReturn {
         setError(null);
 
         const redirectTo = getOAuthRedirectUrl();
-        console.log('🔗 OAuth redirect URL being used:', redirectTo);
 
         const { error: oauthError } = await supabase.auth.signInWithOAuth({
           provider: provider as Provider,
@@ -46,7 +45,6 @@ export function useOAuth(): UseOAuthReturn {
           setError(oauthError.message);
           return;
         }
-
         // The redirect will happen automatically
         // Profile enrichment will be handled in the callback
       } catch (err) {
@@ -89,7 +87,6 @@ export function useProfileEnrichment() {
         );
 
         if (!oauthIdentity) {
-          console.log('No OAuth identity found for profile enrichment');
           return null;
         }
 
@@ -104,8 +101,6 @@ export function useProfileEnrichment() {
             `Failed to normalize ${oauthIdentity.provider} profile data`
           );
         }
-
-        console.log('Normalized OAuth profile:', normalizedProfile);
 
         return normalizedProfile;
       } catch (err) {
