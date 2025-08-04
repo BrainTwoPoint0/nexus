@@ -763,14 +763,6 @@ export default config;
 
 ### Phase 3.5: Extended Platform Pages 🚧 IN PROGRESS
 
-#### Content & Learning Pages
-
-- [ ] **Learning Center** - Course catalog, progress tracking, certification paths
-- [ ] **Course Details** - Individual course pages with lessons, materials, assessments
-- [ ] **Events & Networking** - Event listings, registration, calendar integration
-- [ ] **Blog/Resources** - Article listings, detailed blog posts, resource downloads
-- [ ] **Help Center** - FAQ, documentation, support ticket system
-
 #### Detailed User Flows
 
 - [ ] **Job Posting Creation** - Multi-step form for organizations to post roles

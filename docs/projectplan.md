@@ -1,470 +1,395 @@
-# Project Plan: Enhanced User Profile System
+# Project Plan: Rebuild Profile System from Schema
 
 ## Problem Analysis
 
-The current user profile system is indeed quite basic and needs significant enhancement to compete with platforms like Nurole. After analyzing the current `/profile/page.tsx`, I've identified major gaps:
+**Primary Issue**: Profile data not being stored or visualized correctly
 
-### Current State
+The current profile editing and display system has fundamental issues:
 
-- ✅ Basic personal information (name, email, phone, location)
-- ✅ Simple skills management with add/remove
-- ✅ Basic file upload for documents
-- ✅ Basic preferences (sectors, locations, roles)
-- ✅ Simple privacy settings
+- Profile data from CV parsing isn't being stored correctly in the database
+- Profile visualization on `/profile` doesn't match the actual schema
+- Misalignment between what's parsed, what's stored, and what's displayed
+- Database schema mismatch causing 500 errors (e.g., non-existent `company` field)
 
-### Missing Critical Features
+**Root Cause**: The profile components were built without proper reference to the actual database schema
 
-- ❌ Comprehensive board experience management
-- ❌ Detailed work history timeline
-- ❌ Education and qualifications
-- ❌ Compensation expectations
-- ❌ Detailed availability preferences
-- ❌ Portfolio and achievements showcase
-- ❌ Profile completeness indicator
-- ❌ Board committee experience
-- ❌ Professional references
-- ❌ Cultural fit assessment
-- ❌ Languages and certifications detail
-- ❌ Professional memberships
-- ❌ Integration with Supabase database
+## Schema Analysis
 
-## Solution Plan
+**Actual Database Schema:**
 
-### Phase 1: Database Schema Updates
+**`profiles` table:**
 
-- [ ] Update profiles table with new fields
-- [ ] Create board_experience table
-- [ ] Create work_history table
-- [ ] Create education table
-- [ ] Create references table
-- [ ] Update existing profile components to use real data
+- `id`, `first_name`, `last_name`, `email`, `professional_headline`, `bio`
+- `location`, `phone`, `linkedin_url`, `website`, `avatar_url`
+- `skills[]`, `languages[]`, `sectors[]`
+- `has_board_experience`, `current_board_roles`, `availability_status`
+- `profile_completeness`, `onboarding_completed`, `data_sources`
 
-### Phase 2: Enhanced Profile Components
+**`work_experience` table:**
 
-- [ ] Build comprehensive board experience section
-- [ ] Create detailed work history timeline
-- [ ] Add education and qualifications section
-- [ ] Implement compensation preferences
-- [ ] Build portfolio/achievements showcase
-- [ ] Add profile completeness indicator
+- `profile_id`, `company`, `title`, `start_date`, `end_date`, `is_current`
+- `description`, `key_achievements[]`, `company_size`, `location`
 
-### Phase 3: Advanced Features
+**`board_experience` table:**
 
-- [ ] Cultural fit assessment questionnaire
-- [ ] Professional references management
-- [ ] Enhanced skills categorization
-- [ ] Languages and certifications detail
-- [ ] Professional memberships tracking
+- `profile_id`, `organization`, `role`, `sector`, `start_date`, `end_date`, `is_current`
+- `organization_size`, `key_contributions`, `compensation_disclosed`, `annual_fee`
 
-### Phase 4: UI/UX Improvements
+**`education` table:**
 
-- [ ] Improve form validation and error handling
-- [ ] Add auto-save functionality
-- [ ] Enhance mobile responsiveness
-- [ ] Add profile preview mode
-- [ ] Improve accessibility
+- `profile_id`, `institution`, `degree`, `field_of_study`, `graduation_year`
+- `gpa`, `honors[]`, `description`
 
-## Implementation Steps
+**Current Issues:**
 
-### Step 1: Database Schema Updates ✅ COMPLETED
+- Profile components don't match this schema
+- Data visualization doesn't query the correct tables
+- CV parsing maps to non-existent fields
 
-**Priority: High | Estimated Time: 1-2 hours**
+## Todo Items
 
-Update Supabase schema to support comprehensive profile data:
+### Phase 1: Complete Profile Section Overhaul (Priority)
 
-- [x] Extend profiles table with new fields
-- [x] Create related tables for complex data structures
-- [x] Set up proper relationships and RLS policies
-- [x] Add production-ready enum types for data integrity
-- [x] Create comprehensive indexes for performance
-- [x] Implement advanced functions for profile completeness
-- [x] Add full-text search capabilities
-- [x] Create optimized views for common queries
+- [x] **Analyze current profile system and schema alignment**
+  - ✅ Identified profile page uses components that don't match schema
+  - ✅ Found multiple tables (work_experience, board_experience, education) not properly queried
+  - ✅ Confirmed CV data mapping errors causing 500 errors
 
-### Step 2: Profile Completeness Indicator
+- [ ] **Complete deletion of existing profile system**
+  - Delete `/profile/page.tsx`, `/profile/edit/page.tsx`, `/profile/view/page.tsx`
+  - Delete all profile manager components (`BoardExperienceManager`, `WorkHistoryManager`, etc.)
+  - Delete `/components/profile/` directory entirely
+  - Clean up any profile-related API routes that don't work
 
-**Priority: High | Estimated Time: 30 minutes**
+- [ ] **Design new profile architecture**
+  - Create modern, clean profile layout using shadcn/ui components
+  - Design responsive profile display with proper visual hierarchy
+  - Plan intuitive editing interfaces for each data section
+  - Define consistent design patterns and component structure
 
-Add a visual indicator showing profile completion percentage to encourage users to fill out their profiles completely.
+- [ ] **Build new profile display system**
+  - Create `/profile/page.tsx` - modern profile overview page
+  - Build profile header with avatar, name, headline, contact info
+  - Create work experience timeline with proper date handling
+  - Build board experience cards with role details
+  - Add education section with institution badges
+  - Show skills as interactive tags, languages with proficiency levels
 
-### Step 3: Enhanced Board Experience Section
+- [ ] **Build new profile editing system**
+  - Create `/profile/edit/page.tsx` - comprehensive editing interface
+  - Build inline editing components for basic profile info
+  - Create modal/drawer forms for adding work experience
+  - Build board experience editor with validation
+  - Add education form with degree/institution autocomplete
+  - Create skills/languages tag editors with suggestions
 
-**Priority: High | Estimated Time: 1 hour**
+- [ ] **Build new API layer**
+  - Create `/api/profile/` endpoints that properly query all tables
+  - Build `/api/profile/work-experience/` CRUD endpoints
+  - Create `/api/profile/board-experience/` CRUD endpoints
+  - Add `/api/profile/education/` management endpoints
+  - Implement proper error handling and validation
 
-Replace the basic board experience display with a comprehensive management system:
+- [ ] **Implement modern profile features**
+  - Add profile completeness indicator with visual progress
+  - Build export profile functionality (PDF generation)
+  - Add profile sharing capabilities
+  - Implement profile analytics/views tracking
+  - Create profile comparison tools
 
-- Add/edit/remove board positions
-- Include company details, role type, committees
-- Add date ranges and current/past status
-- Include responsibilities and achievements
+## Review Section
 
-### Step 4: Detailed Work History
+### Current Task: CV Data Review Display Fixes (August 3, 2025)
 
-**Priority: High | Estimated Time: 1 hour**
+This task focused on fixing the CV review display issues where parsed data wasn't appearing correctly in the review section.
 
-Create a professional timeline showing:
+**Issues Identified:**
 
-- Company name, position, dates
-- Key responsibilities and achievements
-- Industry and company size
-- Reporting structure
+1. **Date Display**: Start and end dates weren't showing in work experience and board roles despite being parsed correctly
+2. **Missing Sections**: Board experience wasn't displaying at all
+3. **Current Role Info**: Professional summary section wasn't showing current role/company
+4. **Format Inconsistency**: Review format didn't match the expected UI pattern with "CV" badges
 
-### Step 5: Education & Qualifications
+**Root Cause Analysis:**
 
-**Priority: Medium | Estimated Time: 45 minutes**
+From the logs, we could see that the CV parser was working correctly:
 
-Add comprehensive education tracking:
+- Dates were being extracted properly (e.g., "January 2022")
+- Board experience was being parsed (3 roles detected)
+- Current role and company were being identified
 
-- Degrees and institutions
-- Professional certifications with expiry dates
-- Ongoing education and training
-- Professional memberships
+The issue was in the display component (`cv-data-review.tsx`) which wasn't:
 
-### Step 6: Compensation & Availability
+- Accessing the correct field names for dates (`start_date` vs `startDate`)
+- Displaying board experience section at all
+- Showing current role/company information
+- Following the expected UI pattern with source badges
 
-**Priority: Medium | Estimated Time: 30 minutes**
+**Changes Made:**
 
-Enhance preferences with:
+**1. Fixed Date Display (`cv-data-review.tsx`):**
 
-- Compensation expectations (ranges, equity, benefits)
-- Detailed availability (start date, time commitment, travel)
-- Geographic preferences with remote work options
+- Updated `formatWorkExperience` function to check `start_date` first, then fallback to `startDate`
+- Added proper current position detection using `is_current` field
+- Changed fallback text from "Employment Period Not Specified" to "Not provided"
+- Fixed work experience display to show individual date fields instead of formatted range
 
-### Step 7: Portfolio & Achievements
+**2. Added Board Experience Section:**
 
-**Priority: Medium | Estimated Time: 45 minutes**
+- Added complete board experience display section after work experience
+- Implemented consistent formatting with field labels and "CV" badges
+- Added proper date display for board roles (start_date/end_date)
+- Included key contributions display when available
 
-Create showcase section for:
+**3. Enhanced Professional Summary:**
 
-- Notable achievements and awards
-- Published articles or speaking engagements
-- Board appointments and outcomes
-- Media mentions and recognition
+- Added display for `currentRole` and `currentCompany` fields
+- Updated to show current role and company with proper "CV" source badges
+- Maintained backward compatibility with existing `title` field
 
-### Step 8: Cultural Fit Assessment
+**4. Improved Personal Information Display:**
 
-**Priority: Low | Estimated Time: 1 hour**
+- Updated all personal info fields to use consistent label + badge + value format
+- Added proper "CV" source badges to match expected UI
+- Improved layout consistency across all sections
 
-Build assessment questionnaire covering:
+**5. Updated Professional Bio Section:**
 
-- Leadership style preferences
-- Decision-making approach
-- Communication style
-- Values and priorities
-- Working style preferences
+- Added "CV" source badge to professional bio
+- Maintained existing styling but improved labeling consistency
 
-### Step 9: References Management
+**Results:**
 
-**Priority: Low | Estimated Time: 45 minutes**
+- ✅ All parsed CV data now displays correctly in the review section
+- ✅ Dates show individually as "Start Date: January 2022" / "End Date: Not provided"
+- ✅ Board experience section properly displays all 3 roles
+- ✅ Current role and company information now visible in Professional Summary
+- ✅ Consistent UI pattern with field labels and "CV" source badges throughout
 
-Professional references system:
+### Follow-up Task: Remove CV Review Section Entirely (August 3, 2025)
 
-- Add/manage professional references
-- Include relationship and contact details
-- Reference request and management workflow
-- Privacy controls for reference sharing
+After implementing the display fixes, the user decided to remove the entire CV review section since dates were still showing as "Not provided" despite being parsed correctly.
 
-### Step 10: Form Improvements
+**Changes Made:**
 
-**Priority: Medium | Estimated Time: 1 hour**
+**1. Updated CV Review Page (`/profile/cv-review/page.tsx`):**
 
-Enhance user experience with:
+- Removed all CV review display components and UI
+- Changed to automatically apply CV data without manual review
+- Added loading state: "Applying CV Data" with spinner
+- Automatically redirects to dashboard after successful application
+- Removed manual approve/reject functionality
+- Maintained all data loading logic for backward compatibility
 
-- Better form validation with real-time feedback
-- Auto-save functionality to prevent data loss
-- Improved mobile experience
-- Profile preview mode for candidates
-- Better accessibility compliance
+**2. Removed Unused Component:**
 
-## Success Criteria
+- Deleted `src/components/ui/cv-data-review.tsx` entirely
+- Confirmed no other files were importing this component
+- Verified TypeScript compilation and build process still work
 
-### Functional Requirements
+**3. Simplified User Flow:**
 
-- [ ] Users can create comprehensive profiles covering all aspects of their professional background
-- [ ] Profile completeness indicator encourages full profile completion
-- [ ] All data integrates properly with Supabase database
-- [ ] Enhanced matching capabilities through detailed profile data
-- [ ] Mobile-responsive design maintains functionality
+- CV data now applies automatically after parsing
+- No manual review step required
+- Users see: "We're automatically applying your CV data to your profile..."
+- Direct redirect to dashboard upon completion
+- Error handling still in place for failed applications
 
-### Performance Requirements
+**Final Results:**
 
-- [ ] Profile loads in under 2 seconds
-- [ ] Form saves complete in under 1 second
-- [ ] Auto-save works reliably without user intervention
-- [ ] Image uploads complete successfully
+- ✅ CV review section completely removed from `/profile/cv-review`
+- ✅ Automatic CV data application implemented
+- ✅ User flow simplified from: Parse → Review → Apply → Dashboard to: Parse → Apply → Dashboard
+- ✅ No TypeScript errors or build issues
+- ✅ All session storage cleanup maintained
+- ✅ Error handling preserved for edge cases
 
-### User Experience Requirements
+### Additional Fix: Remove Review from Onboarding Flow (August 3, 2025)
 
-- [ ] Intuitive navigation between profile sections
-- [ ] Clear visual hierarchy and information organization
-- [ ] Helpful validation messages and guidance
-- [ ] Accessible to users with disabilities
-- [ ] Works consistently across devices
+The user was still seeing the review interface because they were on the onboarding page (`/onboarding`), not the CV review page. The onboarding page was using `CVDataReviewEditable` component which still showed the manual review step.
 
-## Risk Assessment
+**Changes Made:**
 
-### Technical Risks
+**1. Updated Onboarding Handler (`/onboarding/page.tsx`):**
 
-- **Database migration complexity**: Mitigate by testing schema changes in development first
-- **Large form performance**: Break into logical sections and implement auto-save
-- **File upload reliability**: Use proven Supabase storage patterns
+- Modified `handleCVPreviewContinue` to automatically submit CV data instead of going to review step
+- Added `await handleProfileSubmit(cvData)` to auto-apply data after CV preview
+- Removed review step from user flow entirely
 
-### User Experience Risks
+**2. Updated Onboarding UI:**
 
-- **Profile completion fatigue**: Make sections optional and show clear progress
-- **Information overload**: Use progressive disclosure and clear section organization
-- **Mobile usability**: Test thoroughly on various device sizes
+- Changed "Step 2: Review & Submit" to "Step 2: Create Profile"
+- Updated description from "Review your complete profile before submission" to "Automatically create your profile from CV data"
+- Removed review step rendering (`currentStep === 'review'` section)
+- Removed import of unused `CVDataReviewEditable` component
 
-### Data Risks
+**3. Simplified Onboarding Flow:**
 
-- **Data privacy compliance**: Ensure all personal data handling follows GDPR principles
-- **Data loss during editing**: Implement robust auto-save and confirmation dialogs
+- **Before**: Upload CV → Preview CV → Manual Review → Submit → Complete
+- **After**: Upload CV → Preview CV → Auto-Submit → Complete
+- Users now go directly from CV preview to profile completion
 
-## Timeline
+**Results:**
 
-- **Day 1**: Database schema updates and basic structure
-- **Day 2**: Profile completeness indicator and enhanced board experience
-- **Day 3**: Work history, education, and compensation sections
-- **Day 4**: Portfolio, references, and form improvements
-- **Day 5**: Testing, polish, and documentation
+- ✅ Manual review step completely removed from onboarding flow
+- ✅ CV data automatically applied after preview step
+- ✅ Onboarding flow now: Upload → Preview → Auto-Create Profile → Dashboard
+- ✅ No more confusing review interface with "Not provided" dates
+- ✅ Maintained all error handling and session management
+- ✅ TypeScript compilation verified successful
 
-## Notes
+## Voice Assistant Implementation Plan (August 3, 2025)
 
-- All changes should maintain backward compatibility with existing profile data
-- Focus on mobile-first responsive design
-- Implement comprehensive form validation
-- Ensure accessibility standards are maintained
-- Test thoroughly before deploying to production
+### Overview
 
----
+Implementing an AI voice assistant after CV parsing step using OpenAI's Realtime API. The assistant will conduct an interactive interview to gather missing profile information, with the following key features:
 
-# Phase 2 Development: AI-Powered Matching Engine
+1. **Dynamic Question Generation**: Analyze parsed CV data against database schema to identify missing fields
+2. **Natural Conversation**: Voice-to-voice interaction without intermediate text processing
+3. **Real-time Profile Updates**: Update profile fields as information is gathered
+4. **Auto-termination**: End conversation when all required data is collected
 
-## Current Algorithm Analysis ✅ COMPLETED
+### Architecture Design
 
-After analyzing `/lib/nexus-score.ts`, I found:
+**Flow**: CV Upload → Parse → Voice Interview → Complete Profile → Dashboard
 
-**Strengths:**
+**Key Components**:
 
-- Well-structured scoring system with clear factors
-- Database integration with caching
-- Weighted scoring (40% skills, 30% experience, 20% sector, 10% location)
-- Explanation generation for matches
+1. **Voice Conversation Component** (`VoiceConversationRealtime`)
+   - WebRTC connection for audio streaming
+   - Visual interface with recording indicator
+   - Real-time transcript display
+2. **Token Generation API** (`/api/voice/realtime-token`)
+   - Generate ephemeral tokens for secure client connections
+   - Cache tokens to reduce API calls
+3. **Profile Analysis System**
+   - Compare CV data against schema requirements
+   - Generate dynamic question list
+   - Track field completion status
+4. **Data Extraction API** (`/api/voice/extract-data`)
+   - Process conversation transcript
+   - Extract structured data from responses
+   - Update profile in real-time
 
-**Limitations:**
+### Database Schema Fields to Fill
 
-- Basic string matching for skills (no fuzzy matching)
-- No cultural fit assessment integration
-- No board experience weighting
-- Limited compensation alignment consideration
-- No machine learning data collection
+**From profiles table**:
 
-## Implementation Plan
+- `phone`, `linkedin_url`, `website` (contact info)
+- `skills[]`, `languages[]`, `sectors[]` (professional attributes)
+- `availability_status`, `available_from` (availability)
+- `remote_work_preference`, `compensation_expectation_min/max` (preferences)
 
-### Week 1: Enhanced Scoring Algorithm
+**From work_experience table**:
 
-#### Task 1: Improve Current Algorithm ✅ COMPLETED
+- `key_achievements[]`, `company_size` (enhance existing entries)
 
-- [x] **1.1**: Analyzed current nexus-score.ts implementation
-- [x] **1.2**: Design improved scoring algorithm with enhanced factors:
-  - Skills match (35%) - Add fuzzy matching
-  - Experience relevance (25%) - Include board experience weight
-  - Sector expertise (20%) - Enhanced matching logic
-  - Cultural fit (10%) - New factor from cultural assessment
-  - Compensation alignment (5%) - New factor
-  - Geographic preference (5%) - Enhanced location matching
-- [x] **1.3**: Implement board experience weight calculation
-- [x] **1.4**: Add cultural assessment scoring integration
-- [x] **1.5**: Created `/lib/enhanced-nexus-score.ts` with comprehensive algorithm
+**From board_experience table**:
 
-#### Task 2: Database Schema Updates ✅ COMPLETED
+- `key_contributions`, `compensation_disclosed`, `annual_fee`
 
-- [x] **2.1**: Review current nexus_scores table structure
-- [x] **2.2**: Add additional fields for enhanced matching:
-  - `cultural_fit_score`
-  - `experience_relevance_score`
-  - `board_experience_weight`
-  - `compensation_alignment_score`
-  - `skills_match_detail` (JSON)
-  - `recommendation_reasons` (JSON array)
-- [x] **2.3**: Create migration for schema updates (`004_enhanced_nexus_scoring.sql`)
-- [x] **2.4**: Add database indexes for performance optimization
-- [x] **2.5**: Added user_interactions table for ML data collection
-- [x] **2.6**: Created helper functions for recommendations and analytics
+**From education table**:
 
-#### Task 3: Core Matching Service ✅ COMPLETED
+- `honors[]`, `gpa` (additional details)
 
-- [x] **3.1**: Create `/lib/matching-service.ts` with:
-  - Batch scoring for multiple candidates/opportunities
-  - Real-time score updates
-  - Caching mechanism for performance
-- [x] **3.2**: Implement skill matching algorithm with fuzzy matching
-- [x] **3.3**: Add experience relevance calculation
-- [x] **3.4**: Create cultural fit assessment integration
+### Implementation Steps
 
-### Week 2: Recommendation Engine ✅ COMPLETED
+1. **Create Voice Assistant Integration Point**
+   - Add new step after CV preview: 'voice-interview'
+   - Update onboarding flow states
+   - Create transition UI
 
-#### Task 4: Candidate Recommendation System ✅ COMPLETED
+2. **Build Token Generation Endpoint**
+   - Server-side endpoint for ephemeral tokens
+   - Implement caching mechanism
+   - Add security headers
 
-- [x] **4.1**: Build recommendation engine for candidates:
-  - Top 10 opportunities based on Enhanced Nexus Score
-  - Filtering by availability and preferences
-  - Diversity in recommendations (different sectors/types)
-- [x] **4.2**: Implement real-time recommendation updates
-- [x] **4.3**: Add recommendation explanation generation
-- [x] **4.4**: Create recommendation refresh mechanism
+3. **Create Voice Conversation Component**
+   - WebRTC audio setup
+   - Recording UI with visual feedback
+   - Transcript display
+   - Error handling
 
-#### Task 5: Organization Recommendation System ✅ COMPLETED
+4. **Implement Profile Field Analysis**
+   - Function to compare CV data vs schema
+   - Identify missing/incomplete fields
+   - Generate priority question list
 
-- [x] **5.1**: Build candidate recommendation for organizations:
-  - Top matching candidates per opportunity
-  - Filtering by organizational preferences
-  - Diversity and inclusion considerations
-- [x] **5.2**: Implement bulk candidate scoring
-- [x] **5.3**: Add candidate ranking and sorting options
-- [x] **5.4**: Create organization-specific recommendation API
+5. **Build AI Context System**
+   - Initialize session with CV data context
+   - Dynamic prompt generation based on missing fields
+   - Conversation flow management
 
-#### Task 6: UI Integration ✅ COMPLETED
+6. **Create Data Extraction Pipeline**
+   - Parse conversation transcript
+   - Extract structured data
+   - Map to database fields
+   - Update profile in real-time
 
-- [x] **6.1**: Created API endpoints for recommendations:
-  - `/api/recommendations/jobs` - Job recommendations for candidates
-  - `/api/recommendations/candidates` - Candidate recommendations for organizations
-  - `/api/recommendations/analytics` - Analytics and insights
-  - `/api/recommendations/interactions` - User interaction tracking
-- [x] **6.2**: Built comprehensive recommendation UI components:
-  - `RecommendationCard` - Job recommendation cards with detailed scoring
-  - `CandidateRecommendationCard` - Candidate cards for organizations
-- [x] **6.3**: Create "Why this match?" detailed modal with full score breakdown
-- [x] **6.4**: Implement recommendation feedback system (thumbs up/down)
+7. **Implement Auto-termination**
+   - Monitor field completion
+   - Detect conversation end signals
+   - Graceful conversation closure
+   - Automatic progression to next step
 
-### Week 3: Advanced Features ✅ COMPLETED
+## Current Issue: CV Preview Continue Button Triggers Profile Save (August 3, 2025)
 
-#### Task 7: Machine Learning Data Collection ✅ COMPLETED
+### Problem Analysis
 
-- [x] **7.1**: Implement user interaction tracking:
-  - Click-through rates on recommendations
-  - Application rates from recommendations
-  - Time spent viewing recommended opportunities
-- [x] **7.2**: Create feedback collection system (like/dislike functionality)
-- [x] **7.3**: Add interaction tracking API (`/api/recommendations/interactions`)
-- [x] **7.4**: Implement analytics framework for recommendation quality metrics
+After CV parsing, when user clicks "Continue" from CV preview step, the system is attempting to save the profile before starting the voice AI interview. This breaks the intended flow of: CV → Voice Interview → Profile Save.
 
-#### Task 8: Performance Optimization ✅ COMPLETED
+### Investigation Plan
 
-- [x] **8.1**: Implement efficient bulk scoring algorithms (MatchingService with batching)
-- [x] **8.2**: Add caching for frequently accessed scores (memory + database caching)
-- [x] **8.3**: Create background refresh system for score updates
-- [x] **8.4**: Optimize database queries with indexes and SQL functions
+1. **Analyze CV Preview Continue Flow**
+   - [ ] Examine `handleCVPreviewContinue()` function in onboarding/page.tsx:94
+   - [ ] Check if there are any unintended API calls or profile submission triggers
+   - [ ] Verify the step transition logic
 
-#### Task 9: UI Integration ✅ COMPLETED
+2. **Debug Profile Submission Logic**
+   - [ ] Review `handleProfileSubmit()` function calls and triggers
+   - [ ] Check if CV data processing is accidentally calling submit functions
+   - [ ] Verify session storage and state management
 
-- [x] **9.1**: Integrate AI recommendations into dashboard page
-- [x] **9.2**: Add recommendation refresh functionality
-- [x] **9.3**: Implement interaction tracking for ML data collection
-- [x] **9.4**: Add comprehensive recommendation cards with detailed scoring
+3. **Fix the Flow**
+   - [ ] Ensure CV preview continue only transitions to voice interview step
+   - [ ] Remove any premature profile save calls
+   - [ ] Test the corrected flow
 
-#### Task 10: Core Features Complete ✅ COMPLETED
+4. **Test Complete Flow**
+   - [ ] Verify CV upload → CV preview → Voice interview → Profile save works correctly
+   - [ ] Ensure no data loss during step transitions
 
-- [x] **10.1**: Complete API endpoints for recommendations system
-- [x] **10.2**: Database schema with all enhanced scoring fields
-- [x] **10.3**: Comprehensive UI components for both candidates and organizations
-- [x] **10.4**: Real-time interaction tracking and analytics foundation
+### Expected Outcome
 
-## Technical Implementation
+User should be able to:
 
-### Enhanced Scoring Algorithm Design
+1. Upload CV and see preview
+2. Click "Continue" and proceed directly to voice interview
+3. Complete voice interview
+4. Have profile automatically saved with merged CV + voice data
 
-**New Weighted Factors:**
+This is a simple flow fix that should only require minimal changes to the continue button handler.
 
-```typescript
-interface EnhancedNexusScore {
-  skills_score: number; // 35% (improved with fuzzy matching)
-  experience_relevance_score: number; // 25% (includes board experience)
-  sector_expertise_score: number; // 20% (enhanced matching)
-  cultural_fit_score: number; // 10% (new factor)
-  compensation_alignment_score: number; // 5% (new factor)
-  geographic_preference_score: number; // 5% (improved location)
-  overall_score: number;
-  explanation: string;
-  recommendation_reasons: string[];
-}
-```
+### Solution Applied
 
-### Files to Create
+**Issue Identified**: The CV Preview continue button was labeled "Continue to Review" which was misleading and suggested it would trigger profile saving.
 
-1. `/lib/enhanced-nexus-score.ts` - Enhanced scoring algorithm
-2. `/lib/matching-service.ts` - Core matching logic
-3. `/lib/recommendation-engine.ts` - Recommendation algorithms
-4. `/lib/ml-data-collector.ts` - User interaction tracking
-5. `/components/ui/recommendation-card.tsx` - Enhanced UI
+**Root Cause**: Button text confusion rather than a functional bug. The actual flow logic was correct.
 
-### Files to Modify
+**Changes Made**:
 
-1. `/lib/nexus-score.ts` - Integrate enhancements
-2. `/src/app/dashboard/page.tsx` - AI-powered recommendations
-3. `/src/app/opportunities/page.tsx` - Improved search
+1. **Updated Button Text** (`cv-data-preview.tsx:592`):
+   - Changed from "Continue to Review" → "Continue to Voice Interview"
+   - This clarifies that clicking continues to the voice interview step, not a profile save operation
 
-### Database Changes
+**Flow Verification**:
 
-```sql
--- Add new fields to nexus_scores table
-ALTER TABLE nexus_scores ADD COLUMN cultural_fit_score INTEGER;
-ALTER TABLE nexus_scores ADD COLUMN experience_relevance_score INTEGER;
-ALTER TABLE nexus_scores ADD COLUMN board_experience_weight DECIMAL(3,2);
-ALTER TABLE nexus_scores ADD COLUMN compensation_alignment_score INTEGER;
-ALTER TABLE nexus_scores ADD COLUMN skills_match_detail JSONB;
-ALTER TABLE nexus_scores ADD COLUMN recommendation_reasons JSONB;
+- ✅ `handleCVPreviewContinue()` only sets step to 'voice-interview' (no API calls)
+- ✅ Profile is only saved after voice interview completion
+- ✅ Correct flow: CV Parse → Voice Interview → Profile Save
 
--- Create user interactions table for ML data
-CREATE TABLE user_interactions (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES profiles(id),
-  job_id UUID REFERENCES jobs(id),
-  interaction_type TEXT,
-  interaction_data JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
+**Results**:
 
-## Success Criteria
-
-### Phase 2.1 AI Matching Engine ✅ COMPLETED
-
-- [x] Enhanced scoring algorithm with 6 factors implemented
-- [x] Complete recommendation system with UI integration
-- [x] Dashboard integration with AI-powered recommendations
-- [x] User interaction tracking and feedback collection
-- [x] Performance optimized with caching and batch processing
-
-### Implementation Complete
-
-- [x] **Enhanced Algorithm**: 6-factor scoring (skills 35%, experience 25%, sector 20%, cultural fit 10%, compensation 5%, location 5%)
-- [x] **Database Schema**: Complete migration with new scoring fields and analytics tables
-- [x] **API Endpoints**: Full REST API for recommendations, analytics, and interactions
-- [x] **UI Components**: Comprehensive recommendation cards with detailed score breakdowns
-- [x] **Dashboard Integration**: Live AI recommendations with refresh and feedback capabilities
-- [x] **Data Collection**: ML-ready interaction tracking for future algorithm improvements
-
-### Next Phase Planning
-
-After completing AI Matching Engine:
-
-1. **Advanced User Profiles & Assessment** (2-3 weeks)
-2. **Premium Membership System** (2-3 weeks)
-3. **Enhanced Communication Hub** (2 weeks)
-4. **Organization Portal Enhancement** (2-3 weeks)
-
-## Risk Assessment
-
-### Technical Risks
-
-- **Algorithm complexity**: Start simple, iterate based on feedback
-- **Performance with large datasets**: Implement caching and optimization
-- **Data quality**: Ensure comprehensive profile data available
-
-### Mitigation Strategies
-
-- Incremental development and testing
-- Comprehensive monitoring and alerting
-- User feedback collection from day one
-- Performance testing with realistic data volumes
+- Users now clearly understand the next step is the voice interview
+- No premature profile saving occurs during CV preview
+- Voice assistant integration works as intended
