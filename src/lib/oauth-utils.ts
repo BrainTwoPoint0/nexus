@@ -178,26 +178,21 @@ export function mapOAuthToProfile(normalizedProfile: NormalizedProfile) {
  * Get OAuth redirect URL for development/production (2025 best practices)
  */
 export function getOAuthRedirectUrl(): string {
-  // Check if we're in production (Netlify deployment)
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname === 'thenexus-ai.netlify.app'
-  ) {
+  // Check environment variable first (highest priority)
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const url = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+    const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+    return `${cleanUrl}/auth/callback`;
+  }
+
+  // For production, always use the explicit URL
+  if (process.env.NODE_ENV === 'production') {
     return 'https://thenexus-ai.netlify.app/auth/callback';
   }
 
-  let url =
-    process?.env?.NEXT_PUBLIC_SITE_URL ??
-    process?.env?.NEXT_PUBLIC_VERCEL_URL ??
-    'http://localhost:3000/';
-
-  // Ensure URL has protocol
-  url = url.startsWith('http') ? url : `https://${url}`;
-  // Ensure URL has trailing slash
-  url = url.endsWith('/') ? url : `${url}/`;
-
-  // Add auth callback path
-  return `${url}auth/callback`;
+  // For development
+  return 'http://localhost:3000/auth/callback';
 }
 
 /**
