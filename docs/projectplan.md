@@ -393,3 +393,122 @@ This is a simple flow fix that should only require minimal changes to the contin
 - Users now clearly understand the next step is the voice interview
 - No premature profile saving occurs during CV preview
 - Voice assistant integration works as intended
+
+## LinkedIn OAuth and Netlify Build Fixes (August 4, 2025)
+
+### Problem Analysis
+
+**Primary Issues**:
+1. LinkedIn OAuth working in localhost but failing in production
+2. Netlify build failures starting after commit cb5f624
+3. Build only installing 156 packages instead of 552+
+4. Users being created but stuck on LinkedIn sign-up page
+
+### Root Cause Investigation
+
+**Commit cb5f624 Analysis**:
+- Modified `src/lib/oauth-utils.ts` `getOAuthRedirectUrl()` function
+- Changed from window-based production detection to environment variable approach
+- This broke the OAuth redirect flow and caused build failures
+
+**Original Working Code**:
+```typescript
+export function getOAuthRedirectUrl(): string {
+  // Check if we're in production (Netlify deployment)
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname === 'thenexus-ai.netlify.app'
+  ) {
+    return 'https://thenexus-ai.netlify.app/auth/callback';
+  }
+
+  let url =
+    process?.env?.NEXT_PUBLIC_SITE_URL ??
+    process?.env?.NEXT_PUBLIC_VERCEL_URL ??
+    'http://localhost:3000/';
+
+  // Ensure URL has protocol
+  url = url.startsWith('http') ? url : `https://${url}`;
+  // Ensure URL has trailing slash
+  url = url.endsWith('/') ? url : `${url}/`;
+
+  // Add auth callback path
+  return `${url}auth/callback`;
+}
+```
+
+**Problematic Code (cb5f624)**:
+```typescript
+export function getOAuthRedirectUrl(): string {
+  // Check environment variable first (highest priority)
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    const url = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+    const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+    return `${cleanUrl}/auth/callback`;
+  }
+
+  // For production, always use the explicit URL
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://thenexus-ai.netlify.app/auth/callback';
+  }
+
+  // For development
+  return 'http://localhost:3000/auth/callback';
+}
+```
+
+### Solution Applied
+
+**1. Reverted oauth-utils.ts to Working State**:
+- ✅ File was already reverted to pre-cb5f624 state
+- ✅ Window-based production detection restored
+- ✅ Proper fallback chain restored
+
+**2. Removed Problematic netlify.toml**:
+- ✅ Deleted `/netlify.toml` file that was causing build issues
+- ✅ Let Netlify use default Next.js build detection
+
+**3. Verified Local Build**:
+- ✅ `npm run build` works perfectly locally
+- ✅ All 35 pages build successfully
+- ✅ No TypeScript errors
+- ✅ All dependencies install correctly (552 packages)
+
+### Key Changes Made
+
+**Files Modified**:
+- ❌ **Removed**: `netlify.toml` (was causing build conflicts)
+- ✅ **Verified**: `src/lib/oauth-utils.ts` (already in working state)
+
+**Build Status**:
+- ✅ Local build: SUCCESS (35/35 pages generated)
+- ✅ TypeScript: No errors
+- ✅ All routes: Generated successfully
+- ✅ Package installation: Complete (all dependencies)
+
+### Expected Results
+
+**OAuth Flow**:
+1. ✅ LinkedIn OAuth should work in production using window.location.hostname detection
+2. ✅ Local development continues to use localhost:3000
+3. ✅ Proper redirect URL handling for both environments
+
+**Netlify Build**:
+1. ✅ Should install all 552+ packages
+2. ✅ Should build all 35 pages successfully
+3. ✅ Should deploy without "Cannot find module 'tailwindcss'" errors
+
+### Next Steps
+
+**Immediate**:
+- [ ] Test LinkedIn OAuth in production after deployment
+- [ ] Verify Netlify build cache is cleared and installs all packages
+- [ ] Confirm users can complete LinkedIn sign-up flow
+
+**Follow-up**:
+- [ ] Monitor OAuth success rates
+- [ ] Check for any remaining CORS issues
+- [ ] Verify user profile creation works end-to-end
+
+The core issue was the modification in commit cb5f624 that broke the OAuth redirect URL generation. By reverting to the working window-based detection and removing the problematic netlify.toml, the system should return to its working state.
