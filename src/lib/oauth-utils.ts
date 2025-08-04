@@ -178,6 +178,14 @@ export function mapOAuthToProfile(normalizedProfile: NormalizedProfile) {
  * Get OAuth redirect URL for development/production (2025 best practices)
  */
 export function getOAuthRedirectUrl(): string {
+  // Check if we're in production (Netlify deployment)
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname === 'thenexus-ai.netlify.app'
+  ) {
+    return 'https://thenexus-ai.netlify.app/auth/callback';
+  }
+
   let url =
     process?.env?.NEXT_PUBLIC_SITE_URL ??
     process?.env?.NEXT_PUBLIC_VERCEL_URL ??
