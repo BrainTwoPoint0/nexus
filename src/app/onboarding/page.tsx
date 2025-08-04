@@ -8,10 +8,12 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
-import { CheckCircle, Upload, User } from 'lucide-react';
+import { CheckCircle, Upload, User, Mic, FileCheck } from 'lucide-react';
 import { useSupabase } from '@/components/providers/supabase-provider';
 import { CVUploadWithProgress } from '@/components/ui/cv-upload-with-progress';
 import { CVDataPreview } from '@/components/ui/cv-data-preview';
+import { VoiceConversationRealtime } from '@/components/ui/voice-conversation-realtime';
+import { ProfileReview } from '@/components/ui/profile-review';
 import { logger } from '@/lib/logger';
 
 export default function OnboardingPage() {
@@ -19,7 +21,7 @@ export default function OnboardingPage() {
   const [, setUserProfile] = useState<Record<string, unknown> | null>(null);
   const [, setUserId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<
-    'cv' | 'cv-preview' | 'review' | 'complete'
+    'cv' | 'cv-preview' | 'voice-interview' | 'review' | 'complete'
   >('cv');
   const [cvData, setCvData] = useState<any>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
@@ -91,10 +93,9 @@ export default function OnboardingPage() {
   };
 
   const handleCVPreviewContinue = async () => {
-    // Skip review step and automatically submit the CV data
+    // Move to voice interview step
     if (cvData) {
-      setFinalProfileData(cvData);
-      await handleProfileSubmit(cvData);
+      setCurrentStep('voice-interview');
     }
   };
 
@@ -104,13 +105,61 @@ export default function OnboardingPage() {
 
   const [finalProfileData, setFinalProfileData] = useState<any>(null);
 
-  const handleReviewSave = async (updatedData: any) => {
-    setFinalProfileData(updatedData);
-    await handleProfileSubmit(updatedData);
+  const handleVoiceComplete = async (
+    transcript: string,
+    extractedData: any
+  ) => {
+    logger.info(
+      'Voice interview completed',
+      {
+        transcriptLength: transcript.length,
+        extractedDataKeys: Object.keys(extractedData || {}),
+        extractedData: extractedData,
+      },
+      'ONBOARDING'
+    );
+
+    // Merge CV data with voice-extracted data
+    const mergedData = { ...cvData, ...extractedData };
+    logger.info(
+      'Data merged for review',
+      {
+        cvDataKeys: Object.keys(cvData || {}),
+        extractedDataKeys: Object.keys(extractedData || {}),
+        mergedDataKeys: Object.keys(mergedData || {}),
+        mergedData: mergedData,
+      },
+      'ONBOARDING'
+    );
+
+    setFinalProfileData(mergedData);
+
+    // Save the voice session (but not the profile yet)
+    try {
+      await fetch('/api/voice/save-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript,
+          extractedData,
+          cvData,
+        }),
+      });
+    } catch (error) {
+      logger.error('Failed to save voice session', error, 'ONBOARDING');
+    }
+
+    // Move to review step instead of auto-saving
+    setCurrentStep('review');
   };
 
-  const handleReviewCancel = () => {
-    setCurrentStep('cv-preview');
+  const handleVoiceError = (error: string) => {
+    logger.error('Voice interview error', { error }, 'ONBOARDING');
+    // Fallback to review step if voice fails
+    if (cvData) {
+      setFinalProfileData(cvData);
+      setCurrentStep('review');
+    }
   };
 
   const handleProfileSubmit = async (profileDataToSubmit?: any) => {
@@ -241,14 +290,14 @@ export default function OnboardingPage() {
               Build Your Executive Profile
             </h1>
             <p className="mt-4 text-lg text-muted-foreground">
-              Upload your CV to build your executive profile
+              Upload your CV and complete a brief voice interview
             </p>
           </div>
 
           {/* Steps Overview */}
           <Card>
             <CardHeader>
-              <CardTitle>Simple 2-Step Process</CardTitle>
+              <CardTitle>Simple 4-Step Process</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Get your executive profile ready in minutes
               </p>
@@ -310,7 +359,113 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Step 2: Create Profile */}
+                {/* Step 2: Voice Interview */}
+                <div
+                  className={`flex items-start gap-4 rounded-lg border p-4 ${
+                    currentStep === 'voice-interview'
+                      ? 'border-primary bg-primary/5'
+                      : currentStep === 'complete'
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-gray-200'
+                  }`}
+                >
+                  <div
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                      currentStep === 'voice-interview'
+                        ? 'bg-primary text-white'
+                        : currentStep === 'complete'
+                          ? 'bg-green-100'
+                          : 'bg-gray-100'
+                    }`}
+                  >
+                    <Mic
+                      className={`h-4 w-4 ${
+                        currentStep === 'voice-interview'
+                          ? 'text-white'
+                          : currentStep === 'complete'
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="flex items-center gap-2 font-semibold">
+                      Voice Interview
+                      <span className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700">
+                        AI-Powered
+                      </span>
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Quick conversation to complete your profile details
+                    </p>
+                  </div>
+                  <div className="text-sm font-medium">
+                    {currentStep === 'voice-interview' ? (
+                      <span className="text-primary">In Progress</span>
+                    ) : currentStep === 'complete' ? (
+                      <span className="text-green-600">✓ Complete</span>
+                    ) : cvData ? (
+                      <span className="text-gray-500">Ready</span>
+                    ) : (
+                      <span className="text-gray-400">Waiting</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 3: Review & Edit */}
+                <div
+                  className={`flex items-start gap-4 rounded-lg border p-4 ${
+                    currentStep === 'review'
+                      ? 'border-primary bg-primary/5'
+                      : currentStep === 'complete'
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-gray-200'
+                  }`}
+                >
+                  <div
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
+                      currentStep === 'review'
+                        ? 'bg-primary text-white'
+                        : currentStep === 'complete'
+                          ? 'bg-green-100'
+                          : 'bg-gray-100'
+                    }`}
+                  >
+                    <FileCheck
+                      className={`h-4 w-4 ${
+                        currentStep === 'review'
+                          ? 'text-white'
+                          : currentStep === 'complete'
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="flex items-center gap-2 font-semibold">
+                      Review & Edit Profile
+                      <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700">
+                        Important
+                      </span>
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Review all information and make any necessary edits
+                    </p>
+                  </div>
+                  <div className="text-sm font-medium">
+                    {currentStep === 'review' ? (
+                      <span className="text-primary">In Progress</span>
+                    ) : currentStep === 'complete' ? (
+                      <span className="text-green-600">✓ Complete</span>
+                    ) : cvData && finalProfileData ? (
+                      <span className="text-gray-500">Ready</span>
+                    ) : (
+                      <span className="text-gray-400">Waiting</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Step 4: Create Profile */}
                 <div
                   className={`flex items-start gap-4 rounded-lg border p-4 ${
                     currentStep === 'complete'
@@ -351,14 +506,12 @@ export default function OnboardingPage() {
                     <p className="mt-1 text-sm text-muted-foreground">
                       {currentStep === 'complete'
                         ? 'Your board-ready profile has been successfully created'
-                        : 'Automatically create your profile from CV data'}
+                        : 'Automatically create your profile from all data'}
                     </p>
                   </div>
                   <div className="text-sm font-medium">
                     {currentStep === 'complete' ? (
                       <span className="text-green-600">✓ Complete</span>
-                    ) : cvData ? (
-                      <span className="text-gray-500">Ready</span>
                     ) : (
                       <span className="text-gray-400">Waiting</span>
                     )}
@@ -386,6 +539,25 @@ export default function OnboardingPage() {
                 </div>
               )}
 
+              {currentStep === 'voice-interview' && cvData && (
+                <div className="mt-6">
+                  <VoiceConversationRealtime
+                    cvData={cvData}
+                    onComplete={handleVoiceComplete}
+                    onError={handleVoiceError}
+                  />
+                </div>
+              )}
+
+              {currentStep === 'review' && finalProfileData && (
+                <div className="mt-6">
+                  <ProfileReview
+                    profileData={finalProfileData}
+                    onSave={handleProfileSubmit}
+                    isLoading={isLoading}
+                  />
+                </div>
+              )}
 
               {currentStep === 'complete' && (
                 <div className="mt-6 text-center">

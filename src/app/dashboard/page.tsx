@@ -36,7 +36,6 @@ interface Profile {
   first_name: string | null;
   last_name: string | null;
   professional_headline: string | null;
-  role: string | null;
   location: string | null;
 }
 
@@ -206,11 +205,9 @@ export default function DashboardPage() {
     async function fetchDashboardData() {
       try {
         // Fetch profile
-        const { data: profileData } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select(
-            'first_name, last_name, professional_headline, role, location'
-          )
+          .select('first_name, last_name, professional_headline, location')
           .eq('id', user?.id)
           .single();
 
@@ -432,10 +429,12 @@ export default function DashboardPage() {
     };
   }, [user, supabase]);
 
-  const displayName =
-    (profile
-      ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim()
-      : user?.email) || 'User';
+  const displayName = (() => {
+    if (profile?.first_name || profile?.last_name) {
+      return `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim();
+    }
+    return user?.email?.split('@')[0] || 'User';
+  })();
   const initials =
     (profile?.first_name?.[0] ?? '') + (profile?.last_name?.[0] ?? '') ||
     (user?.email?.[0] ?? 'U');

@@ -168,14 +168,47 @@ export async function POST(request: NextRequest) {
     );
 
     // Add detailed logging of the actual data structure received
-    console.log('🔍 FULL PARSED DATA STRUCTURE:', JSON.stringify(parsedData, null, 2));
+    console.log(
+      '🔍 FULL PARSED DATA STRUCTURE:',
+      JSON.stringify(parsedData, null, 2)
+    );
     console.log('📊 DATA ANALYSIS:');
-    console.log('  - Has workHistory:', !!parsedData?.workHistory, 'Length:', parsedData?.workHistory?.length || 0);
-    console.log('  - Has workExperience:', !!parsedData?.workExperience, 'Length:', parsedData?.workExperience?.length || 0);
-    console.log('  - Has boardExperience:', !!parsedData?.boardExperience, 'Length:', parsedData?.boardExperience?.length || 0);
-    console.log('  - Has education:', !!parsedData?.education, 'Length:', parsedData?.education?.length || 0);
-    console.log('  - Has skills:', !!parsedData?.skills, 'Length:', parsedData?.skills?.length || 0);
-    console.log('  - Has languages:', !!parsedData?.languages, 'Length:', parsedData?.languages?.length || 0);
+    console.log(
+      '  - Has workHistory:',
+      !!parsedData?.workHistory,
+      'Length:',
+      parsedData?.workHistory?.length || 0
+    );
+    console.log(
+      '  - Has workExperience:',
+      !!parsedData?.workExperience,
+      'Length:',
+      parsedData?.workExperience?.length || 0
+    );
+    console.log(
+      '  - Has boardExperience:',
+      !!parsedData?.boardExperience,
+      'Length:',
+      parsedData?.boardExperience?.length || 0
+    );
+    console.log(
+      '  - Has education:',
+      !!parsedData?.education,
+      'Length:',
+      parsedData?.education?.length || 0
+    );
+    console.log(
+      '  - Has skills:',
+      !!parsedData?.skills,
+      'Length:',
+      parsedData?.skills?.length || 0
+    );
+    console.log(
+      '  - Has languages:',
+      !!parsedData?.languages,
+      'Length:',
+      parsedData?.languages?.length || 0
+    );
 
     // Get current profile
     const { data: currentProfile } = await supabase
@@ -289,21 +322,34 @@ export async function POST(request: NextRequest) {
 
     // Insert board experience first (if available)
     if (parsedData.boardExperience && parsedData.boardExperience.length > 0) {
-      console.log('🏢 Inserting board experience:', JSON.stringify(parsedData.boardExperience, null, 2));
+      console.log(
+        '🏢 Inserting board experience:',
+        JSON.stringify(parsedData.boardExperience, null, 2)
+      );
       const boardExperienceData = parsedData.boardExperience.map(
         (exp: Record<string, unknown>) => {
-          console.log('🔍 Processing board experience item:', JSON.stringify(exp, null, 2));
+          console.log(
+            '🔍 Processing board experience item:',
+            JSON.stringify(exp, null, 2)
+          );
           console.log(
             '- startDate:',
             exp.startDate || exp.start_date,
             'type:',
             typeof (exp.startDate || exp.start_date)
           );
-          console.log('- endDate:', exp.endDate || exp.end_date, 'type:', typeof (exp.endDate || exp.end_date));
+          console.log(
+            '- endDate:',
+            exp.endDate || exp.end_date,
+            'type:',
+            typeof (exp.endDate || exp.end_date)
+          );
           console.log('- isCurrent:', exp.isCurrent || exp.is_current);
 
           // Try multiple field name variations
-          const startDate = parseDate((exp.startDate || exp.start_date) as string);
+          const startDate = parseDate(
+            (exp.startDate || exp.start_date) as string
+          );
           const organization = exp.organization || exp.company;
           const role = exp.role || exp.title || exp.position;
 
@@ -315,7 +361,7 @@ export async function POST(request: NextRequest) {
                 organization,
                 role,
                 startDate,
-                originalData: exp
+                originalData: exp,
               }
             );
             return null;
@@ -326,15 +372,26 @@ export async function POST(request: NextRequest) {
             organization,
             role,
             startDate,
-            endDate: (exp.isCurrent || exp.is_current) ? null : parseDate((exp.endDate || exp.end_date) as string),
-            isCurrent: exp.isCurrent || exp.is_current
+            endDate:
+              exp.isCurrent || exp.is_current
+                ? null
+                : parseDate((exp.endDate || exp.end_date) as string),
+            isCurrent: exp.isCurrent || exp.is_current,
           });
 
           // Validate organization_size against allowed values
-          const validOrgSizes = ['startup', 'small', 'medium', 'large', 'public'];
+          const validOrgSizes = [
+            'startup',
+            'small',
+            'medium',
+            'large',
+            'public',
+          ];
           let orgSize = exp.organizationSize || exp.organization_size;
           if (orgSize && !validOrgSizes.includes(orgSize as string)) {
-            console.warn(`Invalid organization_size: ${orgSize}, setting to null`);
+            console.warn(
+              `Invalid organization_size: ${orgSize}, setting to null`
+            );
             orgSize = null;
           }
 
@@ -344,15 +401,22 @@ export async function POST(request: NextRequest) {
             role: role || 'Board Member',
             sector: exp.sector || null,
             start_date: startDate || '2020-01-01', // Fallback date if parsing fails
-            end_date: (exp.isCurrent || exp.is_current) ? null : parseDate((exp.endDate || exp.end_date) as string),
+            end_date:
+              exp.isCurrent || exp.is_current
+                ? null
+                : parseDate((exp.endDate || exp.end_date) as string),
             is_current: exp.isCurrent || exp.is_current || false,
             organization_size: orgSize || null,
-            key_contributions: exp.keyContributions || exp.key_contributions || null,
+            key_contributions:
+              exp.keyContributions || exp.key_contributions || null,
             compensation_disclosed: exp.compensationDisclosed || false,
             annual_fee: exp.annualFee || null,
           };
-          
-          console.log('📝 Final board entry for database:', JSON.stringify(boardEntry, null, 2));
+
+          console.log(
+            '📝 Final board entry for database:',
+            JSON.stringify(boardEntry, null, 2)
+          );
           return boardEntry;
         }
       );
@@ -362,11 +426,16 @@ export async function POST(request: NextRequest) {
         (item: any) => item !== null
       );
 
-      console.log('🚀 Board experience data to insert:', JSON.stringify(validBoardExperienceData, null, 2));
+      console.log(
+        '🚀 Board experience data to insert:',
+        JSON.stringify(validBoardExperienceData, null, 2)
+      );
 
       if (validBoardExperienceData.length > 0) {
-        console.log(`🔄 Attempting to insert ${validBoardExperienceData.length} board experience entries...`);
-        
+        console.log(
+          `🔄 Attempting to insert ${validBoardExperienceData.length} board experience entries...`
+        );
+
         const { data: insertedBoard, error: boardError } = await supabase
           .from('board_experience')
           .insert(validBoardExperienceData)
@@ -378,12 +447,17 @@ export async function POST(request: NextRequest) {
             message: boardError.message,
             details: boardError.details,
             hint: boardError.hint,
-            code: boardError.code
+            code: boardError.code,
           });
           // Don't fail the entire process, just log the error
         } else {
-          console.log('✅ Board experience inserted successfully:', insertedBoard);
-          console.log(`✅ Successfully inserted ${insertedBoard?.length || 0} board experience entries`);
+          console.log(
+            '✅ Board experience inserted successfully:',
+            insertedBoard
+          );
+          console.log(
+            `✅ Successfully inserted ${insertedBoard?.length || 0} board experience entries`
+          );
         }
       } else {
         console.log('ℹ️ No valid board experience data to insert');
@@ -394,27 +468,43 @@ export async function POST(request: NextRequest) {
 
     // Insert regular work history (if available)
     if (parsedData.workHistory && parsedData.workHistory.length > 0) {
-      console.log('💼 Inserting work history:', JSON.stringify(parsedData.workHistory, null, 2));
+      console.log(
+        '💼 Inserting work history:',
+        JSON.stringify(parsedData.workHistory, null, 2)
+      );
       const workHistoryData = parsedData.workHistory.map(
         (exp: Record<string, unknown>) => {
-          console.log('🔍 Processing work history item:', JSON.stringify(exp, null, 2));
+          console.log(
+            '🔍 Processing work history item:',
+            JSON.stringify(exp, null, 2)
+          );
           console.log(
             '- startDate:',
             exp.startDate || exp.start_date,
             'type:',
             typeof (exp.startDate || exp.start_date)
           );
-          console.log('- endDate:', exp.endDate || exp.end_date, 'type:', typeof (exp.endDate || exp.end_date));
+          console.log(
+            '- endDate:',
+            exp.endDate || exp.end_date,
+            'type:',
+            typeof (exp.endDate || exp.end_date)
+          );
           console.log('- isCurrent:', exp.isCurrent || exp.is_current);
 
           // Try multiple field name variations
-          const startDate = parseDate((exp.startDate || exp.start_date) as string);
+          const startDate = parseDate(
+            (exp.startDate || exp.start_date) as string
+          );
           const company = exp.company || exp.organization;
           const title = exp.title || exp.role || exp.position;
 
           // Only skip if the entry is completely empty
           if (!company && !title) {
-            console.warn('⚠️ Skipping completely empty work experience entry:', exp);
+            console.warn(
+              '⚠️ Skipping completely empty work experience entry:',
+              exp
+            );
             return null;
           }
 
@@ -423,12 +513,21 @@ export async function POST(request: NextRequest) {
             company,
             title,
             startDate,
-            endDate: (exp.isCurrent || exp.is_current) ? null : parseDate((exp.endDate || exp.end_date) as string),
-            isCurrent: exp.isCurrent || exp.is_current
+            endDate:
+              exp.isCurrent || exp.is_current
+                ? null
+                : parseDate((exp.endDate || exp.end_date) as string),
+            isCurrent: exp.isCurrent || exp.is_current,
           });
 
           // Validate company_size against allowed values
-          const validCompanySizes = ['startup', 'small', 'medium', 'large', 'enterprise'];
+          const validCompanySizes = [
+            'startup',
+            'small',
+            'medium',
+            'large',
+            'enterprise',
+          ];
           let compSize = exp.companySize || exp.company_size;
           if (compSize && !validCompanySizes.includes(compSize as string)) {
             console.warn(`Invalid company_size: ${compSize}, setting to null`);
@@ -440,15 +539,22 @@ export async function POST(request: NextRequest) {
             company: company || 'Not specified',
             title: title || 'Not specified',
             start_date: startDate || '2020-01-01', // Fallback date if parsing fails
-            end_date: (exp.isCurrent || exp.is_current) ? null : parseDate((exp.endDate || exp.end_date) as string),
+            end_date:
+              exp.isCurrent || exp.is_current
+                ? null
+                : parseDate((exp.endDate || exp.end_date) as string),
             is_current: exp.isCurrent || exp.is_current || false,
             description: exp.description || null,
-            key_achievements: exp.keyAchievements || exp.key_achievements || null,
+            key_achievements:
+              exp.keyAchievements || exp.key_achievements || null,
             company_size: compSize || null,
             location: exp.location || null,
           };
-          
-          console.log('📝 Final work entry for database:', JSON.stringify(workEntry, null, 2));
+
+          console.log(
+            '📝 Final work entry for database:',
+            JSON.stringify(workEntry, null, 2)
+          );
           return workEntry;
         }
       );
@@ -458,11 +564,16 @@ export async function POST(request: NextRequest) {
         (item: any) => item !== null
       );
 
-      console.log('🚀 Work history data to insert:', JSON.stringify(validWorkHistoryData, null, 2));
+      console.log(
+        '🚀 Work history data to insert:',
+        JSON.stringify(validWorkHistoryData, null, 2)
+      );
 
       if (validWorkHistoryData.length > 0) {
-        console.log(`🔄 Attempting to insert ${validWorkHistoryData.length} work history entries...`);
-        
+        console.log(
+          `🔄 Attempting to insert ${validWorkHistoryData.length} work history entries...`
+        );
+
         const { data: insertedWorkHistory, error: workHistoryError } =
           await supabase
             .from('work_experience')
@@ -475,12 +586,17 @@ export async function POST(request: NextRequest) {
             message: workHistoryError.message,
             details: workHistoryError.details,
             hint: workHistoryError.hint,
-            code: workHistoryError.code
+            code: workHistoryError.code,
           });
           // Don't fail the entire process, just log the error
         } else {
-          console.log('✅ Work history inserted successfully:', insertedWorkHistory);
-          console.log(`✅ Successfully inserted ${insertedWorkHistory?.length || 0} work history entries`);
+          console.log(
+            '✅ Work history inserted successfully:',
+            insertedWorkHistory
+          );
+          console.log(
+            `✅ Successfully inserted ${insertedWorkHistory?.length || 0} work history entries`
+          );
         }
       } else {
         console.log('ℹ️ No valid work history data to insert');
@@ -491,21 +607,33 @@ export async function POST(request: NextRequest) {
 
     // Insert work experience with proper date handling (fallback for legacy data)
     if (parsedData.workExperience && parsedData.workExperience.length > 0) {
-      console.log('📋 Inserting legacy work experience:', JSON.stringify(parsedData.workExperience, null, 2));
+      console.log(
+        '📋 Inserting legacy work experience:',
+        JSON.stringify(parsedData.workExperience, null, 2)
+      );
       const workExperienceData = parsedData.workExperience.map(
         (exp: Record<string, unknown>) => {
-          const startDate = parseDate((exp.startDate || exp.start_date) as string);
+          const startDate = parseDate(
+            (exp.startDate || exp.start_date) as string
+          );
           const endDate = parseDate((exp.endDate || exp.end_date) as string);
 
           // Debug logging for responsibilities mapping
-          console.log(`🔍 Mapping work experience for ${exp.company || exp.organization}:`);
+          console.log(
+            `🔍 Mapping work experience for ${exp.company || exp.organization}:`
+          );
           console.log(
             '  - startDate input:',
             exp.startDate || exp.start_date,
             '-> parsed:',
             startDate
           );
-          console.log('  - endDate input:', exp.endDate || exp.end_date, '-> parsed:', endDate);
+          console.log(
+            '  - endDate input:',
+            exp.endDate || exp.end_date,
+            '-> parsed:',
+            endDate
+          );
           console.log('  - responsibilities:', exp.responsibilities);
           console.log('  - achievements:', exp.achievements);
 
@@ -527,10 +655,18 @@ export async function POST(request: NextRequest) {
           const title = exp.position || exp.title || exp.role;
 
           // Validate company_size for legacy data too
-          const validCompanySizes = ['startup', 'small', 'medium', 'large', 'enterprise'];
+          const validCompanySizes = [
+            'startup',
+            'small',
+            'medium',
+            'large',
+            'enterprise',
+          ];
           let compSize = exp.companySize || exp.company_size;
           if (compSize && !validCompanySizes.includes(compSize as string)) {
-            console.warn(`Invalid company_size in legacy data: ${compSize}, setting to null`);
+            console.warn(
+              `Invalid company_size in legacy data: ${compSize}, setting to null`
+            );
             compSize = null;
           }
 
@@ -542,18 +678,27 @@ export async function POST(request: NextRequest) {
             end_date: endDate,
             is_current: !endDate, // If no end date, it's current
             description: exp.description || null,
-            key_achievements: keyAchievements.length > 0 ? keyAchievements : null,
+            key_achievements:
+              keyAchievements.length > 0 ? keyAchievements : null,
             company_size: compSize || null,
             location: exp.location || null,
           };
-          
-          console.log('📝 Final legacy work entry for database:', JSON.stringify(legacyWorkEntry, null, 2));
+
+          console.log(
+            '📝 Final legacy work entry for database:',
+            JSON.stringify(legacyWorkEntry, null, 2)
+          );
           return legacyWorkEntry;
         }
       );
 
-      console.log('🚀 Legacy work experience data to insert:', JSON.stringify(workExperienceData, null, 2));
-      console.log(`🔄 Attempting to insert ${workExperienceData.length} legacy work experience entries...`);
+      console.log(
+        '🚀 Legacy work experience data to insert:',
+        JSON.stringify(workExperienceData, null, 2)
+      );
+      console.log(
+        `🔄 Attempting to insert ${workExperienceData.length} legacy work experience entries...`
+      );
 
       const { data: insertedWork, error: workError } = await supabase
         .from('work_experience')
@@ -566,12 +711,17 @@ export async function POST(request: NextRequest) {
           message: workError.message,
           details: workError.details,
           hint: workError.hint,
-          code: workError.code
+          code: workError.code,
         });
         // Don't fail the entire process, just log the error
       } else {
-        console.log('✅ Legacy work experience inserted successfully:', insertedWork);
-        console.log(`✅ Successfully inserted ${insertedWork?.length || 0} legacy work experience entries`);
+        console.log(
+          '✅ Legacy work experience inserted successfully:',
+          insertedWork
+        );
+        console.log(
+          `✅ Successfully inserted ${insertedWork?.length || 0} legacy work experience entries`
+        );
       }
     } else {
       console.log('No work experience data found in parsedData');

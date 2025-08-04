@@ -697,15 +697,15 @@ export async function parseCVWithOpenAI(
     const hasCertificationsSection =
       truncatedCVText.toUpperCase().includes('CERTIF') ||
       truncatedCVText.toUpperCase().includes('AWS');
-    const hasSkillsSection = 
+    const hasSkillsSection =
       truncatedCVText.toUpperCase().includes('SKILL') ||
       truncatedCVText.toUpperCase().includes('COMPETENC') ||
       truncatedCVText.toUpperCase().includes('TECHNICAL');
-    const hasEducationSection = 
+    const hasEducationSection =
       truncatedCVText.toUpperCase().includes('EDUCATION') ||
       truncatedCVText.toUpperCase().includes('UNIVERSITY') ||
       truncatedCVText.toUpperCase().includes('DEGREE');
-    
+
     logger.debug(
       'Text analysis',
       {

@@ -80,15 +80,20 @@ export function CVDataReview({
       experience.endYear;
 
     // Check if current position
-    const isCurrent = experience.is_current === true || 
-                     (typeof experience.is_current === 'string' && experience.is_current.toLowerCase() === 'true') ||
-                     endDate === null ||
-                     endDate === 'Present' ||
-                     endDate === 'Current';
+    const isCurrent =
+      experience.is_current === true ||
+      (typeof experience.is_current === 'string' &&
+        experience.is_current.toLowerCase() === 'true') ||
+      endDate === null ||
+      endDate === 'Present' ||
+      endDate === 'Current';
 
     // If we have valid dates, format them
     if (startDate && startDate !== 'Unknown' && startDate !== null) {
-      const end = !isCurrent && endDate && endDate !== 'Unknown' && endDate !== null ? endDate : 'Present';
+      const end =
+        !isCurrent && endDate && endDate !== 'Unknown' && endDate !== null
+          ? endDate
+          : 'Present';
       return `${startDate} - ${end}`;
     }
 
@@ -173,7 +178,9 @@ export function CVDataReview({
             {(cvData.firstName || cvData.lastName) && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Full Name</span>
+                  <span className="text-sm text-muted-foreground">
+                    Full Name
+                  </span>
                   <Badge variant="outline" className="text-sm">
                     CV
                   </Badge>
@@ -214,7 +221,9 @@ export function CVDataReview({
             {cvData.location && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Location</span>
+                  <span className="text-sm text-muted-foreground">
+                    Location
+                  </span>
                   <Badge variant="outline" className="text-sm">
                     CV
                   </Badge>
@@ -228,7 +237,9 @@ export function CVDataReview({
             {cvData.linkedInUrl && (
               <>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">LinkedIn</span>
+                  <span className="text-sm text-muted-foreground">
+                    LinkedIn
+                  </span>
                   <Badge variant="outline" className="text-sm">
                     CV
                   </Badge>
@@ -272,7 +283,10 @@ export function CVDataReview({
       )}
 
       {/* Professional Summary */}
-      {(cvData.title || cvData.currentRole || cvData.currentCompany || cvData.summary) && (
+      {(cvData.title ||
+        cvData.currentRole ||
+        cvData.currentCompany ||
+        cvData.summary) && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -283,16 +297,22 @@ export function CVDataReview({
           <CardContent className="space-y-3">
             {(cvData.currentRole || cvData.title) && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Current Role</span>
+                <span className="text-sm text-muted-foreground">
+                  Current Role
+                </span>
                 <Badge variant="outline" className="text-sm">
                   CV
                 </Badge>
-                <span className="font-medium">{cvData.currentRole || cvData.title}</span>
+                <span className="font-medium">
+                  {cvData.currentRole || cvData.title}
+                </span>
               </div>
             )}
             {cvData.currentCompany && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Current Company</span>
+                <span className="text-sm text-muted-foreground">
+                  Current Company
+                </span>
                 <Badge variant="outline" className="text-sm">
                   CV
                 </Badge>
@@ -323,7 +343,9 @@ export function CVDataReview({
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Professional Bio</span>
+                <span className="text-sm text-muted-foreground">
+                  Professional Bio
+                </span>
                 <Badge variant="outline" className="text-sm">
                   CV
                 </Badge>
@@ -379,7 +401,9 @@ export function CVDataReview({
                     >
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Job Title</span>
+                          <span className="text-sm text-muted-foreground">
+                            Job Title
+                          </span>
                           <Badge variant="outline" className="text-sm">
                             CV
                           </Badge>
@@ -388,7 +412,9 @@ export function CVDataReview({
                           {job.position || job.title || job.role}
                         </h4>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Company</span>
+                          <span className="text-sm text-muted-foreground">
+                            Company
+                          </span>
                           <Badge variant="outline" className="text-sm">
                             CV
                           </Badge>
@@ -397,7 +423,9 @@ export function CVDataReview({
                           {job.company || job.organization || job.employer}
                         </p>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Start Date</span>
+                          <span className="text-sm text-muted-foreground">
+                            Start Date
+                          </span>
                           <Badge variant="outline" className="text-sm">
                             CV
                           </Badge>
@@ -406,7 +434,9 @@ export function CVDataReview({
                           {job.start_date || job.startDate || 'Not provided'}
                         </p>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">End Date</span>
+                          <span className="text-sm text-muted-foreground">
+                            End Date
+                          </span>
                           <Badge variant="outline" className="text-sm">
                             CV
                           </Badge>
@@ -417,7 +447,9 @@ export function CVDataReview({
                         {(job.location || job.city) && (
                           <>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-muted-foreground">Location</span>
+                              <span className="text-sm text-muted-foreground">
+                                Location
+                              </span>
                               <Badge variant="outline" className="text-sm">
                                 CV
                               </Badge>
@@ -490,16 +522,18 @@ export function CVDataReview({
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Board Role</span>
+                        <span className="text-sm text-muted-foreground">
+                          Board Role
+                        </span>
                         <Badge variant="outline" className="text-sm">
                           CV
                         </Badge>
                       </div>
-                      <h4 className="font-semibold">
-                        {board.role}
-                      </h4>
+                      <h4 className="font-semibold">{board.role}</h4>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Organization</span>
+                        <span className="text-sm text-muted-foreground">
+                          Organization
+                        </span>
                         <Badge variant="outline" className="text-sm">
                           CV
                         </Badge>
@@ -508,7 +542,9 @@ export function CVDataReview({
                         {board.organization}
                       </p>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Start Date</span>
+                        <span className="text-sm text-muted-foreground">
+                          Start Date
+                        </span>
                         <Badge variant="outline" className="text-sm">
                           CV
                         </Badge>
@@ -517,7 +553,9 @@ export function CVDataReview({
                         {board.start_date || 'Not provided'}
                       </p>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">End Date</span>
+                        <span className="text-sm text-muted-foreground">
+                          End Date
+                        </span>
                         <Badge variant="outline" className="text-sm">
                           CV
                         </Badge>
@@ -528,8 +566,12 @@ export function CVDataReview({
                     </div>
                     {board.key_contributions && (
                       <div>
-                        <span className="text-sm font-medium">Key Contributions:</span>
-                        <p className="text-sm text-muted-foreground">{board.key_contributions}</p>
+                        <span className="text-sm font-medium">
+                          Key Contributions:
+                        </span>
+                        <p className="text-sm text-muted-foreground">
+                          {board.key_contributions}
+                        </p>
                       </div>
                     )}
                   </div>

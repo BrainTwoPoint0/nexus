@@ -50,7 +50,9 @@ function CVReviewContent() {
               Date.now() - profileData.timestamp < 60 * 60 * 1000;
 
             if (isDataFresh && profileData.data) {
-              console.log('Auto-applying merged profile data from enhanced onboarding');
+              console.log(
+                'Auto-applying merged profile data from enhanced onboarding'
+              );
               parsedData = profileData.data;
               originalFileData = profileData.dataSources || null;
             }
@@ -83,7 +85,10 @@ function CVReviewContent() {
 
         // Fallback to old system if filePath is provided
         if (!parsedData && filePath) {
-          console.log('Auto-applying CV data from database lookup for filePath:', filePath);
+          console.log(
+            'Auto-applying CV data from database lookup for filePath:',
+            filePath
+          );
 
           // Get the CV upload data from database (old system)
           const { data: cvUpload, error: cvError } = await supabase
@@ -116,7 +121,9 @@ function CVReviewContent() {
               extractedContent.status !== 'completed' ||
               !extractedContent.parsed_data
             ) {
-              setError('CV parsing is not yet complete. Please wait and try again.');
+              setError(
+                'CV parsing is not yet complete. Please wait and try again.'
+              );
               setIsProcessing(false);
               return;
             }
@@ -131,14 +138,16 @@ function CVReviewContent() {
         }
 
         if (!parsedData) {
-          setError('No CV data found. Please go back and upload your CV again.');
+          setError(
+            'No CV data found. Please go back and upload your CV again.'
+          );
           setIsProcessing(false);
           return;
         }
 
         // Automatically apply the CV data
         console.log('Automatically applying CV data to profile...');
-        
+
         const response = await fetch('/api/profile/apply-cv-data', {
           method: 'POST',
           headers: {
@@ -152,7 +161,8 @@ function CVReviewContent() {
         if (response.ok) {
           toast({
             title: 'Profile Updated',
-            description: result.message || 'Successfully applied CV data to your profile.',
+            description:
+              result.message || 'Successfully applied CV data to your profile.',
           });
 
           // Clean up sessionStorage since data has been applied
@@ -201,9 +211,7 @@ function CVReviewContent() {
             <h1 className="text-2xl font-bold text-foreground">
               Error Applying CV Data
             </h1>
-            <p className="text-muted-foreground">
-              {error}
-            </p>
+            <p className="text-muted-foreground">{error}</p>
             <button
               onClick={() => router.push('/onboarding')}
               className="text-primary hover:underline"
