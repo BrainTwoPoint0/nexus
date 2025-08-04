@@ -1,5 +1,5 @@
 [build]
-  command = "ls -la src/lib/ && npm ci && npm run build"
+  command = "rm -rf .next && npm ci && npm run build"
   publish = ".next"
 
 [[plugins]]
