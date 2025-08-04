@@ -8,6 +8,22 @@ import { processCVInMemory } from '@/lib/cv-parser';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OPENAI_API_KEY is not configured');
+      return NextResponse.json(
+        {
+          error:
+            'CV parsing service is not configured. Please contact support.',
+        },
+        { status: 503 }
+      );
+    }
+
+    // Set a timeout for Netlify Functions (default is 10s, we'll use 25s to be safe)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
     const supabase = await createClient();
 
     // Get authenticated user
@@ -75,6 +91,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('CV processed successfully');
+
+    // Clear timeout on success
+    clearTimeout(timeoutId);
 
     return NextResponse.json({
       success: true,
