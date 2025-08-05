@@ -245,7 +245,8 @@ Required JSON structure (use null if not found, empty arrays if no items):
   "linkedInUrl": null,
   "title": null,
   "professionalBio": null,
-  "workExperience": [],
+  "boardExperience": [],
+  "workHistory": [],
   "education": [],
   "skills": [],
   "languages": [], // Extract as: ["English (Native)", "French (Fluent)", "Spanish (Conversational)"]
@@ -270,12 +271,12 @@ Output: "certifications": ["PMP", "Six Sigma Black Belt"]
 
 For work experience, extract actual job entries with these fields:
 - company: Company name from CV
-- position: Job title from CV
-- startDate: Extract start date in any format mentioned (e.g., "March 2023", "2023", "Mar 2023", "03/2023")
-- endDate: Extract end date if mentioned (null if current/present)
-- location: Work location if mentioned
-- description: Extract the COMPLETE job description, responsibilities, and role details
-- achievements: List of specific achievements, accomplishments, metrics, or quantifiable results mentioned
+- title: Job title from CV
+- start_date: Extract start date in any format mentioned (e.g., "March 2023", "2023", "Mar 2023", "03/2023")
+- end_date: Extract end date if mentioned (null if current/present)
+- is_current: true if position is current/present (look for "Present", "Current", "Now", or ongoing indicators)
+- description: Extract the COMPLETE job description, responsibilities, and role details. Include ALL bullet points, paragraphs, and details provided for each position. Never leave this empty if any information exists.
+- key_achievements: List of specific achievements, accomplishments, metrics, or quantifiable results mentioned
 
 IMPORTANT FOR DATES: Look for date patterns like:
 - "March 2023 - Present" 
@@ -284,6 +285,14 @@ IMPORTANT FOR DATES: Look for date patterns like:
 - "2019 - Current"
 - Single dates like "Since 2022"
 - Academic years like "2018-2021"
+
+For board experience:
+- organization: Organization name
+- role: Board role/title (e.g., Director, Non-Executive Director, Board Member)
+- start_date: Extract start date in any format mentioned (same patterns as work experience)
+- end_date: Extract end date if mentioned (null if current/present)
+- is_current: true if position is current/present (look for "Present", "Current", "Now")
+- key_contributions: Major contributions or achievements in board role (never leave empty if any details exist)
 
 For education, include:
 - degree: Degree name
@@ -317,6 +326,38 @@ For skills, extract ALL technical skills, professional skills, and competencies 
 - Technology skills: Programming languages, frameworks, tools, platforms
 - Professional skills: Management, leadership, strategy, analysis
 - Industry skills: Domain expertise, specialized knowledge
+- Soft skills: Communication, teamwork, problem-solving
+
+For professional memberships, extract all memberships in professional organizations, associations, clubs, or institutes.
+
+IMPORTANT: Extract ALL work experience entries - do not truncate or skip any positions.
+IMPORTANT: Extract ALL education entries - including degrees, schools, dates, honors.
+IMPORTANT: Extract ALL achievements, awards, speaking engagements, and recognitions.
+IMPORTANT: Extract ALL skills mentioned anywhere in the CV - technical and professional.
+IMPORTANT: For descriptions - NEVER leave description fields empty if ANY information exists about the role, even brief mentions.
+IMPORTANT: For dates - Look carefully for ANY date indicators, including partial dates like years only.
+
+CRITICAL CATEGORIZATION RULES:
+
+**Board Experience ONLY includes governance/oversight roles:**
+- Non-Executive Director, Independent Director, Board Chair, Board Member
+- Advisory Board Member, Board Observer, Board Advisor
+- Trustee, Board of Trustees member
+- Key indicators: "Board", "Non-Executive", "Independent", "Advisory", "Trustee"
+
+**Work Experience includes ALL operational roles (even if senior):**
+- CEO, CFO, CTO, COO, President, VP, Director (when operational)
+- Founder, Co-Founder, Managing Director, General Manager
+- Any role where the person is running/managing the business day-to-day
+- Key indicators: "Founder", "CEO", "President", "Managing", operational responsibilities
+
+**Rule of thumb:** If someone is employed by and running the company = workHistory. If someone is governing/advising the company from outside = boardExperience.
+
+SECTION RECOGNITION: Pay special attention to section headers written in ALL CAPS or with clear formatting:
+- LANGUAGES, LANGUAGE SKILLS, LANGUAGE PROFICIENCY
+- CERTIFICATIONS, PROFESSIONAL CERTIFICATIONS, LICENSES, CREDENTIALS
+- Look for content immediately following these headers
+- Handle both dedicated sections and inline mentions throughout the CV
 
 CV TEXT TO EXTRACT FROM:
 ${truncatedCVText}
@@ -395,24 +436,42 @@ async function enhanceParsedData(data) {
     }
   }
 
-  // Handle current role from work experience
+  // Handle multiple current roles (common for executives and board members)
   if (!enhanced.currentRole || !enhanced.currentCompany) {
-    // Find current work experience
-    const currentWork = enhanced.workExperience?.find(
-      (job) =>
-        !job.endDate ||
-        job.endDate === null ||
-        job.endDate === 'Present' ||
-        job.endDate === 'Current'
+    // Find all current positions (board experience + work history)
+    const allCurrentRoles = [];
+
+    // Add current work history roles
+    const currentWorkRoles =
+      enhanced.workHistory?.filter((job) => job.is_current) || [];
+    allCurrentRoles.push(
+      ...currentWorkRoles.map((job) => ({
+        role: job.title,
+        company: job.company,
+        type: 'work',
+      }))
     );
 
-    if (currentWork) {
-      if (!enhanced.currentRole && currentWork.position) {
-        enhanced.currentRole = currentWork.position;
-      }
-      if (!enhanced.currentCompany && currentWork.company) {
-        enhanced.currentCompany = currentWork.company;
-      }
+    // Add current board experience roles
+    const currentBoardRoles =
+      enhanced.boardExperience?.filter((exp) => exp.is_current) || [];
+    allCurrentRoles.push(
+      ...currentBoardRoles.map((exp) => ({
+        role: exp.role,
+        company: exp.organization,
+        type: 'board',
+      }))
+    );
+
+    // Prioritize operational roles for currentRole/currentCompany
+    const operationalRole = allCurrentRoles.find((role) => role.type === 'work');
+    if (operationalRole) {
+      if (!enhanced.currentRole) enhanced.currentRole = operationalRole.role;
+      if (!enhanced.currentCompany) enhanced.currentCompany = operationalRole.company;
+    } else if (allCurrentRoles.length > 0) {
+      // Use board role if no operational role
+      if (!enhanced.currentRole) enhanced.currentRole = allCurrentRoles[0].role;
+      if (!enhanced.currentCompany) enhanced.currentCompany = allCurrentRoles[0].company;
     }
 
     // Fallback to title field for current role
@@ -442,7 +501,8 @@ async function generateProfessionalBio(data) {
 
 Name: ${data.firstName} ${data.lastName}
 Current Role: ${data.currentRole} at ${data.currentCompany}
-Work Experience: ${data.workExperience?.length || 0} positions
+Work Experience: ${data.workHistory?.length || 0} positions
+Board Experience: ${data.boardExperience?.length || 0} roles
 Education: ${data.education?.map((e) => `${e.degree} from ${e.institution}`).join(', ') || 'Not specified'}
 
 Write a concise, professional bio suitable for an executive profile.`;
@@ -485,13 +545,20 @@ function analyzeCompleteness(data) {
     critical: [
       'firstName',
       'lastName',
-      'email',
+      'email', 
       'phone',
       'location',
-      'title',
+      'currentRole',
+      'currentCompany',
       'professionalBio',
     ],
-    highValue: ['workExperience', 'education', 'skills', 'languages'],
+    highValue: [
+      'workHistory',
+      'boardExperience', 
+      'education',
+      'skills',
+      'languages'
+    ],
     enhanced: [
       'certifications',
       'achievements',
