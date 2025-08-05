@@ -1,0 +1,19 @@
+{
+  "name": "nexus-cv-parser-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for CV parsing with OpenAI",
+  "main": "index.js",
+  "scripts": {
+    "package": "zip -r cv-parser.zip index.js node_modules package.json",
+    "deploy": "npm run package && aws lambda update-function-code --function-name nexus-cv-parser --zip-file fileb://cv-parser.zip",
+    "create": "aws lambda create-function --function-name nexus-cv-parser --runtime nodejs18.x --role arn:aws:iam::YOUR_ACCOUNT:role/lambda-execution-role --handler index.handler --zip-file fileb://cv-parser.zip --timeout 900 --memory-size 1024",
+    "test": "node test-lambda.js"
+  },
+  "dependencies": {
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

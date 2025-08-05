@@ -13,11 +13,11 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useSupabase } from '@/components/providers/supabase-provider';
 import { validateFile, formatFileSize } from '@/lib/cv-storage';
 import { CVHelpModal } from '@/components/ui/cv-help-modal';
+import { useSupabase } from '@/components/providers/supabase-provider';
+import { Progress } from '@/components/ui/progress';
 
 interface CVUploadWithProgressProps {
   onComplete: (result: {

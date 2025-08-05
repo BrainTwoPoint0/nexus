@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Set a timeout for Netlify Functions (extend for complex CV processing)
+    // Set a timeout for processing
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased to 45s
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
 
     const supabase = await createClient();
 
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx - text extracted with mammoth, then processed with OpenAI
       'application/msword', // .doc - text extracted with mammoth, then processed with OpenAI
       'text/plain', // .txt - processed directly
-      'image/jpeg', // .jpg, .jpeg - processed with Vision API
-      'image/png', // .png - processed with Vision API
-      'image/webp', // .webp - processed with Vision API
-      'image/gif', // .gif - processed with Vision API
+      'image/jpeg', // Images processed with OpenAI Vision API
+      'image/png',
+      'image/webp',
+      'image/gif',
     ];
 
     if (!allowedTypes.includes(file.type)) {
@@ -75,27 +75,18 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      // Process CV using in-memory parsing
       const result = await processCVInMemory(file);
 
-      // Clear timeout after processing
+      // Clear timeout on success
       clearTimeout(timeoutId);
 
-      if (!result.success) {
+      if (!result.success || !result.data) {
         return NextResponse.json(
           {
             error: result.error || 'CV processing failed',
           },
           { status: 400 }
-        );
-      }
-
-      // Validate result data structure
-      if (!result.data || typeof result.data !== 'object') {
-        return NextResponse.json(
-          {
-            error: 'Invalid CV processing result - please try again',
-          },
-          { status: 500 }
         );
       }
 
@@ -108,16 +99,18 @@ export async function POST(request: NextRequest) {
     } catch (processingError) {
       // Clear timeout on error
       clearTimeout(timeoutId);
+      console.error('CV processing error:', processingError);
 
       return NextResponse.json(
         {
-          error:
-            'CV processing failed - please try again with a different file format',
+          error: 'CV processing failed - please try again',
         },
         { status: 500 }
       );
     }
   } catch (error) {
+    console.error('CV parsing route error:', error);
+
     return NextResponse.json(
       {
         error:
@@ -126,8 +119,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }
