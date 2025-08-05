@@ -4,22 +4,18 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--prefix=/dev/null"
 
 # Production environment variables
 [context.production.environment]
   LAMBDA_CV_PARSER_URL = "https://vmsleaxjtt25zdbwrt6fegtjfi0mdlzy.lambda-url.eu-west-2.on.aws/"
-  NODE_ENV = "production"
 
 # Deploy preview environment variables  
 [context.deploy-preview.environment]
   LAMBDA_CV_PARSER_URL = "https://vmsleaxjtt25zdbwrt6fegtjfi0mdlzy.lambda-url.eu-west-2.on.aws/"
-  NODE_ENV = "production"
 
 # Branch deploy environment variables
 [context.branch-deploy.environment]
   LAMBDA_CV_PARSER_URL = "https://vmsleaxjtt25zdbwrt6fegtjfi0mdlzy.lambda-url.eu-west-2.on.aws/"
-  NODE_ENV = "production"
 
 # Function configuration
 [[plugins]]
