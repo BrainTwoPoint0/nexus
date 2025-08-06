@@ -48,74 +48,6 @@ The current profile editing and display system has fundamental issues:
 
 ## Todo Items
 
-### ✅ COMPLETED: Step-Based Progress System (August 5, 2025)
-
-**Problem Solved**: User experienced jarring 0% → 70% progress jump during CV processing
-
-**Solution Implemented**:
-
-- Migrated CV parsing from Netlify (25s timeout) to AWS Lambda (15min timeout)
-- Created step-based progress tracking with 8 detailed steps
-- Real-time progress updates via Supabase session tracking
-- Enhanced user experience with visual progress indicators
-
-**Key Components Created**:
-
-- `cv_parsing_sessions` table for progress tracking
-- `CVUploadEnhanced` component with real-time progress
-- `useCVParsingProgress` hook for state management
-- `CVParsingProgress` component for visual feedback
-- Lambda integration with progress callbacks
-- Fallback processing system when Lambda is unavailable
-
-**Technical Details**:
-
-- Fixed foreign key constraint to reference `auth.users` instead of `profiles`
-- Added graceful error handling for onboarding scenarios
-- Implemented polling-based progress updates (1-second intervals)
-- Created automatic fallback to local processing when Lambda fails
-
-**Current Status**:
-
-- ✅ Development server running on `localhost:3000`
-- ✅ Progress UI fully functional
-- ✅ Database schema updated and compatible
-- ✅ Lambda function working correctly with proper permissions
-
-**Files Modified/Created**:
-
-- `/app/api/onboarding/parse-cv/route.ts` - Enhanced with progress
-- `/app/api/onboarding/parse-cv-fallback/route.ts` - Local processing fallback
-- `/hooks/useCVParsingProgress.ts` - Progress state management
-- `/components/ui/cv-upload-enhanced.tsx` - Enhanced upload with progress
-- `/components/ui/cv-parsing-progress.tsx` - Visual progress component
-- `/app/onboarding/page.tsx` - Updated to use new components
-- `/supabase/migrations/20250805193500_fix_cv_parsing_sessions_fk.sql` - Database fix
-
-**Lambda Integration**:
-
-- Lambda URL configured: `https://vmsleaxjtt25zdbwrt6fegtjfi0mdlzy.lambda-url.eu-west-2.on.aws/`
-- ✅ **FIXED**: Added public access permissions (`lambda:InvokeFunctionUrl`)
-- ✅ Function URL configured with `AuthType: NONE` and proper CORS
-- ✅ Function validates input and processes requests correctly
-- Fallback system available as safety net
-
-**Resolution Summary**:
-All Lambda issues have been resolved:
-
-1. **403 Permission Error**: Fixed by adding public access permission with `aws lambda add-permission`
-2. **PDF Processing Error**: Fixed by removing incorrect PDF restriction and enabling OpenAI Vision API for PDF processing
-3. **Full File Support Restored**: Lambda now handles PDF, DOCX, TXT, and image files as originally designed
-4. **Progress Tracking**: 8-step progress system working with real-time Supabase updates
-
-**Next Steps Available**:
-
-1. ✅ Lambda function permissions resolved
-2. Apply database migration for progress tracking (optional - graceful fallback exists)
-3. Deploy to production environment
-
----
-
 ## Todo Items
 
 ### Phase 1: Complete Profile Section Overhaul (Priority)
@@ -667,107 +599,142 @@ The core issue was the modification in commit cb5f624 that broke the OAuth redir
 
 **Ready for Testing**: CV upload and LinkedIn OAuth should now work reliably in production.
 
-## Step-based CV Parsing with Progress Updates (August 5, 2025)
+## CV Parser Split Implementation Analysis (August 5-6, 2025)
 
 ### Problem Analysis
 
-The current Lambda-based CV parsing creates a poor user experience where users see a sudden jump from 0% to 70% after 15-30 seconds of processing, making the system appear frozen.
+CV parsing takes 30-40 seconds but Netlify has a 10-second timeout limit. Initial attempts to split the processing into 3 sequential steps (Extract → Parse → Generate Bio) revealed that even with splitting, the parsing step alone takes 30+ seconds due to the complex OpenAI prompt processing.
 
-### Solution: Progressive Parsing Steps
+### Split Implementation Results
 
-Implemented a step-based architecture that provides real-time progress updates during CV processing:
+**Files Created:**
 
-**Processing Steps:**
+- `src/components/ui/cv-upload-split.tsx` - Client component with 3-step progress
+- `src/app/api/onboarding/parse-cv-split/route.ts` - Split processing API
+- Individual step endpoints for text extraction, parsing, and bio generation
 
-1. **Upload** (5%) - File uploaded successfully
-2. **Prepare** (10%) - File prepared for processing
-3. **Extract** (15-30%) - Reading CV content from PDF/DOCX/images
-4. **Analyze** (30-45%) - Analyzing document structure
-5. **Parse** (45-65%) - Extracting professional information
-6. **Enhance** (65-80%) - Organizing experience data
-7. **Bio** (80-95%) - Creating professional summary
-8. **Finalize** (95-100%) - Completing profile data
+**Testing Results:**
 
-### Implementation Details
+- Step 1 (Text Extraction): < 2 seconds ✅
+- Step 2 (CV Parsing): 30+ seconds ❌ (Still exceeds timeout)
+- Step 3 (Bio Generation): < 3 seconds ✅
 
-**1. Database Schema** (`cv_parsing_sessions` table)
+**Root Cause:** The OpenAI CV parsing step with the comprehensive 6000+ character prompt inherently takes 30-40 seconds regardless of architecture. This cannot be optimized further without losing parsing quality.
 
-- Tracks parsing progress with real-time updates
-- Stores session status, current step, and completion data
-- Enables progress polling and real-time subscriptions
+**Conclusion:** Split approach insufficient - background processing required.
 
-**2. Enhanced API Routes**
+## CV Parser Background Processing Architecture (August 6, 2025)
 
-- `route-with-progress.ts`: Creates sessions and tracks progress
-- `GET /api/onboarding/parse-cv?sessionId=X`: Progress polling endpoint
-- Maintains backward compatibility with existing frontend
+### Problem Analysis
 
-**3. Lambda Function Updates** (`index-with-progress.js`)
+**Current Issue**: CV parsing takes 30-40 seconds but Netlify has a 10-second timeout limit.
 
-- Emits progress updates to Supabase at each processing step
-- Updates parsing session with current step and completion percentage
-- Provides detailed error handling and step-by-step logging
+**Root Cause**: The OpenAI CV parsing step takes ~37.3 seconds, which will always exceed serverless function timeouts.
 
-**4. Frontend Components**
+### Solution: Background Processing with Queue System
 
-- `useCVParsingProgress` hook: Manages parsing state and progress polling
-- `CVParsingProgress` component: Detailed step-by-step visual progress
-- `CVParsingProgressSimple` component: Minimalist progress bar
-- Real-time polling every second during processing
+Instead of synchronous processing, implement asynchronous background jobs with real-time progress updates.
 
-**5. User Experience Improvements**
+**Architecture:**
 
-- Smooth progress from 0% to 100% with meaningful messages
-- Visual step indicators showing completed/current/pending states
-- Clear error states with actionable feedback
-- Professional step descriptions (e.g., "Creating your professional summary...")
+```
+User Upload → Immediate Response → Background Lambda Processing → Completion Notification → Continue Onboarding
+     ↓              ↓                        ↓                         ↓
+   < 1s        "Success, Processing"    30-40s in background    Supabase/SNS Update
+```
 
-### Files Created/Modified
+### Implementation Plan
 
-**New Files:**
+#### Phase 1: Database Schema
 
-- `docs/cv-parsing-steps-design.md` - Architecture documentation
-- `src/supabase/migrations/20240105_cv_parsing_sessions.sql` - Database schema
-- `src/app/api/onboarding/parse-cv/route-with-progress.ts` - Enhanced API with sessions
-- `lambda/cv-parser/index-with-progress.js` - Progress-aware Lambda function
-- `src/hooks/useCVParsingProgress.ts` - React hook for progress management
-- `src/components/ui/cv-parsing-progress.tsx` - Progress UI components
-- `src/components/examples/cv-parsing-example.tsx` - Integration examples
+- [ ] **CV Processing Jobs Table** (`cv_processing_jobs`)
+  - `id`, `user_id`, `filename`, `status`, `created_at`, `completed_at`
+  - `file_data`, `result_data`, `error_message`, `progress_percentage`
+  - Enables job tracking and result storage
 
-**Enhanced Files:**
+#### Phase 2: Background Job System
 
-- `.env.example` - Added `LAMBDA_CV_PARSER_URL` configuration
+- [ ] **Upload Endpoint** (`/api/cv/start-processing`)
+  - Accepts CV file, creates job record, starts Lambda asynchronously
+  - Returns immediately with job ID
+  - Time: < 2 seconds
 
-### Benefits Achieved
+- [ ] **Lambda Integration**
+  - Update Lambda to accept job ID and update Supabase progress
+  - Lambda processes in background (30-40 seconds)
+  - Updates job status: `processing` → `completed` / `failed`
 
-✅ **Improved UX**: Smooth progress from 0-100% eliminates "frozen" appearance
-✅ **Better Debugging**: Can identify exactly where parsing fails
-✅ **Enhanced Reliability**: Step-by-step processing with individual error handling  
-✅ **Real-time Feedback**: Users see meaningful progress messages throughout
-✅ **Maintainable Architecture**: Easy to add new steps or modify existing flow
-✅ **Scalable Design**: Can extend with Step Functions for complex workflows
+#### Phase 3: Progress Monitoring
 
-### Implementation Options
+- [ ] **Polling Endpoint** (`/api/cv/job-status/:jobId`)
+  - Returns current job status and progress
+  - Frontend polls every 2-3 seconds during processing
 
-**Option 1: Quick Implementation** (Recommended)
+- [ ] **Real-time Updates** (Optional Enhancement)
+  - AWS SNS/SQS notifications to frontend
+  - WebSocket connections for instant updates
+  - Reduces polling load
 
-- Use existing Lambda with Supabase progress updates
-- Frontend polls for progress every second
-- Minimal changes to current architecture
+#### Phase 4: User Experience
 
-**Option 2: AWS Step Functions** (Future Enhancement)
+- [ ] **Upload Success State**
+  - Immediate success feedback after file upload
+  - "Your CV is being processed..." message
+  - Transition to loading screen
 
-- Break Lambda into separate functions per step
-- Built-in retry logic and state management
-- Better observability and monitoring
-- Consider when volume increases significantly
+- [ ] **Processing Loading Screen**
+  - Engaging progress animation (30-40 seconds)
+  - Messages like "Analyzing your professional experience..."
+  - Can include tips, product info, or onboarding hints
 
-### Next Steps
+- [ ] **Completion Handling**
+  - Automatic transition when job completes
+  - Load processed data into onboarding flow
+  - Error handling for failed jobs
 
-1. **Deploy Database Migration**: Add `cv_parsing_sessions` table
-2. **Update API Route**: Replace current route with progress-aware version
-3. **Deploy Enhanced Lambda**: Update Lambda function with progress callbacks
-4. **Update Frontend**: Integrate progress components into onboarding flow
-5. **Test End-to-End**: Verify smooth progress updates during CV processing
+### Benefits
 
-The step-based architecture transforms CV parsing from a "black box" operation into a transparent, user-friendly experience while maintaining the reliable 15-minute Lambda processing capability.
+✅ **Eliminates Timeouts**: Upload returns immediately, processing happens in background
+✅ **Better UX**: Clear progress indication instead of silent waiting
+✅ **Scalable**: Can handle any processing time without function limits
+✅ **Resilient**: Failed jobs can be retried, graceful error handling
+✅ **Cost Effective**: No wasted Lambda time on client waiting
+
+### Technical Architecture
+
+**Database Tables:**
+
+```sql
+CREATE TABLE cv_processing_jobs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid REFERENCES auth.users(id),
+  filename text NOT NULL,
+  status text DEFAULT 'pending', -- pending, processing, completed, failed
+  progress_percentage int DEFAULT 0,
+  file_data jsonb, -- Store file metadata
+  result_data jsonb, -- Store processed CV data
+  error_message text,
+  created_at timestamptz DEFAULT now(),
+  completed_at timestamptz
+);
+```
+
+**API Endpoints:**
+
+- `POST /api/cv/start-processing` - Create job, start Lambda
+- `GET /api/cv/job-status/:jobId` - Get current status
+- `POST /api/cv/retry-job/:jobId` - Retry failed job
+
+**Lambda Updates:**
+
+- Accept `jobId` parameter
+- Update Supabase with progress at each step
+- Store final results in database
+- Send completion notification
+
+### Implementation Priority
+
+**MVP (Phase 1-2)**: Database + Basic polling system
+**Enhanced (Phase 3-4)**: Real-time notifications + polished UX
+
+This architecture completely eliminates timeout issues while providing a much better user experience during the unavoidable 30-40 second processing time.

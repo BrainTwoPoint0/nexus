@@ -1,12 +1,12 @@
-/**
- * AWS Lambda function for CV parsing
- * Handles OpenAI processing with 15-minute timeout
- */
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabaseServer';
 
-const { Buffer } = require('buffer');
-
-// CV parsing logic
-async function processDocumentWithOpenAI(fileBuffer, fileName, mimeType) {
+// Import the processing functions directly to avoid HTTP overhead
+async function processDocumentWithOpenAI(
+  fileBuffer: Buffer,
+  fileName: string,
+  mimeType: string
+) {
   console.log('Processing with OpenAI-only approach', {
     fileName,
     mimeType,
@@ -73,7 +73,7 @@ async function processDocumentWithOpenAI(fileBuffer, fileName, mimeType) {
       });
 
       return { text: extractedText.trim() };
-    } catch (mammothError) {
+    } catch (mammothError: any) {
       // Fallback to OpenAI if mammoth fails
       console.log('Mammoth extraction failed, falling back to OpenAI', {
         error: mammothError.message,
@@ -94,9 +94,16 @@ async function processDocumentWithOpenAI(fileBuffer, fileName, mimeType) {
 
       if (!pdfData.text || pdfData.text.trim().length < 50) {
         console.log(
-          'Insufficient text extracted from PDF, will fallback to OpenAI'
+          'Insufficient text extracted from PDF, using as-is with minimal text'
         );
-        throw new Error('Insufficient text from pdf-parse');
+        // If we got some text but not much, still return it rather than failing
+        if (pdfData.text && pdfData.text.trim().length > 0) {
+          console.log('Using minimal PDF text extracted', {
+            length: pdfData.text.trim().length,
+          });
+          return { text: pdfData.text.trim() };
+        }
+        throw new Error('No text extracted from pdf-parse');
       }
 
       console.log('Text extracted from PDF successfully', {
@@ -104,27 +111,23 @@ async function processDocumentWithOpenAI(fileBuffer, fileName, mimeType) {
       });
 
       return { text: pdfData.text.trim() };
-    } catch (pdfError) {
+    } catch (pdfError: any) {
       console.log(
-        'PDF parsing failed, falling back to OpenAI Vision (treating as image)',
+        'PDF parsing failed, this PDF may require manual conversion',
         { error: pdfError.message }
       );
-      // Continue with OpenAI extraction below as fallback
+
+      // For PDFs that can't be parsed, suggest conversion rather than failing completely
+      throw new Error(
+        'This PDF could not be processed automatically. Please try converting it to a text file (.txt) or image format (.jpg/.png) and upload again.'
+      );
     }
   }
 
-  // Use OpenAI for text extraction from images (and PDF fallback)
+  // Use OpenAI for text extraction from images
   let requestBody;
 
-  if (mimeType === 'application/pdf') {
-    // Fallback: Try processing PDF as image with OpenAI Vision API
-    console.log('Processing PDF with OpenAI Vision API (fallback)');
-    // Note: This may not work as Vision API doesn't support PDF MIME type
-    // but we'll try converting the approach
-    throw new Error(
-      'PDF processing is currently not supported. Please convert your CV to an image format (JPG, PNG) or text file (TXT) and try again.'
-    );
-  } else if (mimeType.startsWith('image/')) {
+  if (mimeType.startsWith('image/')) {
     // Use Vision API for image files
     console.log('Sending image to OpenAI Vision API');
     requestBody = {
@@ -197,7 +200,7 @@ async function processDocumentWithOpenAI(fileBuffer, fileName, mimeType) {
   return { text: extractedText.trim() };
 }
 
-async function parseCVWithOpenAI(cvText) {
+async function parseCVWithOpenAI(cvText: string) {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('AI parsing service not available');
   }
@@ -411,7 +414,7 @@ REMEMBER: Only extract actual information from the above CV text. Do not add any
       workExperienceCount: parsedData.workExperience?.length || 0,
       educationCount: parsedData.education?.length || 0,
     });
-  } catch (parseError) {
+  } catch (parseError: any) {
     console.error('JSON parsing failed', { parseError, rawContent: content });
     throw new Error(
       'Failed to parse AI response as JSON. Please try again or use a different file format.'
@@ -423,8 +426,8 @@ REMEMBER: Only extract actual information from the above CV text. Do not add any
   return parsedData;
 }
 
-// Enhanced data processing
-async function enhanceParsedData(data) {
+// Enhanced data processing and bio generation (exact copy from Lambda)
+async function enhanceParsedData(data: any) {
   const enhanced = { ...data };
 
   // Compute fullName from firstName and lastName
@@ -443,9 +446,9 @@ async function enhanceParsedData(data) {
 
     // Add current work history roles
     const currentWorkRoles =
-      enhanced.workHistory?.filter((job) => job.is_current) || [];
+      enhanced.workHistory?.filter((job: any) => job.is_current) || [];
     allCurrentRoles.push(
-      ...currentWorkRoles.map((job) => ({
+      ...currentWorkRoles.map((job: any) => ({
         role: job.title,
         company: job.company,
         type: 'work',
@@ -454,9 +457,9 @@ async function enhanceParsedData(data) {
 
     // Add current board experience roles
     const currentBoardRoles =
-      enhanced.boardExperience?.filter((exp) => exp.is_current) || [];
+      enhanced.boardExperience?.filter((exp: any) => exp.is_current) || [];
     allCurrentRoles.push(
-      ...currentBoardRoles.map((exp) => ({
+      ...currentBoardRoles.map((exp: any) => ({
         role: exp.role,
         company: exp.organization,
         type: 'board',
@@ -499,15 +502,15 @@ async function enhanceParsedData(data) {
   return enhanced;
 }
 
-// Generate professional bio from CV data
-async function generateProfessionalBio(data) {
+// Generate professional bio from CV data (exact copy from Lambda)
+async function generateProfessionalBio(data: any) {
   const bioPrompt = `Create a professional biography based on the following CV data. Write in third person, 2-3 sentences, focusing on current role, key achievements, and board experience if applicable.
 
 Name: ${data.firstName} ${data.lastName}
 Current Role: ${data.currentRole} at ${data.currentCompany}
 Work Experience: ${data.workHistory?.length || 0} positions
 Board Experience: ${data.boardExperience?.length || 0} roles
-Education: ${data.education?.map((e) => `${e.degree} from ${e.institution}`).join(', ') || 'Not specified'}
+Education: ${data.education?.map((e: any) => `${e.degree} from ${e.institution}`).join(', ') || 'Not specified'}
 
 Write a concise, professional bio suitable for an executive profile.`;
 
@@ -543,8 +546,8 @@ Write a concise, professional bio suitable for an executive profile.`;
   return result.choices[0]?.message?.content?.trim() || '';
 }
 
-// Completeness analysis
-function analyzeCompleteness(data) {
+// Completeness analysis (exact copy from Lambda)
+function analyzeCompleteness(data: any) {
   const fieldRequirements = {
     critical: [
       'firstName',
@@ -571,10 +574,10 @@ function analyzeCompleteness(data) {
     ],
   };
 
-  const presentFields = [];
-  const missingCriticalFields = [];
-  const missingHighValueFields = [];
-  const missingEnhancedFields = [];
+  const presentFields: string[] = [];
+  const missingCriticalFields: string[] = [];
+  const missingHighValueFields: string[] = [];
+  const missingEnhancedFields: string[] = [];
 
   // Check critical fields
   fieldRequirements.critical.forEach((field) => {
@@ -628,306 +631,143 @@ function analyzeCompleteness(data) {
   };
 }
 
-// Supabase client for progress updates
-const { createClient } = require('@supabase/supabase-js');
-
-function getSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('Missing Supabase configuration');
-    return null;
-  }
-
-  return createClient(supabaseUrl, supabaseServiceKey);
-}
-
-// Update job progress in Supabase
-async function updateJobProgress(
-  jobId,
-  progress,
-  message,
-  status = 'processing'
-) {
-  if (!jobId) return; // Skip if no job ID provided (backward compatibility)
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return;
-
+/**
+ * Split CV processing for onboarding - bypasses Netlify timeout
+ * Processes in 3 sequential steps: Extract → Parse → Generate Bio
+ */
+export async function POST(request: NextRequest) {
   try {
-    const updateData = {
-      progress,
-      status,
-      updated_at: new Date().toISOString(),
-    };
+    const supabase = await createClient();
 
-    // Add started_at timestamp when first moving to processing
-    if (status === 'processing' && progress <= 10) {
-      updateData.started_at = new Date().toISOString();
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Add completed_at timestamp when completed or failed
-    if (status === 'completed' || status === 'failed') {
-      updateData.completed_at = new Date().toISOString();
+    // Parse multipart form data
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+
+    if (!file) {
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // Store progress message in result jsonb
-    if (message) {
-      updateData.result = { progressMessage: message };
-    }
+    // Validate file type - support what we can actually process
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'text/plain',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+    ];
 
-    const { error } = await supabase
-      .from('cv_processing_jobs')
-      .update(updateData)
-      .eq('id', jobId);
-
-    if (error) {
-      console.error('Failed to update job progress:', error);
-    } else {
-      console.log('Job progress updated', { jobId, progress, message, status });
-    }
-  } catch (error) {
-    console.error('Error updating job progress:', error);
-  }
-}
-
-// Update job with final results
-async function updateJobComplete(jobId, data, completenessAnalysis, filename) {
-  if (!jobId) return; // Skip if no job ID provided (backward compatibility)
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return;
-
-  try {
-    const { error } = await supabase
-      .from('cv_processing_jobs')
-      .update({
-        status: 'completed',
-        progress: 100,
-        result: {
-          data,
-          completenessAnalysis,
-          filename,
-          progressMessage: 'CV processing completed successfully!',
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid file type. Please upload TXT, PDF, DOCX, or image files (JPG, PNG, WEBP, GIF).',
         },
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', jobId);
-
-    if (error) {
-      console.error('Failed to update job completion:', error);
-    } else {
-      console.log('Job completed successfully', { jobId, filename });
+        { status: 400 }
+      );
     }
-  } catch (error) {
-    console.error('Error updating job completion:', error);
-  }
-}
 
-// Update job with error
-async function updateJobError(jobId, errorMessage) {
-  if (!jobId) return; // Skip if no job ID provided (backward compatibility)
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return;
-
-  try {
-    const { error } = await supabase
-      .from('cv_processing_jobs')
-      .update({
-        status: 'failed',
-        error: errorMessage,
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', jobId);
-
-    if (error) {
-      console.error('Failed to update job error:', error);
-    } else {
-      console.log('Job marked as failed', { jobId, errorMessage });
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        {
+          error: 'File too large. Please upload files smaller than 10MB.',
+        },
+        { status: 400 }
+      );
     }
-  } catch (error) {
-    console.error('Error updating job error:', error);
-  }
-}
 
-// Main Lambda handler
-exports.handler = async (event) => {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-
-  console.log('Lambda function started', {
-    httpMethod: event.requestContext?.http?.method || event.httpMethod,
-    headers: Object.keys(event.headers || {}),
-    bodySize: event.body ? event.body.length : 0,
-    eventKeys: Object.keys(event),
-  });
-
-  // Get HTTP method
-  const httpMethod = event.requestContext?.http?.method || event.httpMethod;
-
-  // Handle preflight CORS requests
-  if (httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: '',
-    };
-  }
-
-  if (httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'Method not allowed' }),
-    };
-  }
-
-  try {
-    // Parse the JSON payload
-    let requestData;
     try {
-      requestData = JSON.parse(event.body);
-    } catch (parseError) {
-      console.error('Failed to parse request body', {
-        parseError,
-        body: event.body?.substring(0, 200),
+      // Convert file to base64 for processing
+      const fileBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(fileBuffer);
+
+      console.log('Starting split CV processing', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
       });
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'Invalid JSON payload' }),
-      };
-    }
 
-    const { fileBuffer, fileName, mimeType, jobId } = requestData;
+      // STEP 1: Extract text from document (< 2 seconds)
+      console.log('Step 1: Extracting text...');
+      const textResult = await processDocumentWithOpenAI(
+        buffer,
+        file.name,
+        file.type
+      );
 
-    if (!fileBuffer || !fileName || !mimeType) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'Missing file data, name, or type' }),
-      };
-    }
+      if (!textResult.text) {
+        throw new Error('No text could be extracted from the file');
+      }
 
-    // Update job status to processing
-    await updateJobProgress(
-      jobId,
-      5,
-      'Starting CV processing...',
-      'processing'
-    );
+      console.log('Step 1 completed - Text extracted', {
+        textLength: textResult.text.length,
+      });
 
-    // Convert base64 back to buffer
-    const buffer = Buffer.from(fileBuffer, 'base64');
+      // STEP 2: Parse CV data from text (variable time, but should be under 10s)
+      console.log('Step 2: Parsing CV data...');
+      const parsedData = await parseCVWithOpenAI(textResult.text);
 
-    console.log('Processing CV file', {
-      fileName,
-      mimeType,
-      size: buffer.length,
-    });
+      console.log('Step 2 completed - CV parsed', {
+        workExperienceCount: parsedData.workHistory?.length || 0,
+        educationCount: parsedData.education?.length || 0,
+        skillsCount: parsedData.skills?.length || 0,
+      });
 
-    // Step 1: Extract text using OpenAI Vision API (10-30%)
-    await updateJobProgress(jobId, 10, 'Extracting text from your document...');
+      // STEP 3: Generate bio and enhance data (< 3 seconds)
+      console.log('Step 3: Generating bio and enhancing data...');
+      const enhancedData = await enhanceParsedData(parsedData);
 
-    const textResult = await processDocumentWithOpenAI(
-      buffer,
-      fileName,
-      mimeType
-    );
+      // Analyze completeness
+      const completenessAnalysis = analyzeCompleteness(enhancedData);
 
-    if (!textResult.text) {
-      await updateJobError(jobId, 'No text could be extracted from the file');
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({
-          error: 'No text could be extracted from the file',
-        }),
-      };
-    }
+      console.log('Step 3 completed - Bio generated and data enhanced', {
+        overallCompleteness: completenessAnalysis?.overallCompleteness || 0,
+        hasBio: !!enhancedData.professionalBio,
+      });
 
-    await updateJobProgress(
-      jobId,
-      30,
-      'Text extracted successfully, analyzing with AI...'
-    );
-    console.log('Text extracted successfully, parsing with AI', {
-      textLength: textResult.text.length,
-    });
+      console.log('Split CV processing completed successfully', {
+        fileName: file.name,
+        overallCompleteness: completenessAnalysis?.overallCompleteness || 0,
+      });
 
-    // Step 2: Parse the extracted text into structured data (30-70%)
-    await updateJobProgress(
-      jobId,
-      40,
-      'Analyzing your professional experience...'
-    );
-    const parsedData = await parseCVWithOpenAI(textResult.text);
-
-    await updateJobProgress(
-      jobId,
-      70,
-      'Professional data extracted, enhancing profile...'
-    );
-
-    // Step 3: Enhance parsed data with computed fields and bio (70-90%)
-    await updateJobProgress(jobId, 80, 'Generating your professional bio...');
-    const enhancedData = await enhanceParsedData(parsedData);
-
-    await updateJobProgress(jobId, 90, 'Finalizing your profile data...');
-    console.log('Finalizing CV processing...');
-
-    // Step 4: Analyze completeness (90-95%)
-    const completenessAnalysis = analyzeCompleteness(enhancedData);
-
-    await updateJobProgress(jobId, 95, 'Completing processing...');
-
-    console.log('CV processed successfully', {
-      overallCompleteness: completenessAnalysis.overallCompleteness,
-      workExperienceCount: enhancedData.workExperience?.length || 0,
-      educationCount: enhancedData.education?.length || 0,
-      skillsCount: enhancedData.skills?.length || 0,
-    });
-
-    // Update job as completed with final results
-    await updateJobComplete(
-      jobId,
-      enhancedData,
-      completenessAnalysis,
-      fileName
-    );
-
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({
+      // Return the same format as the original Lambda endpoint
+      return NextResponse.json({
         success: true,
         data: enhancedData,
-        completenessAnalysis,
-        filename: fileName,
-        jobId, // Include jobId in response for reference
-      }),
-    };
-  } catch (error) {
-    console.error('CV processing error', error);
+        completenessAnalysis: completenessAnalysis || null,
+        filename: file.name,
+      });
+    } catch (processingError: any) {
+      console.error('Split CV processing error:', processingError);
 
-    // Update job as failed
-    const { jobId } = JSON.parse(event.body || '{}');
-    await updateJobError(jobId, `Failed to process CV: ${error.message}`);
+      return NextResponse.json(
+        {
+          error: `CV processing failed: ${processingError.message}`,
+        },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    console.error('CV parsing route error:', error);
 
-    return {
-      statusCode: 500,
-      headers: corsHeaders,
-      body: JSON.stringify({
-        error: `Failed to process CV: ${error.message}`,
-        jobId,
-      }),
-    };
+    return NextResponse.json(
+      {
+        error:
+          'Failed to process CV file. Please try again or use a different file format.',
+      },
+      { status: 500 }
+    );
   }
-};
+}

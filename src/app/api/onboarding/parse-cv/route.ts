@@ -8,12 +8,15 @@ import { createClient } from '@/lib/supabaseServer';
 export async function POST(request: NextRequest) {
   try {
     // Check if Lambda URL is configured
-    const lambdaUrl = process.env.LAMBDA_CV_PARSER_URL || 'https://vmsleaxjtt25zdbwrt6fegtjfi0mdlzy.lambda-url.eu-west-2.on.aws/';
-    
+    const lambdaUrl =
+      process.env.LAMBDA_CV_PARSER_URL ||
+      'https://vmsleaxjtt25zdbwrt6fegtjfi0mdlzy.lambda-url.eu-west-2.on.aws/';
+
     if (!lambdaUrl) {
       return NextResponse.json(
         {
-          error: 'CV parsing service is not configured. Please contact support.',
+          error:
+            'CV parsing service is not configured. Please contact support.',
         },
         { status: 503 }
       );
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
           statusText: lambdaResponse.statusText,
           errorText,
         });
-        
+
         return NextResponse.json(
           {
             error: `CV processing failed (${lambdaResponse.status}): ${errorText}`,
@@ -142,10 +145,14 @@ export async function POST(request: NextRequest) {
       console.error('CV processing error:', processingError);
 
       // Check if it's a timeout error
-      if (processingError instanceof Error && processingError.name === 'AbortError') {
+      if (
+        processingError instanceof Error &&
+        processingError.name === 'AbortError'
+      ) {
         return NextResponse.json(
           {
-            error: 'CV processing timed out. Please try again with a smaller file.',
+            error:
+              'CV processing timed out. Please try again with a smaller file.',
           },
           { status: 408 }
         );

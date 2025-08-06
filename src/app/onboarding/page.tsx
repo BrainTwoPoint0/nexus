@@ -10,7 +10,8 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { LoadingSpinner } from '@/components/ui/loading';
 import { CheckCircle, Upload, User, Mic, FileCheck } from 'lucide-react';
 import { useSupabase } from '@/components/providers/supabase-provider';
-import { CVUploadWithProgress } from '@/components/ui/cv-upload-with-progress';
+import { CVUploadBackground } from '@/components/ui/cv-upload-background';
+import { CVProcessingLoading } from '@/components/ui/cv-processing-loading';
 import { CVDataPreview } from '@/components/ui/cv-data-preview';
 import { VoiceConversationRealtime } from '@/components/ui/voice-conversation-realtime';
 import { ProfileReview } from '@/components/ui/profile-review';
@@ -21,10 +22,17 @@ export default function OnboardingPage() {
   const [, setUserProfile] = useState<Record<string, unknown> | null>(null);
   const [, setUserId] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<
-    'cv' | 'cv-preview' | 'voice-interview' | 'review' | 'complete'
+    | 'cv'
+    | 'cv-processing'
+    | 'cv-preview'
+    | 'voice-interview'
+    | 'review'
+    | 'complete'
   >('cv');
   const [cvData, setCvData] = useState<any>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [processingJobId, setProcessingJobId] = useState<string | null>(null);
+  const [processingFilename, setProcessingFilename] = useState<string>('');
   const router = useRouter();
   const supabase = useSupabase();
 
@@ -58,24 +66,25 @@ export default function OnboardingPage() {
     loadUserProfile();
   }, [supabase, router]);
 
-  const handleCVComplete = ({
-    data,
-    confidence,
-    filename,
-    originalFile,
-    completenessAnalysis,
-  }: {
-    data: any;
-    confidence: number;
-    filename: string;
-    originalFile?: File;
-    completenessAnalysis?: any;
-  }) => {
+  // Handle background processing start
+  const handleUploadStart = (jobId: string, filename: string) => {
     logger.debug(
-      'CV processing completed',
+      'Background CV processing started',
+      { jobId, filename },
+      'ONBOARDING'
+    );
+
+    setProcessingJobId(jobId);
+    setProcessingFilename(filename);
+    setCurrentStep('cv-processing');
+  };
+
+  // Handle background processing completion
+  const handleProcessingComplete = (data: any, completenessAnalysis: any) => {
+    logger.debug(
+      'Background CV processing completed',
       {
-        filename,
-        confidence,
+        filename: processingFilename,
         completeness: completenessAnalysis?.overallCompleteness,
       },
       'ONBOARDING'
@@ -86,9 +95,6 @@ export default function OnboardingPage() {
       completenessAnalysis,
     });
 
-    if (originalFile) {
-      setOriginalFile(originalFile);
-    }
     setCurrentStep('cv-preview');
   };
 
@@ -101,6 +107,10 @@ export default function OnboardingPage() {
 
   const handleCVError = (error: string) => {
     logger.error('CV processing error', { error }, 'ONBOARDING');
+    // Reset to upload state on error
+    setCurrentStep('cv');
+    setProcessingJobId(null);
+    setProcessingFilename('');
   };
 
   const [finalProfileData, setFinalProfileData] = useState<any>(null);
@@ -307,7 +317,9 @@ export default function OnboardingPage() {
                 {/* Step 1: CV Upload */}
                 <div
                   className={`flex items-start gap-4 rounded-lg border p-4 ${
-                    currentStep === 'cv' || currentStep === 'cv-preview'
+                    currentStep === 'cv' ||
+                    currentStep === 'cv-processing' ||
+                    currentStep === 'cv-preview'
                       ? 'border-primary bg-primary/5'
                       : cvData
                         ? 'border-green-200 bg-green-50'
@@ -316,7 +328,9 @@ export default function OnboardingPage() {
                 >
                   <div
                     className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                      currentStep === 'cv' || currentStep === 'cv-preview'
+                      currentStep === 'cv' ||
+                      currentStep === 'cv-processing' ||
+                      currentStep === 'cv-preview'
                         ? 'bg-primary text-white'
                         : cvData
                           ? 'bg-green-100'
@@ -325,7 +339,9 @@ export default function OnboardingPage() {
                   >
                     <Upload
                       className={`h-4 w-4 ${
-                        currentStep === 'cv' || currentStep === 'cv-preview'
+                        currentStep === 'cv' ||
+                        currentStep === 'cv-processing' ||
+                        currentStep === 'cv-preview'
                           ? 'text-white'
                           : cvData
                             ? 'text-green-600'
@@ -335,20 +351,24 @@ export default function OnboardingPage() {
                   </div>
                   <div className="flex-1">
                     <h3 className="flex items-center gap-2 font-semibold">
-                      Upload & Review CV Data
+                      Upload & Process CV Data
                       <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
-                        Smart
+                        Background AI
                       </span>
                     </h3>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {currentStep === 'cv-preview'
                         ? 'Review extracted data from your CV'
-                        : 'Upload your CV for AI-powered data extraction'}
+                        : currentStep === 'cv-processing'
+                          ? 'AI is processing your CV in the background'
+                          : 'Upload your CV for background AI processing'}
                     </p>
                   </div>
                   <div className="text-sm font-medium">
                     {currentStep === 'cv' ? (
-                      <span className="text-primary">Uploading</span>
+                      <span className="text-primary">Ready</span>
+                    ) : currentStep === 'cv-processing' ? (
+                      <span className="text-primary">Processing</span>
                     ) : currentStep === 'cv-preview' ? (
                       <span className="text-primary">Reviewing</span>
                     ) : cvData ? (
@@ -522,10 +542,21 @@ export default function OnboardingPage() {
               {/* Current Step Content */}
               {currentStep === 'cv' && (
                 <div className="mt-6">
-                  <CVUploadWithProgress
-                    onComplete={handleCVComplete}
+                  <CVUploadBackground
+                    onUploadStart={handleUploadStart}
                     onError={handleCVError}
                     disabled={false}
+                  />
+                </div>
+              )}
+
+              {currentStep === 'cv-processing' && processingJobId && (
+                <div className="mt-6">
+                  <CVProcessingLoading
+                    jobId={processingJobId}
+                    filename={processingFilename}
+                    onComplete={handleProcessingComplete}
+                    onError={handleCVError}
                   />
                 </div>
               )}

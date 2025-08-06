@@ -10,6 +10,7 @@
     "test": "node test-lambda.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "mammoth": "^1.8.0",
     "pdf-parse": "^1.1.1"
   },
