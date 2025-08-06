@@ -18,6 +18,7 @@ import { useOAuth } from '@/hooks/use-oauth';
 
 function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [formData, setFormData] = useState({
@@ -153,7 +154,7 @@ function SignUpForm() {
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First name</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="firstName"
                         placeholder="First name"
@@ -184,7 +185,7 @@ function SignUpForm() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
@@ -204,7 +205,7 @@ function SignUpForm() {
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="password"
                         type={showPassword ? 'text' : 'password'}
@@ -219,7 +220,7 @@ function SignUpForm() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         disabled={isLoading}
                       >
                         {showPassword ? (
@@ -236,18 +237,30 @@ function SignUpForm() {
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirm password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
-                        type="password"
+                        type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Confirm your password"
                         value={formData.confirmPassword}
                         onChange={(e) =>
                           handleInputChange('confirmPassword', e.target.value)
                         }
-                        className="pl-10"
+                        className="pl-10 pr-10"
                         disabled={isLoading}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        disabled={isLoading}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -261,20 +274,20 @@ function SignUpForm() {
                       handleInputChange('agreeToTerms', checked as boolean)
                     }
                     disabled={isLoading}
-                    className="mt-1"
+                    className="mt-1 h-4 w-4 min-h-4 min-w-4"
                   />
                   <Label htmlFor="terms" className="text-sm leading-relaxed">
                     I agree to the{' '}
                     <Link
                       href="/terms"
-                      className="text-primary hover:text-primary/80"
+                      className="text-sm leading-relaxed text-primary hover:text-primary/80"
                     >
                       Terms of Service
                     </Link>{' '}
                     and{' '}
                     <Link
                       href="/privacy"
-                      className="text-primary hover:text-primary/80"
+                      className="text-sm leading-relaxed text-primary hover:text-primary/80"
                     >
                       Privacy Policy
                     </Link>
@@ -340,7 +353,7 @@ function SignUpForm() {
               Already have an account?{' '}
               <Link
                 href="/sign-in"
-                className="font-medium text-primary transition-colors hover:text-primary/80"
+                className="text-sm leading-relaxed font-medium text-primary transition-colors hover:text-primary/80"
               >
                 Sign in
               </Link>

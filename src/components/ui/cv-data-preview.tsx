@@ -590,11 +590,6 @@ export function CVDataPreview({ cvData, onContinue }: CVDataPreviewProps) {
       <div className="flex gap-4">
         <Button onClick={onContinue} className="flex-1" size="lg">
           Continue to Voice Interview
-          {missingFields.length > 0 && (
-            <span className="ml-2 text-xs">
-              ({missingFields.length} fields to complete)
-            </span>
-          )}
         </Button>
       </div>
     </motion.div>

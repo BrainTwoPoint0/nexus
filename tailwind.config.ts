@@ -121,6 +121,12 @@ const config: Config = {
         'nexus-lg': '0 10px 15px -3px rgba(1, 22, 56, 0.1)',
         'nexus-xl': '0 20px 25px -5px rgba(1, 22, 56, 0.1)',
       },
+      padding: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
     },
   },
   plugins: [],

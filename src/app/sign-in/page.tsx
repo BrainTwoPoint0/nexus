@@ -58,6 +58,12 @@ function SignInForm() {
     const { error } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.password,
+    }, {
+      shouldCreateUser: false,
+      // Set session persistence based on remember me checkbox
+      // If remember me is checked, session persists across browser sessions
+      // If not checked, session only lasts for the current browser session
+      persistSession: formData.rememberMe
     });
 
     if (error) {
@@ -129,7 +135,7 @@ function SignInForm() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
@@ -148,7 +154,7 @@ function SignInForm() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
@@ -176,7 +182,7 @@ function SignInForm() {
                 </div>
 
                 {/* Remember Me & Forgot Password */}
-                <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                <div className="flex items-baseline justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
@@ -185,15 +191,15 @@ function SignInForm() {
                         handleInputChange('rememberMe', checked as boolean)
                       }
                       disabled={isLoading}
-                      className="h-4 w-4"
+                      className="h-4 w-4 min-h-4 min-w-4 flex-shrink-0"
                     />
-                    <Label htmlFor="remember" className="text-sm">
+                    <Label htmlFor="remember" className="text-sm leading-relaxed cursor-pointer">
                       Remember me
                     </Label>
                   </div>
                   <Link
                     href="/forgot-password"
-                    className="text-sm text-primary transition-colors hover:text-primary/80"
+                    className="text-sm leading-relaxed text-primary transition-colors hover:text-primary/80 flex-shrink-0 self-center"
                   >
                     Forgot password?
                   </Link>
@@ -258,7 +264,7 @@ function SignInForm() {
               Don&apos;t have an account?{' '}
               <Link
                 href="/sign-up"
-                className="font-medium text-primary transition-colors hover:text-primary/80"
+                className="text-sm leading-relaxed font-medium text-primary transition-colors hover:text-primary/80"
               >
                 Sign up for free
               </Link>

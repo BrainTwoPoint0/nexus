@@ -30,6 +30,12 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Nexus Team' }],
   creator: 'Nexus',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Nexus',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_GB',
@@ -49,6 +55,14 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+};
+
+export const viewport = {
+  themeColor: '#101935',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export default function RootLayout({

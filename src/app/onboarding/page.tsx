@@ -296,10 +296,10 @@ export default function OnboardingPage() {
             >
               <User className="h-8 w-8 text-primary" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
               Build Your Executive Profile
             </h1>
-            <p className="mt-4 text-lg text-muted-foreground">
+            <p className="mt-4 text-sm sm:text-base text-muted-foreground">
               Upload your CV and complete a brief voice interview
             </p>
           </div>
@@ -307,56 +307,55 @@ export default function OnboardingPage() {
           {/* Steps Overview */}
           <Card>
             <CardHeader>
-              <CardTitle>Simple 4-Step Process</CardTitle>
+              <CardTitle>Simple 3-Step Process</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Get your executive profile ready in minutes
               </p>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 sm:space-y-6">
                 {/* Step 1: CV Upload */}
                 <div
-                  className={`flex items-start gap-4 rounded-lg border p-4 ${
-                    currentStep === 'cv' ||
+                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'cv' ||
                     currentStep === 'cv-processing' ||
                     currentStep === 'cv-preview'
-                      ? 'border-primary bg-primary/5'
-                      : cvData
-                        ? 'border-green-200 bg-green-50'
-                        : 'border-gray-200'
-                  }`}
+                    ? 'border-primary bg-primary/5'
+                    : cvData
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-gray-200'
+                    }`}
                 >
                   <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                      currentStep === 'cv' ||
+                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'cv' ||
                       currentStep === 'cv-processing' ||
                       currentStep === 'cv-preview'
-                        ? 'bg-primary text-white'
-                        : cvData
-                          ? 'bg-green-100'
-                          : 'bg-gray-100'
-                    }`}
+                      ? 'bg-primary text-white'
+                      : cvData
+                        ? 'bg-green-100'
+                        : 'bg-gray-100'
+                      }`}
                   >
                     <Upload
-                      className={`h-4 w-4 ${
-                        currentStep === 'cv' ||
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'cv' ||
                         currentStep === 'cv-processing' ||
                         currentStep === 'cv-preview'
-                          ? 'text-white'
-                          : cvData
-                            ? 'text-green-600'
-                            : 'text-gray-400'
-                      }`}
+                        ? 'text-white'
+                        : cvData
+                          ? 'text-green-600'
+                          : 'text-gray-400'
+                        }`}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="flex items-center gap-2 font-semibold">
-                      Upload & Process CV Data
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-700">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h3 className="font-semibold text-sm">
+                        Upload & Process CV
+                      </h3>
+                      <span className="inline-flex rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] sm:text-xs text-green-700 w-fit">
                         Background AI
                       </span>
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                       {currentStep === 'cv-preview'
                         ? 'Review extracted data from your CV'
                         : currentStep === 'cv-processing'
@@ -364,179 +363,168 @@ export default function OnboardingPage() {
                           : 'Upload your CV for background AI processing'}
                     </p>
                   </div>
-                  <div className="text-sm font-medium">
+                  <div className="text-xs font-normal flex-shrink-0">
                     {currentStep === 'cv' ? (
-                      <span className="text-primary">Ready</span>
+                      <span className="text-primary text-xs">Ready</span>
                     ) : currentStep === 'cv-processing' ? (
-                      <span className="text-primary">Processing</span>
+                      <span className="text-primary text-xs">Processing</span>
                     ) : currentStep === 'cv-preview' ? (
-                      <span className="text-primary">Reviewing</span>
+                      <span className="text-primary text-xs">Reviewing</span>
                     ) : cvData ? (
-                      <span className="text-green-600">✓ Complete</span>
+                      <span className="text-green-600 text-xs">✓ Complete</span>
                     ) : (
-                      <span className="text-gray-500">Ready</span>
+                      <span className="text-gray-500 text-xs">Ready</span>
                     )}
                   </div>
                 </div>
 
                 {/* Step 2: Voice Interview */}
                 <div
-                  className={`flex items-start gap-4 rounded-lg border p-4 ${
-                    currentStep === 'voice-interview'
-                      ? 'border-primary bg-primary/5'
-                      : currentStep === 'complete'
-                        ? 'border-green-200 bg-green-50'
-                        : 'border-gray-200'
-                  }`}
+                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'voice-interview'
+                    ? 'border-primary bg-primary/5'
+                    : currentStep === 'complete'
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-gray-200'
+                    }`}
                 >
                   <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                      currentStep === 'voice-interview'
-                        ? 'bg-primary text-white'
-                        : currentStep === 'complete'
-                          ? 'bg-green-100'
-                          : 'bg-gray-100'
-                    }`}
+                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'voice-interview'
+                      ? 'bg-primary text-white'
+                      : currentStep === 'complete'
+                        ? 'bg-green-100'
+                        : 'bg-gray-100'
+                      }`}
                   >
                     <Mic
-                      className={`h-4 w-4 ${
-                        currentStep === 'voice-interview'
-                          ? 'text-white'
-                          : currentStep === 'complete'
-                            ? 'text-green-600'
-                            : 'text-gray-400'
-                      }`}
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'voice-interview'
+                        ? 'text-white'
+                        : currentStep === 'complete'
+                          ? 'text-green-600'
+                          : 'text-gray-400'
+                        }`}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="flex items-center gap-2 font-semibold">
-                      Voice Interview
-                      <span className="rounded-full bg-purple-100 px-2 py-1 text-xs text-purple-700">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h3 className="font-semibold text-sm">
+                        Voice Interview
+                      </h3>
+                      <span className="inline-flex rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] sm:text-xs text-purple-700 w-fit">
                         AI-Powered
                       </span>
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
                       Quick conversation to complete your profile details
                     </p>
                   </div>
-                  <div className="text-sm font-medium">
+                  <div className="text-xs font-normal flex-shrink-0">
                     {currentStep === 'voice-interview' ? (
-                      <span className="text-primary">In Progress</span>
+                      <span className="text-primary text-xs">In Progress</span>
                     ) : currentStep === 'complete' ? (
-                      <span className="text-green-600">✓ Complete</span>
+                      <span className="text-green-600 text-xs">✓ Complete</span>
                     ) : cvData ? (
-                      <span className="text-gray-500">Ready</span>
+                      <span className="text-gray-500 text-xs">Ready</span>
                     ) : (
-                      <span className="text-gray-400">Waiting</span>
+                      <span className="text-gray-400 text-xs">Waiting</span>
                     )}
                   </div>
                 </div>
+
 
                 {/* Step 3: Review & Edit */}
                 <div
-                  className={`flex items-start gap-4 rounded-lg border p-4 ${
-                    currentStep === 'review'
-                      ? 'border-primary bg-primary/5'
-                      : currentStep === 'complete'
-                        ? 'border-green-200 bg-green-50'
-                        : 'border-gray-200'
-                  }`}
+                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'review'
+                    ? 'border-primary bg-primary/5'
+                    : currentStep === 'complete'
+                      ? 'border-green-200 bg-green-50'
+                      : 'border-gray-200'
+                    }`}
                 >
                   <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                      currentStep === 'review'
-                        ? 'bg-primary text-white'
-                        : currentStep === 'complete'
-                          ? 'bg-green-100'
-                          : 'bg-gray-100'
-                    }`}
+                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'review'
+                      ? 'bg-primary text-white'
+                      : currentStep === 'complete'
+                        ? 'bg-green-100'
+                        : 'bg-gray-100'
+                      }`}
                   >
                     <FileCheck
-                      className={`h-4 w-4 ${
-                        currentStep === 'review'
-                          ? 'text-white'
-                          : currentStep === 'complete'
-                            ? 'text-green-600'
-                            : 'text-gray-400'
-                      }`}
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'review'
+                        ? 'text-white'
+                        : currentStep === 'complete'
+                          ? 'text-green-600'
+                          : 'text-gray-400'
+                        }`}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="flex items-center gap-2 font-semibold">
-                      Review & Edit Profile
-                      <span className="rounded-full bg-orange-100 px-2 py-1 text-xs text-orange-700">
-                        Important
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h3 className="font-semibold text-sm">
+                        Review & Edit
+                      </h3>
+                      <span className="inline-flex rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] sm:text-xs text-blue-700 w-fit">
+                        Final Step
                       </span>
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Review all information and make any necessary edits
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                      Review your information and save your profile
                     </p>
                   </div>
-                  <div className="text-sm font-medium">
+                  <div className="text-xs font-normal flex-shrink-0">
                     {currentStep === 'review' ? (
-                      <span className="text-primary">In Progress</span>
+                      <span className="text-primary text-xs">In Progress</span>
                     ) : currentStep === 'complete' ? (
-                      <span className="text-green-600">✓ Complete</span>
-                    ) : cvData && finalProfileData ? (
-                      <span className="text-gray-500">Ready</span>
+                      <span className="text-green-600 text-xs">✓ Complete</span>
+                    ) : finalProfileData ? (
+                      <span className="text-gray-500 text-xs">Ready</span>
                     ) : (
-                      <span className="text-gray-400">Waiting</span>
+                      <span className="text-gray-400 text-xs">Waiting</span>
                     )}
                   </div>
                 </div>
 
-                {/* Step 4: Create Profile */}
+                {/* Step 4: Create Profile
                 <div
-                  className={`flex items-start gap-4 rounded-lg border p-4 ${
-                    currentStep === 'complete'
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-gray-200'
-                  }`}
+                  className={`flex items-start gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'complete'
+                    ? 'border-green-200 bg-green-50'
+                    : 'border-gray-200'
+                    }`}
                 >
                   <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${
-                      currentStep === 'complete'
-                        ? 'bg-green-100'
-                        : 'bg-gray-100'
-                    }`}
+                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'complete'
+                      ? 'bg-green-100'
+                      : 'bg-gray-100'
+                      }`}
                   >
                     <CheckCircle
-                      className={`h-4 w-4 ${
-                        currentStep === 'complete'
-                          ? 'text-green-600'
-                          : 'text-gray-400'
-                      }`}
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'complete'
+                        ? 'text-green-600'
+                        : 'text-gray-400'
+                        }`}
                     />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="flex items-center gap-2 font-semibold">
-                      {currentStep === 'complete'
-                        ? 'Profile Complete'
-                        : 'Create Profile'}
-                      <span
-                        className={`rounded-full px-2 py-1 text-xs ${
-                          currentStep === 'complete'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-blue-100 text-blue-700'
-                        }`}
-                      >
-                        {currentStep === 'complete' ? 'Done' : 'Final'}
-                      </span>
-                    </h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <h3 className="font-semibold text-sm">
+                        {currentStep === 'complete'
+                          ? 'Profile Complete'
+                          : 'Create Profile'}
+                      </h3>
+                    </div>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {currentStep === 'complete'
                         ? 'Your board-ready profile has been successfully created'
-                        : 'Automatically create your profile from all data'}
+                        : ''}
                     </p>
                   </div>
-                  <div className="text-sm font-medium">
+                  <div className="text-xs font-normal flex-shrink-0">
                     {currentStep === 'complete' ? (
-                      <span className="text-green-600">✓ Complete</span>
+                      <span className="text-green-600 text-xs">✓ Complete</span>
                     ) : (
-                      <span className="text-gray-400">Waiting</span>
+                      <span className="text-gray-400 text-xs">Waiting</span>
                     )}
                   </div>
-                </div>
+                </div> */}
               </div>
 
               {/* Current Step Content */}
@@ -579,6 +567,7 @@ export default function OnboardingPage() {
                   />
                 </div>
               )}
+
 
               {currentStep === 'review' && finalProfileData && (
                 <div className="mt-6">

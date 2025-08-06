@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { validateFile, formatFileSize } from '@/lib/cv-storage';
-import { CVHelpModal } from '@/components/ui/cv-help-modal';
 import { useSupabase } from '@/components/providers/supabase-provider';
 import { Progress } from '@/components/ui/progress';
 
@@ -516,13 +515,11 @@ export function CVUploadSplit({
             <Button onClick={handleReset} variant="outline">
               Try Again
             </Button>
-            <CVHelpModal />
           </div>
         )}
 
         {uploadState.status === 'idle' && (
           <div className="mt-4 text-center">
-            <CVHelpModal />
           </div>
         )}
       </CardContent>

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { validateFile, formatFileSize } from '@/lib/cv-storage';
-import { CVHelpModal } from '@/components/ui/cv-help-modal';
 import { useSupabase } from '@/components/providers/supabase-provider';
 
 interface CVUploadBackgroundProps {
@@ -259,7 +258,7 @@ export function CVUploadBackground({
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {uploadState.status === 'idle' &&
-                  'Supported formats: PDF, DOCX, TXT, Images (Max 10MB) • Background processing eliminates timeouts'}
+                  'Supported formats: PDF, DOCX, TXT, Images (Max 10MB)'}
                 {uploadState.status === 'uploading' &&
                   'Creating background processing job...'}
                 {uploadState.status === 'uploaded' &&
@@ -292,19 +291,13 @@ export function CVUploadBackground({
 
         {/* Action Buttons */}
         {uploadState.status === 'error' && (
-          <div className="mt-6 flex justify-center gap-3">
+          <div className="mt-6 flex justify-center">
             <Button onClick={handleReset} variant="outline">
               Try Again
             </Button>
-            <CVHelpModal />
           </div>
         )}
 
-        {uploadState.status === 'idle' && (
-          <div className="mt-4 text-center">
-            <CVHelpModal />
-          </div>
-        )}
 
         {uploadState.status === 'uploaded' && (
           <div className="mt-6">

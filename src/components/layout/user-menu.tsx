@@ -16,9 +16,7 @@ import {
   User,
   LayoutDashboard,
   LogOut,
-  CheckCircle,
-  AlertCircle,
-  Crown,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUserRole } from '@/hooks/use-user-role';
@@ -50,75 +48,44 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 border-2 border-white/20 shadow-xl transition-all duration-300 hover:shadow-2xl hover:border-white/30">
+          <Avatar className="h-10 w-10">
             <AvatarFallback className="bg-primary text-primary-foreground">
               {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64" align="end" forceMount>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-2">
-            <div className="flex items-center space-x-2">
-              <p className="text-sm font-medium leading-none">{displayName}</p>
-              {userProfile?.role === 'platform_admin' && (
-                <Crown className="h-3 w-3 text-yellow-500" />
-              )}
-            </div>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
-            {userProfile && (
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="px-1 py-0 text-xs">
-                  {userProfile.role_display_name}
-                </Badge>
-                <div className="flex items-center space-x-1">
-                  {userProfile.onboarding_completed ? (
-                    <CheckCircle className="h-3 w-3 text-green-500" />
-                  ) : (
-                    <AlertCircle className="h-3 w-3 text-orange-500" />
-                  )}
-                  <span className="text-xs text-muted-foreground">
-                    {userProfile.onboarding_completed
-                      ? 'Setup Complete'
-                      : 'Setup Incomplete'}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        {/* Dynamic navigation based on role */}
-        {quickActions.slice(0, 4).map((item) => (
-          <DropdownMenuItem key={item.href} asChild>
-            <Link href={item.href} className="flex cursor-pointer">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>{item.title}</span>
-            </Link>
-          </DropdownMenuItem>
-        ))}
-
-        <DropdownMenuSeparator />
+        {/* Simplified menu - 4 essential items */}
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard" className="flex cursor-pointer">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/profile" className="flex cursor-pointer">
             <User className="mr-2 h-4 w-4" />
-            <span>Profile & Settings</span>
+            <span>Profile</span>
           </Link>
         </DropdownMenuItem>
-
-        {userProfile?.role === 'platform_admin' && (
-          <DropdownMenuItem asChild>
-            <Link href="/admin" className="flex cursor-pointer">
-              <Crown className="mr-2 h-4 w-4" />
-              <span>Admin Panel</span>
-            </Link>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex cursor-pointer">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
         <DropdownMenuItem

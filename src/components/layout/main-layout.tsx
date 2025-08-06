@@ -1,4 +1,5 @@
-import { Header } from './header';
+import { HeaderPremium } from './header-premium';
+import { BottomNavigation } from './bottom-navigation';
 import { Footer } from './footer';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -25,11 +26,12 @@ export function MainLayout({ children }: MainLayoutProps) {
         id="live-region"
       />
 
-      <Header />
-      <main id="main-content" className="flex-1" role="main">
+      <HeaderPremium />
+      <main id="main-content" className="flex-1 pb-20 lg:pb-0" role="main">
         {children}
       </main>
       <Footer />
+      <BottomNavigation />
       <Toaster />
     </div>
   );

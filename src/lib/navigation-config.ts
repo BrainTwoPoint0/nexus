@@ -17,6 +17,41 @@ export interface NavigationSubItem {
 }
 
 /**
+ * Simplified navigation - 3 main items for clarity
+ * Direct links without dropdowns for faster access
+ */
+export const simplifiedNavigation = {
+  main: [
+    {
+      title: 'Browse Jobs',
+      href: '/opportunities',
+      icon: 'briefcase',
+      description: 'Find your next opportunity',
+    },
+    {
+      title: 'Dashboard',
+      href: '/dashboard',
+      icon: 'layout-dashboard',
+      description: 'Your personal hub',
+      requiresAuth: true,
+    },
+    {
+      title: 'Post a Job',
+      href: '/post-role',
+      icon: 'plus-circle',
+      description: 'Hire top talent',
+      roles: ['organization_admin', 'organization_employee'],
+    },
+  ],
+  mobile: [
+    { title: 'Home', href: '/', icon: 'home' },
+    { title: 'Jobs', href: '/opportunities', icon: 'briefcase' },
+    { title: 'Applications', href: '/applications', icon: 'file-text', requiresAuth: true },
+    { title: 'Profile', href: '/profile', icon: 'user', requiresAuth: true },
+  ],
+};
+
+/**
  * Core site-wide navigation - visible to everyone
  * Role-specific content is handled at the page level, not navigation level
  */
@@ -116,44 +151,17 @@ export const authenticatedNavigation: NavigationItem[] = [
 ];
 
 /**
- * Quick actions for the user menu dropdown
- * Role-specific actions that don't clutter the main navigation
+ * Simplified user menu - 4 essential items only
+ * All other actions moved to dashboard
  */
 export const getUserQuickActions = (role?: string) => {
-  const baseActions = [
-    { title: 'Dashboard', href: '/dashboard' },
-    { title: 'My Profile', href: '/profile' },
-    { title: 'Settings', href: '/settings' },
+  // Simplified to 4 essential items for all users
+  // Role-specific actions are now in the dashboard
+  return [
+    { title: 'Dashboard', href: '/dashboard', icon: 'layout-dashboard' },
+    { title: 'Profile', href: '/profile', icon: 'user' },
+    { title: 'Settings', href: '/settings', icon: 'settings' },
   ];
-
-  switch (role) {
-    case 'candidate':
-      return [
-        ...baseActions,
-        { title: 'My Applications', href: '/applications' },
-        { title: 'Saved Opportunities', href: '/opportunities/saved' },
-      ];
-
-    case 'organization_admin':
-    case 'organization_employee':
-      return [
-        ...baseActions,
-        { title: 'Post a Role', href: '/post-role' },
-        { title: 'Manage Jobs', href: '/jobs' },
-        { title: 'Find Talent', href: '/talent' },
-      ];
-
-    case 'consultant':
-      return [
-        ...baseActions,
-        { title: 'My Clients', href: '/clients' },
-        { title: 'Active Searches', href: '/searches' },
-        { title: 'Candidate Network', href: '/talent' },
-      ];
-
-    default:
-      return baseActions;
-  }
 };
 
 /**
