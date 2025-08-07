@@ -12,12 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  User,
-  LayoutDashboard,
-  LogOut,
-  Settings,
-} from 'lucide-react';
+import { User, LayoutDashboard, LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useUserRole } from '@/hooks/use-user-role';
 import { getUserQuickActions } from '@/lib/navigation-config';
@@ -48,7 +43,10 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/80 border-2 border-white/20 shadow-xl transition-all duration-300 hover:shadow-2xl hover:border-white/30">
+        <Button
+          variant="ghost"
+          className="relative h-10 w-10 rounded-full border-2 border-white/20 bg-gradient-to-br from-primary to-primary/80 shadow-xl transition-all duration-300 hover:border-white/30 hover:shadow-2xl"
+        >
           <Avatar className="h-10 w-10">
             <AvatarFallback className="bg-primary text-primary-foreground">
               {initials}

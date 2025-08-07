@@ -67,7 +67,11 @@ export default function OnboardingPage() {
   }, [supabase, router]);
 
   // Handle background processing start
-  const handleUploadStart = (jobId: string, filename: string) => {
+  const handleUploadStart = (
+    jobId: string,
+    filename: string,
+    originalFile: File
+  ) => {
     logger.debug(
       'Background CV processing started',
       { jobId, filename },
@@ -76,6 +80,7 @@ export default function OnboardingPage() {
 
     setProcessingJobId(jobId);
     setProcessingFilename(filename);
+    setOriginalFile(originalFile); // Store the original file for later use
     setCurrentStep('cv-processing');
   };
 
@@ -190,6 +195,12 @@ export default function OnboardingPage() {
 
       // Prepare original file data if available
       let originalFileData = null;
+      console.log('🔍 Original file check:', {
+        hasOriginalFile: !!originalFile,
+        fileName: originalFile?.name,
+        fileSize: originalFile?.size,
+      });
+
       if (originalFile) {
         const fileBuffer = await originalFile.arrayBuffer();
         const base64Data = btoa(
@@ -296,10 +307,10 @@ export default function OnboardingPage() {
             >
               <User className="h-8 w-8 text-primary" />
             </motion.div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
               Build Your Executive Profile
             </h1>
-            <p className="mt-4 text-sm sm:text-base text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground sm:text-base">
               Upload your CV and complete a brief voice interview
             </p>
           </div>
@@ -316,46 +327,49 @@ export default function OnboardingPage() {
               <div className="space-y-4 sm:space-y-6">
                 {/* Step 1: CV Upload */}
                 <div
-                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'cv' ||
+                  className={`flex items-center gap-3 rounded-lg border p-3 sm:gap-4 sm:p-4 ${
+                    currentStep === 'cv' ||
                     currentStep === 'cv-processing' ||
                     currentStep === 'cv-preview'
-                    ? 'border-primary bg-primary/5'
-                    : cvData
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-gray-200'
-                    }`}
+                      ? 'border-primary bg-primary/5'
+                      : cvData
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-gray-200'
+                  }`}
                 >
                   <div
-                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'cv' ||
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
+                      currentStep === 'cv' ||
                       currentStep === 'cv-processing' ||
                       currentStep === 'cv-preview'
-                      ? 'bg-primary text-white'
-                      : cvData
-                        ? 'bg-green-100'
-                        : 'bg-gray-100'
-                      }`}
+                        ? 'bg-primary text-white'
+                        : cvData
+                          ? 'bg-green-100'
+                          : 'bg-gray-100'
+                    }`}
                   >
                     <Upload
-                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'cv' ||
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${
+                        currentStep === 'cv' ||
                         currentStep === 'cv-processing' ||
                         currentStep === 'cv-preview'
-                        ? 'text-white'
-                        : cvData
-                          ? 'text-green-600'
-                          : 'text-gray-400'
-                        }`}
+                          ? 'text-white'
+                          : cvData
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                      }`}
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                      <h3 className="font-semibold text-sm">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                      <h3 className="text-sm font-semibold">
                         Upload & Process CV
                       </h3>
-                      <span className="inline-flex rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] sm:text-xs text-green-700 w-fit">
+                      <span className="inline-flex w-fit rounded-full bg-green-100 px-1.5 py-0.5 text-[9px] text-green-700 sm:text-xs">
                         Background AI
                       </span>
                     </div>
-                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                       {currentStep === 'cv-preview'
                         ? 'Review extracted data from your CV'
                         : currentStep === 'cv-processing'
@@ -363,122 +377,123 @@ export default function OnboardingPage() {
                           : 'Upload your CV for background AI processing'}
                     </p>
                   </div>
-                  <div className="text-xs font-normal flex-shrink-0">
+                  <div className="flex-shrink-0 text-xs font-normal">
                     {currentStep === 'cv' ? (
-                      <span className="text-primary text-xs">Ready</span>
+                      <span className="text-xs text-primary">Ready</span>
                     ) : currentStep === 'cv-processing' ? (
-                      <span className="text-primary text-xs">Processing</span>
+                      <span className="text-xs text-primary">Processing</span>
                     ) : currentStep === 'cv-preview' ? (
-                      <span className="text-primary text-xs">Reviewing</span>
+                      <span className="text-xs text-primary">Reviewing</span>
                     ) : cvData ? (
-                      <span className="text-green-600 text-xs">✓ Complete</span>
+                      <span className="text-xs text-green-600">✓ Complete</span>
                     ) : (
-                      <span className="text-gray-500 text-xs">Ready</span>
+                      <span className="text-xs text-gray-500">Ready</span>
                     )}
                   </div>
                 </div>
 
                 {/* Step 2: Voice Interview */}
                 <div
-                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'voice-interview'
-                    ? 'border-primary bg-primary/5'
-                    : currentStep === 'complete'
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-gray-200'
-                    }`}
+                  className={`flex items-center gap-3 rounded-lg border p-3 sm:gap-4 sm:p-4 ${
+                    currentStep === 'voice-interview'
+                      ? 'border-primary bg-primary/5'
+                      : currentStep === 'complete'
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-gray-200'
+                  }`}
                 >
                   <div
-                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'voice-interview'
-                      ? 'bg-primary text-white'
-                      : currentStep === 'complete'
-                        ? 'bg-green-100'
-                        : 'bg-gray-100'
-                      }`}
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
+                      currentStep === 'voice-interview'
+                        ? 'bg-primary text-white'
+                        : currentStep === 'complete'
+                          ? 'bg-green-100'
+                          : 'bg-gray-100'
+                    }`}
                   >
                     <Mic
-                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'voice-interview'
-                        ? 'text-white'
-                        : currentStep === 'complete'
-                          ? 'text-green-600'
-                          : 'text-gray-400'
-                        }`}
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${
+                        currentStep === 'voice-interview'
+                          ? 'text-white'
+                          : currentStep === 'complete'
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                      }`}
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                      <h3 className="font-semibold text-sm">
-                        Voice Interview
-                      </h3>
-                      <span className="inline-flex rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] sm:text-xs text-purple-700 w-fit">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                      <h3 className="text-sm font-semibold">Voice Interview</h3>
+                      <span className="inline-flex w-fit rounded-full bg-purple-100 px-1.5 py-0.5 text-[9px] text-purple-700 sm:text-xs">
                         AI-Powered
                       </span>
                     </div>
-                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                       Quick conversation to complete your profile details
                     </p>
                   </div>
-                  <div className="text-xs font-normal flex-shrink-0">
+                  <div className="flex-shrink-0 text-xs font-normal">
                     {currentStep === 'voice-interview' ? (
-                      <span className="text-primary text-xs">In Progress</span>
+                      <span className="text-xs text-primary">In Progress</span>
                     ) : currentStep === 'complete' ? (
-                      <span className="text-green-600 text-xs">✓ Complete</span>
+                      <span className="text-xs text-green-600">✓ Complete</span>
                     ) : cvData ? (
-                      <span className="text-gray-500 text-xs">Ready</span>
+                      <span className="text-xs text-gray-500">Ready</span>
                     ) : (
-                      <span className="text-gray-400 text-xs">Waiting</span>
+                      <span className="text-xs text-gray-400">Waiting</span>
                     )}
                   </div>
                 </div>
 
-
                 {/* Step 3: Review & Edit */}
                 <div
-                  className={`flex items-center gap-3 sm:gap-4 rounded-lg border p-3 sm:p-4 ${currentStep === 'review'
-                    ? 'border-primary bg-primary/5'
-                    : currentStep === 'complete'
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-gray-200'
-                    }`}
+                  className={`flex items-center gap-3 rounded-lg border p-3 sm:gap-4 sm:p-4 ${
+                    currentStep === 'review'
+                      ? 'border-primary bg-primary/5'
+                      : currentStep === 'complete'
+                        ? 'border-green-200 bg-green-50'
+                        : 'border-gray-200'
+                  }`}
                 >
                   <div
-                    className={`flex h-10 w-10 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full ${currentStep === 'review'
-                      ? 'bg-primary text-white'
-                      : currentStep === 'complete'
-                        ? 'bg-green-100'
-                        : 'bg-gray-100'
-                      }`}
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full sm:h-8 sm:w-8 ${
+                      currentStep === 'review'
+                        ? 'bg-primary text-white'
+                        : currentStep === 'complete'
+                          ? 'bg-green-100'
+                          : 'bg-gray-100'
+                    }`}
                   >
                     <FileCheck
-                      className={`h-5 w-5 sm:h-4 sm:w-4 ${currentStep === 'review'
-                        ? 'text-white'
-                        : currentStep === 'complete'
-                          ? 'text-green-600'
-                          : 'text-gray-400'
-                        }`}
+                      className={`h-5 w-5 sm:h-4 sm:w-4 ${
+                        currentStep === 'review'
+                          ? 'text-white'
+                          : currentStep === 'complete'
+                            ? 'text-green-600'
+                            : 'text-gray-400'
+                      }`}
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                      <h3 className="font-semibold text-sm">
-                        Review & Edit
-                      </h3>
-                      <span className="inline-flex rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] sm:text-xs text-blue-700 w-fit">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                      <h3 className="text-sm font-semibold">Review & Edit</h3>
+                      <span className="inline-flex w-fit rounded-full bg-blue-100 px-1.5 py-0.5 text-[9px] text-blue-700 sm:text-xs">
                         Final Step
                       </span>
                     </div>
-                    <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                       Review your information and save your profile
                     </p>
                   </div>
-                  <div className="text-xs font-normal flex-shrink-0">
+                  <div className="flex-shrink-0 text-xs font-normal">
                     {currentStep === 'review' ? (
-                      <span className="text-primary text-xs">In Progress</span>
+                      <span className="text-xs text-primary">In Progress</span>
                     ) : currentStep === 'complete' ? (
-                      <span className="text-green-600 text-xs">✓ Complete</span>
+                      <span className="text-xs text-green-600">✓ Complete</span>
                     ) : finalProfileData ? (
-                      <span className="text-gray-500 text-xs">Ready</span>
+                      <span className="text-xs text-gray-500">Ready</span>
                     ) : (
-                      <span className="text-gray-400 text-xs">Waiting</span>
+                      <span className="text-xs text-gray-400">Waiting</span>
                     )}
                   </div>
                 </div>
@@ -567,7 +582,6 @@ export default function OnboardingPage() {
                   />
                 </div>
               )}
-
 
               {currentStep === 'review' && finalProfileData && (
                 <div className="mt-6">

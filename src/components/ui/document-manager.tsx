@@ -64,6 +64,7 @@ interface DocumentManagerProps {
 
 const DOCUMENT_CATEGORIES = [
   'resume',
+  'cv',
   'cover_letter',
   'certificate',
   'reference',
@@ -73,7 +74,8 @@ const DOCUMENT_CATEGORIES = [
 ];
 
 const DOCUMENT_CATEGORY_LABELS = {
-  resume: 'Resume/CV',
+  resume: 'Resume',
+  cv: 'CV',
   cover_letter: 'Cover Letter',
   certificate: 'Certificate',
   reference: 'Reference Letter',
@@ -477,11 +479,18 @@ export function DocumentManager({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {sortedDocuments.filter((doc) => doc.document_category === 'resume')
-              .length > 0 ? (
+            {sortedDocuments.filter(
+              (doc) =>
+                doc.document_category === 'resume' ||
+                doc.document_category === 'cv'
+            ).length > 0 ? (
               <div className="space-y-3">
                 {sortedDocuments
-                  .filter((doc) => doc.document_category === 'resume')
+                  .filter(
+                    (doc) =>
+                      doc.document_category === 'resume' ||
+                      doc.document_category === 'cv'
+                  )
                   .map((doc) => (
                     <DocumentCard
                       key={doc.id}
@@ -514,11 +523,18 @@ export function DocumentManager({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {sortedDocuments.filter((doc) => doc.document_category !== 'resume')
-              .length > 0 ? (
+            {sortedDocuments.filter(
+              (doc) =>
+                doc.document_category !== 'resume' &&
+                doc.document_category !== 'cv'
+            ).length > 0 ? (
               <div className="space-y-3">
                 {sortedDocuments
-                  .filter((doc) => doc.document_category !== 'resume')
+                  .filter(
+                    (doc) =>
+                      doc.document_category !== 'resume' &&
+                      doc.document_category !== 'cv'
+                  )
                   .map((doc) => (
                     <DocumentCard
                       key={doc.id}

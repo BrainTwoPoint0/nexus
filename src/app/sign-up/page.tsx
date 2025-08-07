@@ -154,7 +154,7 @@ function SignUpForm() {
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First name</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="firstName"
                         placeholder="First name"
@@ -185,7 +185,7 @@ function SignUpForm() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
@@ -205,7 +205,7 @@ function SignUpForm() {
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="password"
                         type={showPassword ? 'text' : 'password'}
@@ -237,7 +237,7 @@ function SignUpForm() {
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirm password</Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="confirmPassword"
                         type={showConfirmPassword ? 'text' : 'password'}
@@ -251,7 +251,9 @@ function SignUpForm() {
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                         disabled={isLoading}
                       >
@@ -274,7 +276,7 @@ function SignUpForm() {
                       handleInputChange('agreeToTerms', checked as boolean)
                     }
                     disabled={isLoading}
-                    className="mt-1 h-4 w-4 min-h-4 min-w-4"
+                    className="mt-1 h-4 min-h-4 w-4 min-w-4"
                   />
                   <Label htmlFor="terms" className="text-sm leading-relaxed">
                     I agree to the{' '}
@@ -353,7 +355,7 @@ function SignUpForm() {
               Already have an account?{' '}
               <Link
                 href="/sign-in"
-                className="text-sm leading-relaxed font-medium text-primary transition-colors hover:text-primary/80"
+                className="text-sm font-medium leading-relaxed text-primary transition-colors hover:text-primary/80"
               >
                 Sign in
               </Link>

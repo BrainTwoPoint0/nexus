@@ -138,7 +138,7 @@ export function CVProcessingLoading({
     <Card className="mx-auto w-full max-w-2xl">
       <CardContent className="p-4 sm:p-6 md:p-8">
         {/* Header */}
-        <div className="mb-6 sm:mb-8 text-center">
+        <div className="mb-6 text-center sm:mb-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: [1, 1.1, 1] }}
@@ -147,15 +147,15 @@ export function CVProcessingLoading({
               repeat: Infinity,
               ease: 'easeInOut',
             }}
-            className="mx-auto mb-3 sm:mb-4 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-full bg-primary/10"
+            className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 sm:mb-4 sm:h-16 sm:w-16"
           >
             {getProgressIcon(jobStatus?.progress || 0)}
           </motion.div>
 
-          <h2 className="mb-2 text-xl sm:text-2xl font-bold text-foreground">
+          <h2 className="mb-2 text-xl font-bold text-foreground sm:text-2xl">
             Processing Your CV
           </h2>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-sm text-muted-foreground sm:text-base">
             Extracting and enhancing your professional profile
           </p>
         </div>
@@ -176,9 +176,11 @@ export function CVProcessingLoading({
           </div>
 
           {/* File Info */}
-          <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 p-2 sm:p-3 text-xs sm:text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 rounded-lg bg-muted/50 p-2 text-xs text-muted-foreground sm:p-3 sm:text-sm">
             <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="font-medium truncate max-w-[200px] sm:max-w-none">{filename}</span>
+            <span className="max-w-[200px] truncate font-medium sm:max-w-none">
+              {filename}
+            </span>
           </div>
 
           {/* Processing Tips */}
@@ -192,14 +194,14 @@ export function CVProcessingLoading({
               className="rounded-lg border border-blue-100 bg-gradient-to-r from-blue-50 to-purple-50 p-4 sm:p-6"
             >
               <div className="flex items-start gap-3 sm:gap-4">
-                <div className="flex-shrink-0 rounded-lg bg-blue-100 p-1.5 sm:p-2 text-blue-600">
+                <div className="flex-shrink-0 rounded-lg bg-blue-100 p-1.5 text-blue-600 sm:p-2">
                   <div className="h-4 w-4 sm:h-5 sm:w-5">{currentTip.icon}</div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="mb-1 text-sm sm:text-base font-semibold text-gray-900">
+                  <h3 className="mb-1 text-sm font-semibold text-gray-900 sm:text-base">
                     {currentTip.title}
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-600">
+                  <p className="text-xs text-gray-600 sm:text-sm">
                     {currentTip.description}
                   </p>
                 </div>
@@ -208,9 +210,9 @@ export function CVProcessingLoading({
           </AnimatePresence>
 
           {/* Processing Steps Visualization */}
-          <div className="mt-4 sm:mt-6 grid grid-cols-3 gap-2 sm:gap-4">
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-6 sm:gap-4">
             <div
-              className={`rounded-lg p-2 sm:p-3 text-center transition-all ${
+              className={`rounded-lg p-2 text-center transition-all sm:p-3 ${
                 (jobStatus?.progress || 0) >= 30
                   ? 'border border-green-200 bg-green-50'
                   : (jobStatus?.progress || 0) >= 10
@@ -219,7 +221,7 @@ export function CVProcessingLoading({
               }`}
             >
               <div
-                className={`mx-auto mb-1 sm:mb-2 flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full ${
+                className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full sm:mb-2 sm:h-8 sm:w-8 ${
                   (jobStatus?.progress || 0) >= 30
                     ? 'bg-green-100 text-green-600'
                     : (jobStatus?.progress || 0) >= 10
@@ -233,11 +235,11 @@ export function CVProcessingLoading({
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                 )}
               </div>
-              <p className="text-[10px] sm:text-xs font-medium">Extract</p>
+              <p className="text-[10px] font-medium sm:text-xs">Extract</p>
             </div>
 
             <div
-              className={`rounded-lg p-2 sm:p-3 text-center transition-all ${
+              className={`rounded-lg p-2 text-center transition-all sm:p-3 ${
                 (jobStatus?.progress || 0) >= 70
                   ? 'border border-green-200 bg-green-50'
                   : (jobStatus?.progress || 0) >= 30
@@ -246,7 +248,7 @@ export function CVProcessingLoading({
               }`}
             >
               <div
-                className={`mx-auto mb-1 sm:mb-2 flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full ${
+                className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full sm:mb-2 sm:h-8 sm:w-8 ${
                   (jobStatus?.progress || 0) >= 70
                     ? 'bg-green-100 text-green-600'
                     : (jobStatus?.progress || 0) >= 30
@@ -260,11 +262,11 @@ export function CVProcessingLoading({
                   <Brain className="h-3 w-3 sm:h-4 sm:w-4" />
                 )}
               </div>
-              <p className="text-[10px] sm:text-xs font-medium">Analyze</p>
+              <p className="text-[10px] font-medium sm:text-xs">Analyze</p>
             </div>
 
             <div
-              className={`rounded-lg p-2 sm:p-3 text-center transition-all ${
+              className={`rounded-lg p-2 text-center transition-all sm:p-3 ${
                 (jobStatus?.progress || 0) >= 95
                   ? 'border border-green-200 bg-green-50'
                   : (jobStatus?.progress || 0) >= 70
@@ -273,7 +275,7 @@ export function CVProcessingLoading({
               }`}
             >
               <div
-                className={`mx-auto mb-1 sm:mb-2 flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full ${
+                className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full sm:mb-2 sm:h-8 sm:w-8 ${
                   (jobStatus?.progress || 0) >= 95
                     ? 'bg-green-100 text-green-600'
                     : (jobStatus?.progress || 0) >= 70
@@ -287,14 +289,14 @@ export function CVProcessingLoading({
                   <User className="h-3 w-3 sm:h-4 sm:w-4" />
                 )}
               </div>
-              <p className="text-[10px] sm:text-xs font-medium">Enhance</p>
+              <p className="text-[10px] font-medium sm:text-xs">Enhance</p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-6 sm:mt-8 border-t pt-4 sm:pt-6 text-center">
-          <p className="mb-3 sm:mb-4 text-xs sm:text-sm text-muted-foreground px-2">
+        <div className="mt-6 border-t pt-4 text-center sm:mt-8 sm:pt-6">
+          <p className="mb-3 px-2 text-xs text-muted-foreground sm:mb-4 sm:text-sm">
             Your data is processed securely and never shared with third parties
           </p>
 
@@ -306,7 +308,7 @@ export function CVProcessingLoading({
               setIsPolling(false);
               onError('Processing cancelled by user');
             }}
-            className="text-xs h-8 px-3"
+            className="h-8 px-3 text-xs"
           >
             Cancel Processing
           </Button>

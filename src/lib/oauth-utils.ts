@@ -154,6 +154,11 @@ export function mapOAuthToProfile(normalizedProfile: NormalizedProfile) {
     },
   };
 
+  // Auto-verify users who signed up via LinkedIn OAuth
+  if (normalizedProfile.provider === 'linkedin') {
+    profileData.is_verified = true;
+  }
+
   // Add optional fields if they exist
   if (normalizedProfile.title) {
     profileData.professional_headline = normalizedProfile.title;

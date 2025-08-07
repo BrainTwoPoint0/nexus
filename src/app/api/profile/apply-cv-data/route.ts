@@ -794,9 +794,19 @@ export async function POST(request: NextRequest) {
 
     // Store the original CV file in the documents bucket if provided
     let cvFileUrl = null;
+    console.log('🔍 Original file data check:', {
+      hasOriginalFileData: !!originalFileData,
+      fileName: originalFileData?.name,
+      fileSize: originalFileData?.size,
+      dataLength: originalFileData?.data?.length,
+    });
+
     if (originalFileData) {
       try {
-        console.log('Storing CV file:', originalFileData.name);
+        console.log(
+          '📁 Storing CV file to documents bucket:',
+          originalFileData.name
+        );
 
         // Convert base64 back to file buffer
         const fileBuffer = Uint8Array.from(atob(originalFileData.data), (c) =>

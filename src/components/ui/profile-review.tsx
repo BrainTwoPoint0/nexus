@@ -142,8 +142,6 @@ export function ProfileReview({
       animate={{ opacity: 1, y: 0 }}
       className="space-y-4 sm:space-y-6"
     >
-
-
       {/* Basic Information */}
       <Card>
         <CardHeader className="pb-3 sm:pb-6">
@@ -155,7 +153,9 @@ export function ProfileReview({
         <CardContent className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="firstName" className="text-sm">First Name *</Label>
+              <Label htmlFor="firstName" className="text-sm">
+                First Name *
+              </Label>
               <Input
                 id="firstName"
                 value={editedData.firstName || editedData.first_name || ''}
@@ -165,7 +165,9 @@ export function ProfileReview({
               />
             </div>
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="lastName" className="text-sm">Last Name *</Label>
+              <Label htmlFor="lastName" className="text-sm">
+                Last Name *
+              </Label>
               <Input
                 id="lastName"
                 value={editedData.lastName || editedData.last_name || ''}
@@ -178,12 +180,15 @@ export function ProfileReview({
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="email" className="text-sm flex items-center gap-2">
-                <Mail className="h-3 w-3 sm:hidden text-muted-foreground" />
+              <Label
+                htmlFor="email"
+                className="flex items-center gap-2 text-sm"
+              >
+                <Mail className="h-3 w-3 text-muted-foreground sm:hidden" />
                 Email *
               </Label>
               <div className="flex items-center gap-2">
-                <Mail className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Mail className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
                 <Input
                   id="email"
                   type="email"
@@ -196,12 +201,15 @@ export function ProfileReview({
               </div>
             </div>
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="phone" className="text-sm flex items-center gap-2">
-                <Phone className="h-3 w-3 sm:hidden text-muted-foreground" />
+              <Label
+                htmlFor="phone"
+                className="flex items-center gap-2 text-sm"
+              >
+                <Phone className="h-3 w-3 text-muted-foreground sm:hidden" />
                 Phone *
               </Label>
               <div className="flex items-center gap-2">
-                <Phone className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Phone className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
                 <Input
                   id="phone"
                   type="tel"
@@ -216,12 +224,15 @@ export function ProfileReview({
           </div>
 
           <div className="space-y-1 sm:space-y-2">
-            <Label htmlFor="location" className="text-sm flex items-center gap-2">
-              <MapPin className="h-3 w-3 sm:hidden text-muted-foreground" />
+            <Label
+              htmlFor="location"
+              className="flex items-center gap-2 text-sm"
+            >
+              <MapPin className="h-3 w-3 text-muted-foreground sm:hidden" />
               Location *
             </Label>
             <div className="flex items-center gap-2">
-              <MapPin className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+              <MapPin className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
               <Input
                 id="location"
                 value={editedData.location || ''}
@@ -245,7 +256,9 @@ export function ProfileReview({
         </CardHeader>
         <CardContent className="space-y-3 sm:space-y-4">
           <div className="space-y-1 sm:space-y-2">
-            <Label htmlFor="professionalHeadline" className="text-sm">Professional Headline</Label>
+            <Label htmlFor="professionalHeadline" className="text-sm">
+              Professional Headline
+            </Label>
             <Input
               id="professionalHeadline"
               value={editedData.professional_headline || editedData.title || ''}
@@ -257,7 +270,9 @@ export function ProfileReview({
           </div>
 
           <div className="space-y-1 sm:space-y-2">
-            <Label htmlFor="bio" className="text-sm">Professional Bio</Label>
+            <Label htmlFor="bio" className="text-sm">
+              Professional Bio
+            </Label>
             <Textarea
               id="bio"
               value={editedData.professionalBio || editedData.bio || ''}
@@ -269,12 +284,15 @@ export function ProfileReview({
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="linkedInUrl" className="text-sm flex items-center gap-2">
-                <Linkedin className="h-3 w-3 sm:hidden text-muted-foreground" />
+              <Label
+                htmlFor="linkedInUrl"
+                className="flex items-center gap-2 text-sm"
+              >
+                <Linkedin className="h-3 w-3 text-muted-foreground sm:hidden" />
                 LinkedIn URL
               </Label>
               <div className="flex items-center gap-2">
-                <Linkedin className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Linkedin className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
                 <Input
                   id="linkedInUrl"
                   value={
@@ -282,17 +300,24 @@ export function ProfileReview({
                   }
                   onChange={(e) => updateField('linkedin_url', e.target.value)}
                   placeholder="https://linkedin.com/in/yourprofile"
-                  className={editedData.linkedInUrl || editedData.linkedin_url ? '' : 'sm:ml-0'}
+                  className={
+                    editedData.linkedInUrl || editedData.linkedin_url
+                      ? ''
+                      : 'sm:ml-0'
+                  }
                 />
               </div>
             </div>
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="website" className="text-sm flex items-center gap-2">
-                <Globe className="h-3 w-3 sm:hidden text-muted-foreground" />
+              <Label
+                htmlFor="website"
+                className="flex items-center gap-2 text-sm"
+              >
+                <Globe className="h-3 w-3 text-muted-foreground sm:hidden" />
                 Personal Website
               </Label>
               <div className="flex items-center gap-2">
-                <Globe className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <Globe className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
                 <Input
                   id="website"
                   value={editedData.website || ''}
@@ -323,12 +348,14 @@ export function ProfileReview({
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="flex items-center text-xs px-1.5 py-0.5 min-w-0"
+                  className="flex min-w-0 items-center px-1.5 py-0.5 text-xs"
                 >
-                  <span className="truncate max-w-[100px] sm:max-w-[120px]">{skill}</span>
+                  <span className="max-w-[100px] truncate sm:max-w-[120px]">
+                    {skill}
+                  </span>
                   <button
                     onClick={() => removeArrayItem('skills', index)}
-                    className="hover:text-destructive flex-shrink-0 ml-2"
+                    className="ml-2 flex-shrink-0 hover:text-destructive"
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
@@ -357,12 +384,14 @@ export function ProfileReview({
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="flex items-center text-xs px-1.5 py-0.5 min-w-0"
+                  className="flex min-w-0 items-center px-1.5 py-0.5 text-xs"
                 >
-                  <span className="truncate max-w-[100px] sm:max-w-[120px]">{language}</span>
+                  <span className="max-w-[100px] truncate sm:max-w-[120px]">
+                    {language}
+                  </span>
                   <button
                     onClick={() => removeArrayItem('languages', index)}
-                    className="hover:text-destructive flex-shrink-0 ml-2"
+                    className="ml-2 flex-shrink-0 hover:text-destructive"
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
@@ -391,12 +420,14 @@ export function ProfileReview({
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="flex items-center text-xs px-1.5 py-0.5 min-w-0"
+                  className="flex min-w-0 items-center px-1.5 py-0.5 text-xs"
                 >
-                  <span className="truncate max-w-[100px] sm:max-w-[120px]">{sector}</span>
+                  <span className="max-w-[100px] truncate sm:max-w-[120px]">
+                    {sector}
+                  </span>
                   <button
                     onClick={() => removeArrayItem('sectors', index)}
-                    className="hover:text-destructive flex-shrink-0 ml-2"
+                    className="ml-2 flex-shrink-0 hover:text-destructive"
                   >
                     <X className="h-2.5 w-2.5" />
                   </button>
@@ -430,7 +461,9 @@ export function ProfileReview({
         <CardContent className="space-y-3 sm:space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="availability" className="text-sm">Availability Status</Label>
+              <Label htmlFor="availability" className="text-sm">
+                Availability Status
+              </Label>
               <Select
                 value={editedData.availability_status || ''}
                 onValueChange={(value) =>
@@ -459,7 +492,9 @@ export function ProfileReview({
             </div>
 
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="remote" className="text-sm">Remote Work Preference</Label>
+              <Label htmlFor="remote" className="text-sm">
+                Remote Work Preference
+              </Label>
               <Select
                 value={editedData.remote_work_preference || ''}
                 onValueChange={(value) =>
@@ -481,12 +516,15 @@ export function ProfileReview({
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="minComp" className="text-sm flex items-center gap-2">
-                <DollarSign className="h-3 w-3 sm:hidden text-muted-foreground" />
+              <Label
+                htmlFor="minComp"
+                className="flex items-center gap-2 text-sm"
+              >
+                <DollarSign className="h-3 w-3 text-muted-foreground sm:hidden" />
                 Min Compensation
               </Label>
               <div className="flex items-center gap-2">
-                <DollarSign className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <DollarSign className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
                 <Input
                   id="minComp"
                   type="number"
@@ -498,18 +536,23 @@ export function ProfileReview({
                     )
                   }
                   placeholder="e.g., 100000"
-                  className={editedData.compensation_expectation_min ? '' : 'sm:ml-0'}
+                  className={
+                    editedData.compensation_expectation_min ? '' : 'sm:ml-0'
+                  }
                 />
               </div>
             </div>
 
             <div className="space-y-1 sm:space-y-2">
-              <Label htmlFor="maxComp" className="text-sm flex items-center gap-2">
-                <DollarSign className="h-3 w-3 sm:hidden text-muted-foreground" />
+              <Label
+                htmlFor="maxComp"
+                className="flex items-center gap-2 text-sm"
+              >
+                <DollarSign className="h-3 w-3 text-muted-foreground sm:hidden" />
                 Max Compensation
               </Label>
               <div className="flex items-center gap-2">
-                <DollarSign className="hidden sm:flex h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                <DollarSign className="hidden h-3 w-3 text-muted-foreground sm:flex sm:h-4 sm:w-4" />
                 <Input
                   id="maxComp"
                   type="number"
@@ -521,7 +564,9 @@ export function ProfileReview({
                     )
                   }
                   placeholder="e.g., 150000"
-                  className={editedData.compensation_expectation_max ? '' : 'sm:ml-0'}
+                  className={
+                    editedData.compensation_expectation_max ? '' : 'sm:ml-0'
+                  }
                 />
               </div>
             </div>
@@ -532,7 +577,12 @@ export function ProfileReview({
       {/* Action Buttons */}
       <div className="flex gap-3 sm:gap-4">
         {onBack && (
-          <Button variant="outline" onClick={onBack} disabled={isLoading} className="px-3 sm:px-4">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            disabled={isLoading}
+            className="px-3 sm:px-4"
+          >
             <ArrowLeft className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             <span className="text-sm">Back</span>
           </Button>
@@ -544,7 +594,7 @@ export function ProfileReview({
         >
           {isLoading ? (
             <>
-              <div className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+              <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-background border-t-transparent sm:h-4 sm:w-4" />
               <span className="text-sm">Saving...</span>
             </>
           ) : (
@@ -561,12 +611,12 @@ export function ProfileReview({
         <Card className="border-destructive/50 bg-destructive/10">
           <CardContent className="pt-4 sm:pt-6">
             <div className="flex items-start gap-2 sm:gap-3">
-              <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive flex-shrink-0" />
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-destructive sm:h-5 sm:w-5" />
               <div className="min-w-0">
-                <p className="text-sm sm:text-base font-medium text-destructive">
+                <p className="text-sm font-medium text-destructive sm:text-base">
                   Missing Required Fields
                 </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground sm:text-sm">
                   Please fill in: {completionStatus.missingRequired.join(', ')}
                 </p>
               </div>

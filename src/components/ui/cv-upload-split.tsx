@@ -519,8 +519,7 @@ export function CVUploadSplit({
         )}
 
         {uploadState.status === 'idle' && (
-          <div className="mt-4 text-center">
-          </div>
+          <div className="mt-4 text-center"></div>
         )}
       </CardContent>
     </Card>

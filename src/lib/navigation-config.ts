@@ -46,7 +46,12 @@ export const simplifiedNavigation = {
   mobile: [
     { title: 'Home', href: '/', icon: 'home' },
     { title: 'Jobs', href: '/opportunities', icon: 'briefcase' },
-    { title: 'Applications', href: '/applications', icon: 'file-text', requiresAuth: true },
+    {
+      title: 'Applications',
+      href: '/applications',
+      icon: 'file-text',
+      requiresAuth: true,
+    },
     { title: 'Profile', href: '/profile', icon: 'user', requiresAuth: true },
   ],
 };

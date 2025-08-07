@@ -837,49 +837,192 @@ export default function ProfilePage() {
           className="space-y-8"
         >
           {/* Header */}
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col items-start justify-between space-y-4 md:flex-row md:items-center md:space-y-0"
-          >
-            <div className="flex items-center space-x-6">
-              <div className="relative">
-                <Avatar className="h-20 w-20">
-                  <AvatarFallback className="bg-primary text-2xl text-primary-foreground">
-                    {(profile.first_name?.[0] || '') +
-                      (profile.last_name?.[0] || '') || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                {isEditing && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                  >
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                )}
+          <motion.div variants={itemVariants}>
+            {/* Desktop Layout - Original Design */}
+            <div className="hidden flex-col items-start justify-between space-y-4 md:flex md:flex-row md:items-center md:space-y-0">
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <Avatar className="h-20 w-20">
+                    <AvatarFallback className="bg-primary text-2xl text-primary-foreground">
+                      {(profile.first_name?.[0] || '') +
+                        (profile.last_name?.[0] || '') || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isEditing && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground">
+                    {`${profile.first_name || ''} ${profile.last_name || ''}`.trim() ||
+                      'User'}
+                  </h1>
+                  <p className="text-lg text-muted-foreground">
+                    {profile.professional_headline ||
+                      'Add your professional headline'}
+                  </p>
+                  <div className="mt-2 flex flex-col space-y-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
+                    {profile.location && (
+                      <div className="flex items-center space-x-1">
+                        <MapPin className="h-4 w-4" />
+                        <span>{profile.location}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  {`${profile.first_name || ''} ${profile.last_name || ''}`.trim() ||
-                    'User'}
-                </h1>
-                <p className="text-lg text-muted-foreground">
-                  {profile.professional_headline ||
-                    'Add your professional headline'}
-                </p>
-                <div className="mt-2 flex flex-col space-y-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
+              <div className="flex flex-col items-stretch space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0">
+                <div className="flex items-center space-x-2 text-sm">
+                  {profile.is_verified ? (
+                    <Badge
+                      variant="default"
+                      className="bg-green-100 text-green-800"
+                    >
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Verified
+                    </Badge>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline">
+                        <AlertCircle className="mr-1 h-3 w-3" />
+                        Unverified
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const response = await fetch(
+                              '/api/profile/verify-linkedin',
+                              {
+                                method: 'POST',
+                              }
+                            );
+
+                            if (response.ok) {
+                              setProfile((prev) =>
+                                prev ? { ...prev, is_verified: true } : null
+                              );
+                              toast({
+                                title: 'Profile Verified',
+                                description:
+                                  'Your LinkedIn account has been verified successfully!',
+                              });
+                            } else {
+                              const error = await response.json();
+                              toast({
+                                variant: 'destructive',
+                                title: 'Verification Failed',
+                                description:
+                                  error.error ||
+                                  'Failed to verify LinkedIn account',
+                              });
+                            }
+                          } catch (error) {
+                            toast({
+                              variant: 'destructive',
+                              title: 'Error',
+                              description: 'Failed to verify account',
+                            });
+                          }
+                        }}
+                        className="h-6 px-2 py-1 text-xs"
+                      >
+                        Verify LinkedIn
+                      </Button>
+                    </div>
+                  )}
+                  <span className="text-muted-foreground">
+                    {completeness}% Complete
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  {isEditing ? (
+                    <>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditing(false)}
+                        disabled={isSaving}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        {isSaving ? (
+                          <>
+                            <LoadingSpinner size="sm" className="mr-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          'Save Changes'
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      className="w-full sm:w-auto"
+                    >
+                      <Settings className="mr-2 h-4 w-4" />
+                      Edit Profile
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Layout - Optimized Design */}
+            <div className="space-y-4 md:hidden">
+              {/* Profile Info */}
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Avatar className="h-16 w-16">
+                    <AvatarFallback className="bg-primary text-xl text-primary-foreground">
+                      {(profile.first_name?.[0] || '') +
+                        (profile.last_name?.[0] || '') || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isEditing && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h1 className="truncate text-2xl font-bold text-foreground">
+                    {`${profile.first_name || ''} ${profile.last_name || ''}`.trim() ||
+                      'User'}
+                  </h1>
+                  <p className="line-clamp-2 text-base text-muted-foreground">
+                    {profile.professional_headline ||
+                      'Add your professional headline'}
+                  </p>
                   {profile.location && (
-                    <div className="flex items-center space-x-1">
+                    <div className="mt-1 flex items-center space-x-1 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       <span>{profile.location}</span>
                     </div>
                   )}
                 </div>
               </div>
-            </div>
-            <div className="flex flex-col items-stretch space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0">
-              <div className="flex items-center space-x-2 text-sm">
+
+              {/* Status Bar with justify-between */}
+              <div className="flex items-center justify-between">
                 {profile.is_verified ? (
                   <Badge
                     variant="default"
@@ -889,31 +1032,77 @@ export default function ProfilePage() {
                     Verified
                   </Badge>
                 ) : (
-                  <Badge variant="outline">
-                    <AlertCircle className="mr-1 h-3 w-3" />
-                    Unverified
-                  </Badge>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline">
+                      <AlertCircle className="mr-1 h-3 w-3" />
+                      Unverified
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(
+                            '/api/profile/verify-linkedin',
+                            {
+                              method: 'POST',
+                            }
+                          );
+
+                          if (response.ok) {
+                            setProfile((prev) =>
+                              prev ? { ...prev, is_verified: true } : null
+                            );
+                            toast({
+                              title: 'Profile Verified',
+                              description:
+                                'Your LinkedIn account has been verified successfully!',
+                            });
+                          } else {
+                            const error = await response.json();
+                            toast({
+                              variant: 'destructive',
+                              title: 'Verification Failed',
+                              description:
+                                error.error ||
+                                'Failed to verify LinkedIn account',
+                            });
+                          }
+                        } catch (error) {
+                          toast({
+                            variant: 'destructive',
+                            title: 'Error',
+                            description: 'Failed to verify account',
+                          });
+                        }
+                      }}
+                      className="h-6 px-2 py-1 text-xs"
+                    >
+                      Verify LinkedIn
+                    </Button>
+                  </div>
                 )}
-                <span className="text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {completeness}% Complete
                 </span>
               </div>
 
-              <div className="flex items-center space-x-3">
+              {/* Full width edit button */}
+              <div className="w-full">
                 {isEditing ? (
-                  <>
+                  <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       onClick={() => setIsEditing(false)}
                       disabled={isSaving}
-                      className="flex-1 sm:flex-initial"
+                      className="flex-1"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="flex-1 sm:flex-initial"
+                      className="flex-1"
                     >
                       {isSaving ? (
                         <>
@@ -924,12 +1113,9 @@ export default function ProfilePage() {
                         'Save Changes'
                       )}
                     </Button>
-                  </>
+                  </div>
                 ) : (
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="w-full sm:w-auto"
-                  >
+                  <Button onClick={() => setIsEditing(true)} className="w-full">
                     <Settings className="mr-2 h-4 w-4" />
                     Edit Profile
                   </Button>

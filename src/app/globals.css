@@ -118,7 +118,6 @@
 
   /* Ensure minimum touch target size for mobile accessibility */
   @media (pointer: coarse) {
-
     button,
     [role='button'],
     a,
@@ -198,7 +197,6 @@
 }
 
 @layer components {
-
   /* Legacy component classes - use shadcn/ui components instead */
   .card-base {
     background-color: hsl(var(--card));
@@ -214,9 +212,11 @@
   }
 
   .card-featured {
-    background: linear-gradient(to bottom right,
-        hsl(var(--card)),
-        hsl(var(--secondary) / 0.3));
+    background: linear-gradient(
+      to bottom right,
+      hsl(var(--card)),
+      hsl(var(--secondary) / 0.3)
+    );
     border: 2px solid hsl(var(--primary) / 0.1);
     border-radius: 0.75rem;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -298,7 +298,6 @@
 }
 
 @layer utilities {
-
   /* Custom utilities */
   .text-balance {
     text-wrap: balance;
@@ -314,9 +313,11 @@
 
   /* Gradient text */
   .gradient-text {
-    background: linear-gradient(to right,
-        hsl(var(--primary)),
-        hsl(var(--primary) / 0.8));
+    background: linear-gradient(
+      to right,
+      hsl(var(--primary)),
+      hsl(var(--primary) / 0.8)
+    );
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;

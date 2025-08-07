@@ -10,7 +10,7 @@ import { validateFile, formatFileSize } from '@/lib/cv-storage';
 import { useSupabase } from '@/components/providers/supabase-provider';
 
 interface CVUploadBackgroundProps {
-  onUploadStart: (jobId: string, filename: string) => void;
+  onUploadStart: (jobId: string, filename: string, originalFile: File) => void;
   onError?: (error: string) => void;
   disabled?: boolean;
 }
@@ -115,7 +115,7 @@ export function CVUploadBackground({
         });
 
         // Notify parent component to start monitoring
-        onUploadStart(result.jobId, file.name);
+        onUploadStart(result.jobId, file.name, file);
       } catch (error: any) {
         const errorMessage = error.message || 'Upload failed';
 
@@ -297,7 +297,6 @@ export function CVUploadBackground({
             </Button>
           </div>
         )}
-
 
         {uploadState.status === 'uploaded' && (
           <div className="mt-6">
