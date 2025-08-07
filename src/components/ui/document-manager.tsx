@@ -710,49 +710,65 @@ function DocumentCard({
   isEditing: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border p-3">
-      <div className="flex items-center space-x-3">
-        <FileText className="h-5 w-5 text-blue-500" />
-        <div>
-          <p className="text-sm font-medium">{document.title}</p>
-          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-            <span>
+    <div className="flex flex-col space-y-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+      <div className="flex items-start space-x-3 sm:items-center">
+        <FileText className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-500 sm:mt-0" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate pr-2 text-sm font-medium">{document.title}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center">
               {
                 DOCUMENT_CATEGORY_LABELS[
                   document.document_category as keyof typeof DOCUMENT_CATEGORY_LABELS
                 ]
               }
             </span>
-            <span>•</span>
-            <span>{formatFileSize(document.file_size)}</span>
-            <span>•</span>
-            <div className="flex items-center space-x-1">
+            <span className="hidden sm:inline">•</span>
+            <span className="inline-flex items-center">
+              {formatFileSize(document.file_size)}
+            </span>
+            <span className="hidden sm:inline">•</span>
+            <div className="inline-flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
               <span>{formatDate(document.upload_date)}</span>
             </div>
           </div>
           {document.access_level === 'public' && (
-            <Badge variant="outline" className="mt-1 text-xs">
+            <Badge variant="outline" className="mt-2 text-xs">
               Public
             </Badge>
           )}
         </div>
       </div>
-      <div className="flex space-x-2">
-        <Button variant="ghost" size="sm" onClick={() => onDownload(document)}>
+      <div className="flex items-center justify-center space-x-1 sm:justify-end sm:space-x-2 sm:self-auto">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDownload(document)}
+          className="h-8 px-2 sm:px-3"
+        >
           <Download className="h-4 w-4" />
+          <span className="ml-1 text-xs sm:hidden">Download</span>
         </Button>
         {isEditing && (
           <>
-            <Button variant="ghost" size="sm" onClick={() => onEdit(document)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(document)}
+              className="h-8 px-2 sm:px-3"
+            >
               <Edit className="h-4 w-4" />
+              <span className="ml-1 text-xs sm:hidden">Edit</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onDelete(document.id)}
+              className="h-8 px-2 sm:px-3"
             >
               <Trash2 className="h-4 w-4" />
+              <span className="ml-1 text-xs sm:hidden">Delete</span>
             </Button>
           </>
         )}

@@ -1225,7 +1225,7 @@ export default function ProfilePage() {
               className="space-y-6"
             >
               <div className="overflow-x-auto">
-                <TabsList className="inline-flex h-auto w-max min-w-full justify-start p-1 md:grid md:w-full md:grid-cols-6">
+                <TabsList className="inline-flex h-auto w-max min-w-full justify-evenly p-1 md:grid md:w-full md:grid-cols-6">
                   <TabsTrigger
                     value="personal"
                     className="flex flex-shrink-0 items-center gap-2 text-sm"
