@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useRouter } from 'next/navigation';
 
@@ -43,6 +43,19 @@ const mapProfileData = (data: Record<string, unknown>): UserProfile => ({
   role_display_name: 'Candidate',
 });
 
+// Create a singleton cache for user profile data
+let profileCache: {
+  userId: string | null;
+  profile: UserProfile | null;
+  timestamp: number;
+} = {
+  userId: null,
+  profile: null,
+  timestamp: 0,
+};
+
+const CACHE_DURATION = 5000; // 5 seconds cache
+
 export const useUserRole = () => {
   const user = useUser();
   const supabase = useSupabaseClient();
@@ -50,10 +63,24 @@ export const useUserRole = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasLoggedRef = useRef(false);
 
   useEffect(() => {
     if (!user) {
       setUserProfile(null);
+      setLoading(false);
+      profileCache = { userId: null, profile: null, timestamp: 0 };
+      return;
+    }
+
+    // Check cache first
+    const now = Date.now();
+    if (
+      profileCache.userId === user.id &&
+      profileCache.profile &&
+      now - profileCache.timestamp < CACHE_DURATION
+    ) {
+      setUserProfile(profileCache.profile);
       setLoading(false);
       return;
     }
@@ -66,7 +93,11 @@ export const useUserRole = () => {
       currentPath.startsWith('/auth/');
 
     if (isOnboardingPath) {
-      console.log('Skipping profile loading during onboarding');
+      // Only log once across all instances
+      if (!hasLoggedRef.current) {
+        console.log('[useUserRole] Onboarding page detected - using minimal profile');
+        hasLoggedRef.current = true;
+      }
       // Return minimal profile for onboarding
       const onboardingProfile: UserProfile = {
         id: user.id,
@@ -79,6 +110,14 @@ export const useUserRole = () => {
         permissions: {},
         role_display_name: 'Candidate',
       };
+      
+      // Cache the profile
+      profileCache = {
+        userId: user.id,
+        profile: onboardingProfile,
+        timestamp: now,
+      };
+      
       setUserProfile(onboardingProfile);
       setLoading(false);
       return;
@@ -138,7 +177,16 @@ export const useUserRole = () => {
         }
 
         if (profileData) {
-          setUserProfile(mapProfileData(profileData));
+          const mappedProfile = mapProfileData(profileData);
+          
+          // Cache the profile
+          profileCache = {
+            userId: user.id,
+            profile: mappedProfile,
+            timestamp: Date.now(),
+          };
+          
+          setUserProfile(mappedProfile);
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);

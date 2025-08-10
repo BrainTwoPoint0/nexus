@@ -33,6 +33,12 @@ import {
   Plus,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { 
+  AVAILABILITY_STATUS_LABELS,
+  REMOTE_WORK_LABELS,
+  AvailabilityStatus,
+  RemoteWorkPreference
+} from '@/lib/enums';
 
 interface ProfileReviewProps {
   profileData: any;
@@ -474,19 +480,11 @@ export function ProfileReview({
                   <SelectValue placeholder="Select availability" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="immediately_available">
-                    Immediately Available
-                  </SelectItem>
-                  <SelectItem value="available_3_months">
-                    Available in 3 months
-                  </SelectItem>
-                  <SelectItem value="available_6_months">
-                    Available in 6 months
-                  </SelectItem>
-                  <SelectItem value="not_available">
-                    Not actively looking
-                  </SelectItem>
-                  <SelectItem value="by_arrangement">By arrangement</SelectItem>
+                  {Object.entries(AVAILABILITY_STATUS_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -505,10 +503,11 @@ export function ProfileReview({
                   <SelectValue placeholder="Select preference" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no">On-site only</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
-                  <SelectItem value="full">Fully remote</SelectItem>
-                  <SelectItem value="occasional">Occasional remote</SelectItem>
+                  {Object.entries(REMOTE_WORK_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

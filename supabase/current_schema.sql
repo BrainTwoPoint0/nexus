@@ -278,18 +278,6 @@ CREATE TYPE "public"."travel_willingness_enum" AS ENUM (
 ALTER TYPE "public"."travel_willingness_enum" OWNER TO "postgres";
 
 
-CREATE TYPE "public"."user_role_enum" AS ENUM (
-    'candidate',
-    'organization_admin',
-    'organization_employee',
-    'consultant',
-    'platform_admin'
-);
-
-
-ALTER TYPE "public"."user_role_enum" OWNER TO "postgres";
-
-
 CREATE TYPE "public"."visibility_status_enum" AS ENUM (
     'public',
     'members_only',
@@ -325,7 +313,8 @@ BEGIN
         completeness_score := completeness_score + 5;
     END IF;
     
-    IF profile_rec.title IS NOT NULL AND profile_rec.title != '' THEN
+    -- Fixed: Use professional_headline instead of title
+    IF profile_rec.professional_headline IS NOT NULL AND profile_rec.professional_headline != '' THEN
         completeness_score := completeness_score + 10;
     END IF;
     
@@ -333,42 +322,34 @@ BEGIN
         completeness_score := completeness_score + 20;
     END IF;
     
-    -- Compensation fields (15 points total)
-    IF profile_rec.compensation_min IS NOT NULL AND profile_rec.compensation_max IS NOT NULL THEN
-        completeness_score := completeness_score + 10;
-    END IF;
-    
-    IF profile_rec.compensation_type IS NOT NULL THEN
-        completeness_score := completeness_score + 3;
-    END IF;
-    
-    IF profile_rec.benefits_important IS NOT NULL AND array_length(profile_rec.benefits_important, 1) > 0 THEN
-        completeness_score := completeness_score + 2;
-    END IF;
-    
-    -- Availability fields (15 points total)
-    IF profile_rec.availability_start_date IS NOT NULL THEN
+    -- Contact and availability fields (25 points total)
+    IF profile_rec.phone IS NOT NULL AND profile_rec.phone != '' THEN
         completeness_score := completeness_score + 5;
     END IF;
     
-    IF profile_rec.time_commitment_preference IS NOT NULL THEN
+    IF profile_rec.linkedin_url IS NOT NULL AND profile_rec.linkedin_url != '' THEN
         completeness_score := completeness_score + 5;
     END IF;
     
-    IF profile_rec.travel_willingness IS NOT NULL THEN
-        completeness_score := completeness_score + 3;
+    IF profile_rec.availability_status IS NOT NULL THEN
+        completeness_score := completeness_score + 5;
     END IF;
     
     IF profile_rec.remote_work_preference IS NOT NULL THEN
         completeness_score := completeness_score + 2;
     END IF;
     
-    -- Professional experience enhancements (30 points total)
-    IF EXISTS (SELECT 1 FROM board_experience WHERE profile_id = profile_uuid) THEN
-        completeness_score := completeness_score + 15;
+    IF profile_rec.skills IS NOT NULL AND array_length(profile_rec.skills, 1) > 0 THEN
+        completeness_score := completeness_score + 8;
     END IF;
     
-    IF EXISTS (SELECT 1 FROM work_history WHERE profile_id = profile_uuid) THEN
+    -- Professional experience enhancements (35 points total)
+    IF EXISTS (SELECT 1 FROM board_experience WHERE profile_id = profile_uuid) THEN
+        completeness_score := completeness_score + 20;
+    END IF;
+    
+    -- Fixed: Use work_experience instead of work_history
+    IF EXISTS (SELECT 1 FROM work_experience WHERE profile_id = profile_uuid) THEN
         completeness_score := completeness_score + 10;
     END IF;
     
@@ -465,7 +446,7 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "sectors" "text"[] DEFAULT '{}'::"text"[],
     "has_board_experience" boolean DEFAULT false,
     "current_board_roles" integer DEFAULT 0,
-    "availability_status" "text" DEFAULT 'available'::"text",
+    "availability_status" "text" DEFAULT 'immediately_available'::"text",
     "available_from" "date",
     "remote_work_preference" "text" DEFAULT 'hybrid'::"text",
     "compensation_expectation_min" integer,
@@ -478,56 +459,83 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "data_sources" "jsonb" DEFAULT '{}'::"jsonb",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "profiles_availability_status_check" CHECK (("availability_status" = ANY (ARRAY['available'::"text", 'selective'::"text", 'unavailable'::"text"]))),
-    CONSTRAINT "profiles_remote_work_preference_check" CHECK (("remote_work_preference" = ANY (ARRAY['remote'::"text", 'hybrid'::"text", 'onsite'::"text"])))
+    "last_profile_update" timestamp with time zone DEFAULT "now"(),
+    "is_platform_admin" boolean DEFAULT false,
+    CONSTRAINT "profiles_availability_status_enum_check" CHECK (("availability_status" = ANY (ARRAY['immediately_available'::"text", 'available_3_months'::"text", 'available_6_months'::"text", 'not_available'::"text", 'by_arrangement'::"text"]))),
+    CONSTRAINT "profiles_remote_work_preference_enum_check" CHECK (("remote_work_preference" = ANY (ARRAY['no'::"text", 'hybrid'::"text", 'full'::"text", 'occasional'::"text"])))
 );
 
 
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
 
 
+COMMENT ON TABLE "public"."profiles" IS 'User profiles following LinkedIn-style architecture where all users are individuals who can join organizations';
+
+
+
+COMMENT ON COLUMN "public"."profiles"."availability_status" IS 'User availability status - default is immediately_available';
+
+
+
+COMMENT ON COLUMN "public"."profiles"."last_profile_update" IS 'Timestamp of last profile modification';
+
+
+
+COMMENT ON COLUMN "public"."profiles"."is_platform_admin" IS 'Simple flag for platform administration access';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."calculate_profile_completeness"("profile_row" "public"."profiles") RETURNS integer
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
-DECLARE
-    completeness INTEGER := 0;
-    work_count INTEGER := 0;
-    education_count INTEGER := 0;
-    board_count INTEGER := 0;
+  DECLARE
+      completeness INTEGER := 0;
+  BEGIN
+      -- Core Identity (40 points)
+      IF profile_row.first_name IS NOT NULL AND profile_row.first_name != '' THEN completeness := completeness + 10; END IF;
+      IF profile_row.last_name IS NOT NULL AND profile_row.last_name != '' THEN completeness := completeness + 10; END IF;
+      IF profile_row.email IS NOT NULL AND profile_row.email != '' THEN completeness := completeness + 10; END IF;
+      IF profile_row.professional_headline IS NOT NULL AND profile_row.professional_headline != '' THEN completeness := completeness + 10; END IF;
+
+      -- Professional Profile (30 points)
+      IF profile_row.bio IS NOT NULL AND profile_row.bio != '' THEN completeness := completeness + 15; END IF;
+      IF profile_row.location IS NOT NULL AND profile_row.location != '' THEN completeness := completeness + 5; END IF;
+      IF profile_row.skills IS NOT NULL AND array_length(profile_row.skills, 1) > 0 THEN completeness := completeness + 10; END IF;
+
+      -- Contact Info (10 points)
+      IF profile_row.phone IS NOT NULL AND profile_row.phone != '' THEN completeness := completeness + 5; END IF;
+      IF profile_row.linkedin_url IS NOT NULL AND profile_row.linkedin_url != '' THEN completeness := completeness + 5; END IF;
+
+      -- Additional fields (20 points)
+      IF profile_row.languages IS NOT NULL AND array_length(profile_row.languages, 1) > 0 THEN completeness := completeness + 5; END IF;
+      IF profile_row.sectors IS NOT NULL AND array_length(profile_row.sectors, 1) > 0 THEN completeness := completeness + 5; END IF;
+      IF profile_row.has_board_experience = true THEN completeness := completeness + 5; END IF;
+      IF profile_row.availability_status IS NOT NULL AND profile_row.availability_status != '' THEN completeness := completeness + 5; END IF;
+
+      -- Cap at 100
+      IF completeness > 100 THEN completeness := 100; END IF;
+
+      RETURN completeness;
+  END;
+  $$;
+
+
+ALTER FUNCTION "public"."calculate_profile_completeness"("profile_row" "public"."profiles") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cleanup_old_cv_processing_jobs"() RETURNS "void"
+    LANGUAGE "plpgsql"
+    AS $$
 BEGIN
-    -- Core Identity (40 points)
-    IF profile_row.first_name IS NOT NULL AND profile_row.first_name != '' THEN completeness := completeness + 8; END IF;
-    IF profile_row.last_name IS NOT NULL AND profile_row.last_name != '' THEN completeness := completeness + 8; END IF;
-    IF profile_row.email IS NOT NULL AND profile_row.email != '' THEN completeness := completeness + 8; END IF;
-    IF profile_row.title IS NOT NULL AND profile_row.title != '' THEN completeness := completeness + 8; END IF;
-    IF profile_row.company IS NOT NULL AND profile_row.company != '' THEN completeness := completeness + 8; END IF;
-
-    -- Professional Profile (30 points)
-    IF profile_row.bio IS NOT NULL AND profile_row.bio != '' THEN completeness := completeness + 15; END IF;
-    IF profile_row.location IS NOT NULL AND profile_row.location != '' THEN completeness := completeness + 5; END IF;
-    IF profile_row.skills IS NOT NULL AND array_length(profile_row.skills, 1) > 0 THEN completeness := completeness + 10; END IF;
-
-    -- Contact Info (10 points)
-    IF profile_row.phone IS NOT NULL AND profile_row.phone != '' THEN completeness := completeness + 5; END IF;
-    IF profile_row.linkedin_url IS NOT NULL AND profile_row.linkedin_url != '' THEN completeness := completeness + 5; END IF;
-
-    -- Experience Data (20 points)
-    SELECT COUNT(*) INTO work_count FROM work_experience WHERE profile_id = profile_row.id;
-    SELECT COUNT(*) INTO education_count FROM education WHERE profile_id = profile_row.id;
-    SELECT COUNT(*) INTO board_count FROM board_experience WHERE profile_id = profile_row.id;
-
-    IF work_count > 0 THEN completeness := completeness + 8; END IF;
-    IF education_count > 0 THEN completeness := completeness + 4; END IF;
-    IF board_count > 0 THEN completeness := completeness + 8; END IF;
-
-    IF completeness > 100 THEN completeness := 100; END IF;
-    RETURN completeness;
+  DELETE FROM cv_processing_jobs
+  WHERE (status IN ('completed', 'failed', 'cancelled'))
+    AND completed_at < NOW() - INTERVAL '7 days';
 END;
 $$;
 
 
-ALTER FUNCTION "public"."calculate_profile_completeness"("profile_row" "public"."profiles") OWNER TO "postgres";
+ALTER FUNCTION "public"."cleanup_old_cv_processing_jobs"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."ensure_organization_owner"() RETURNS "trigger"
@@ -566,7 +574,7 @@ $$;
 ALTER FUNCTION "public"."ensure_organization_owner"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_candidate_recommendations"("p_limit" integer DEFAULT 10) RETURNS TABLE("id" "uuid", "first_name" character varying, "last_name" character varying, "title" character varying, "profile_completeness" smallint, "board_positions_count" bigint, "current_board_positions" bigint, "availability_status" "public"."availability_status_enum")
+CREATE OR REPLACE FUNCTION "public"."get_candidate_recommendations"("p_limit" integer DEFAULT 10) RETURNS TABLE("id" "uuid", "first_name" "text", "last_name" "text", "title" "text", "profile_completeness" integer, "board_positions_count" bigint, "current_board_positions" bigint, "availability_status" "text")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
@@ -576,7 +584,8 @@ BEGIN
         p.id,
         p.first_name,
         p.last_name,
-        p.title,
+        -- Fixed: Use professional_headline instead of title
+        p.professional_headline as title,
         p.profile_completeness,
         COALESCE((SELECT COUNT(*) FROM board_experience be WHERE be.profile_id = p.id), 0) as board_positions_count,
         COALESCE((SELECT COUNT(*) FROM board_experience be WHERE be.profile_id = p.id AND be.is_current = true), 0) as current_board_positions,
@@ -641,7 +650,8 @@ BEGIN
         p.id as candidate_id,
         p.first_name,
         p.last_name,
-        p.title,
+        -- Fixed: Use professional_headline instead of title
+        p.professional_headline as title,
         p.profile_completeness,
         COALESCE(ns.overall_score, 0) as nexus_score,
         COALESCE((SELECT COUNT(*) FROM board_experience be WHERE be.profile_id = p.id), 0) as board_positions_count,
@@ -659,15 +669,16 @@ $$;
 ALTER FUNCTION "public"."get_job_candidates"("job_uuid" "uuid", "p_limit" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_profile_analytics"("profile_uuid" "uuid") RETURNS TABLE("total_views" bigint, "total_applications" bigint, "profile_completeness" smallint, "board_positions_count" bigint, "current_positions" bigint, "last_updated" timestamp with time zone)
+CREATE OR REPLACE FUNCTION "public"."get_profile_analytics"("profile_uuid" "uuid") RETURNS TABLE("total_views" bigint, "total_applications" bigint, "profile_completeness" integer, "board_positions_count" bigint, "current_positions" bigint, "last_updated" timestamp with time zone)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        COALESCE((SELECT COUNT(*) FROM user_interactions ui WHERE ui.target_profile_id = profile_uuid AND ui.interaction_type = 'profile_view'), 0) as total_views,
-        COALESCE((SELECT COUNT(*) FROM user_interactions ui WHERE ui.target_profile_id = profile_uuid AND ui.interaction_type = 'application'), 0) as total_applications,
+        -- Note: user_interactions table not implemented yet, returning 0 for now
+        0::bigint as total_views,
+        0::bigint as total_applications,
         p.profile_completeness,
         COALESCE((SELECT COUNT(*) FROM board_experience be WHERE be.profile_id = profile_uuid), 0) as board_positions_count,
         COALESCE((SELECT COUNT(*) FROM board_experience be WHERE be.profile_id = profile_uuid AND be.is_current = true), 0) as current_positions,
@@ -739,12 +750,18 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
-    INSERT INTO profiles (id, first_name, last_name, role, created_at, updated_at)
-    VALUES (
+    INSERT INTO public.profiles (
+        id,
+        email,
+        first_name,
+        last_name,
+        created_at,
+        updated_at
+    ) VALUES (
         NEW.id,
+        NEW.email,
         COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
         COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
-        COALESCE(NEW.raw_user_meta_data->>'role', 'candidate')::user_role_enum,
         NOW(),
         NOW()
     );
@@ -754,85 +771,6 @@ $$;
 
 
 ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."has_permission"("user_id" "uuid", "permission" "text") RETURNS boolean
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-DECLARE
-    user_role TEXT;
-    user_permissions JSONB;
-BEGIN
-    SELECT role, permissions INTO user_role, user_permissions FROM profiles WHERE id = user_id;
-    
-    -- Check role-based permissions
-    CASE user_role
-        WHEN 'platform_admin' THEN
-            RETURN TRUE; -- Platform admins have all permissions
-            
-        WHEN 'organization_admin' THEN
-            RETURN permission IN ('post_jobs', 'view_candidates', 'manage_team', 'view_analytics');
-            
-        WHEN 'organization_employee' THEN
-            RETURN permission IN ('view_candidates', 'view_searches') OR 
-                   (user_permissions ? permission AND (user_permissions ->> permission)::boolean);
-                   
-        WHEN 'consultant' THEN
-            RETURN permission IN ('view_candidates', 'manage_searches', 'view_clients');
-            
-        WHEN 'candidate' THEN
-            RETURN permission IN ('view_opportunities', 'apply_jobs', 'manage_profile');
-            
-        ELSE
-            RETURN FALSE;
-    END CASE;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."has_permission"("user_id" "uuid", "permission" "text") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."has_permission"("user_id" "uuid", "permission" "text") IS 'Checks if user has specific permission based on role and custom permissions';
-
-
-
-CREATE OR REPLACE FUNCTION "public"."has_permission"("user_uuid" "uuid", "permission_name" character varying) RETURNS boolean
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-DECLARE
-    user_permissions VARCHAR[];
-    user_role user_role_enum;
-BEGIN
-    SELECT role, permissions INTO user_role, user_permissions FROM profiles WHERE id = user_uuid;
-    
-    -- Check if user has explicit permission
-    IF permission_name = ANY(user_permissions) THEN
-        RETURN TRUE;
-    END IF;
-    
-    -- Check role-based permissions
-    CASE user_role
-        WHEN 'platform_admin' THEN
-            RETURN TRUE; -- Platform admins have all permissions
-        WHEN 'organization_admin' THEN
-            RETURN permission_name IN ('manage_jobs', 'view_candidates', 'manage_organization');
-        WHEN 'organization_employee' THEN
-            RETURN permission_name IN ('view_jobs', 'view_candidates');
-        WHEN 'consultant' THEN
-            RETURN permission_name IN ('view_candidates', 'manage_placements');
-        WHEN 'candidate' THEN
-            RETURN permission_name IN ('view_profile', 'update_profile');
-        ELSE
-            RETURN FALSE;
-    END CASE;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."has_permission"("user_uuid" "uuid", "permission_name" character varying) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."is_org_member_with_permission"("org_id" "uuid", "user_id" "uuid", "required_permission" "text" DEFAULT NULL::"text") RETURNS boolean
@@ -859,6 +797,39 @@ $$;
 
 
 ALTER FUNCTION "public"."is_org_member_with_permission"("org_id" "uuid", "user_id" "uuid", "required_permission" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."is_platform_admin"("user_id" "uuid") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = user_id 
+        AND is_platform_admin = true
+    );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."is_platform_admin"("user_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."is_platform_admin"("user_id" "uuid") IS 'Check if user has platform admin privileges';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."update_cv_processing_jobs_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_cv_processing_jobs_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_job_application_count"() RETURNS "trigger"
@@ -976,6 +947,31 @@ $$;
 ALTER FUNCTION "public"."update_profile_completeness"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."update_profile_completeness_enhanced"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    -- Update completeness calculation
+    NEW.profile_completeness := calculate_profile_completeness(NEW);
+    
+    -- Update timestamp
+    NEW.updated_at := NOW();
+    NEW.last_profile_update := NOW();
+    
+    -- Update board experience counts
+    SELECT COUNT(*) > 0, COUNT(*) FILTER (WHERE is_current = true)
+    INTO NEW.has_board_experience, NEW.current_board_roles
+    FROM board_experience WHERE profile_id = NEW.id;
+    
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_profile_completeness_enhanced"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_profile_completeness_on_oauth"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -992,8 +988,7 @@ ALTER FUNCTION "public"."update_profile_completeness_on_oauth"() OWNER TO "postg
 
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
+    LANGUAGE "plpgsql"
     AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -1119,6 +1114,53 @@ ALTER TABLE "public"."cultural_assessment" OWNER TO "postgres";
 
 COMMENT ON TABLE "public"."cultural_assessment" IS 'Cultural fit assessment for board position matching';
 
+
+
+CREATE TABLE IF NOT EXISTS "public"."cv_parsing_sessions" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "user_id" "uuid",
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "progress" integer DEFAULT 0,
+    "current_step" "text",
+    "steps_completed" "jsonb" DEFAULT '[]'::"jsonb",
+    "error" "text",
+    "result" "jsonb",
+    "file_name" "text",
+    "file_type" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "cv_parsing_sessions_progress_check" CHECK ((("progress" >= 0) AND ("progress" <= 100))),
+    CONSTRAINT "cv_parsing_sessions_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'processing'::"text", 'completed'::"text", 'failed'::"text"])))
+);
+
+
+ALTER TABLE "public"."cv_parsing_sessions" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cv_parsing_sessions" IS 'Tracks CV parsing progress and results for better UX - references auth.users for onboarding compatibility';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cv_processing_jobs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "filename" "text" NOT NULL,
+    "file_size" integer NOT NULL,
+    "mime_type" "text" NOT NULL,
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "progress" integer DEFAULT 0,
+    "result" "jsonb",
+    "error" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "started_at" timestamp with time zone,
+    "completed_at" timestamp with time zone,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "cv_processing_jobs_progress_check" CHECK ((("progress" >= 0) AND ("progress" <= 100))),
+    CONSTRAINT "cv_processing_jobs_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'processing'::"text", 'completed'::"text", 'failed'::"text", 'cancelled'::"text"])))
+);
+
+
+ALTER TABLE "public"."cv_processing_jobs" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."documents" (
@@ -1461,7 +1503,7 @@ CREATE OR REPLACE VIEW "public"."profile_summary" AS
 ALTER VIEW "public"."profile_summary" OWNER TO "postgres";
 
 
-COMMENT ON VIEW "public"."profile_summary" IS 'Summary view of user profiles - security definer removed for security';
+COMMENT ON VIEW "public"."profile_summary" IS 'Summary view of user profiles with corrected field references';
 
 
 
@@ -1526,6 +1568,16 @@ ALTER TABLE ONLY "public"."certifications"
 
 ALTER TABLE ONLY "public"."cultural_assessment"
     ADD CONSTRAINT "cultural_assessment_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cv_parsing_sessions"
+    ADD CONSTRAINT "cv_parsing_sessions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cv_processing_jobs"
+    ADD CONSTRAINT "cv_processing_jobs_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1599,6 +1651,18 @@ ALTER TABLE ONLY "public"."work_experience"
 
 
 
+CREATE INDEX "cv_processing_jobs_created_at_idx" ON "public"."cv_processing_jobs" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "cv_processing_jobs_status_idx" ON "public"."cv_processing_jobs" USING "btree" ("status");
+
+
+
+CREATE INDEX "cv_processing_jobs_user_id_idx" ON "public"."cv_processing_jobs" USING "btree" ("user_id");
+
+
+
 CREATE INDEX "idx_achievements_profile_id" ON "public"."achievements" USING "btree" ("profile_id");
 
 
@@ -1628,6 +1692,18 @@ CREATE INDEX "idx_board_experience_sector" ON "public"."board_experience" USING 
 
 
 CREATE INDEX "idx_cultural_assessment_profile_id" ON "public"."cultural_assessment" USING "btree" ("profile_id");
+
+
+
+CREATE INDEX "idx_cv_parsing_sessions_created_at" ON "public"."cv_parsing_sessions" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_cv_parsing_sessions_status" ON "public"."cv_parsing_sessions" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_cv_parsing_sessions_user_id" ON "public"."cv_parsing_sessions" USING "btree" ("user_id");
 
 
 
@@ -1715,6 +1791,10 @@ CREATE INDEX "idx_profiles_availability" ON "public"."profiles" USING "btree" ("
 
 
 
+CREATE INDEX "idx_profiles_last_update" ON "public"."profiles" USING "btree" ("last_profile_update" DESC);
+
+
+
 CREATE INDEX "idx_profiles_location" ON "public"."profiles" USING "btree" ("location");
 
 
@@ -1787,7 +1867,15 @@ CREATE INDEX "nexus_scores_overall_idx" ON "public"."nexus_scores" USING "btree"
 
 
 
-CREATE OR REPLACE TRIGGER "trigger_update_profile_completeness" BEFORE INSERT OR UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."update_profile_completeness"();
+CREATE OR REPLACE TRIGGER "trigger_update_profile_completeness_enhanced" BEFORE INSERT OR UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."update_profile_completeness_enhanced"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_cv_parsing_sessions_updated_at" BEFORE UPDATE ON "public"."cv_parsing_sessions" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_cv_processing_jobs_updated_at" BEFORE UPDATE ON "public"."cv_processing_jobs" FOR EACH ROW EXECUTE FUNCTION "public"."update_cv_processing_jobs_updated_at"();
 
 
 
@@ -1808,6 +1896,16 @@ ALTER TABLE ONLY "public"."board_experience"
 
 ALTER TABLE ONLY "public"."certifications"
     ADD CONSTRAINT "certifications_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."cv_parsing_sessions"
+    ADD CONSTRAINT "cv_parsing_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."cv_processing_jobs"
+    ADD CONSTRAINT "cv_processing_jobs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -1886,17 +1984,33 @@ CREATE POLICY "Candidates can view own nexus scores" ON "public"."nexus_scores" 
 
 
 
+CREATE POLICY "Completed profiles are publicly viewable" ON "public"."profiles" FOR SELECT USING (("onboarding_completed" = true));
+
+
+
 CREATE POLICY "Job posters can view applications to their jobs" ON "public"."applications" FOR SELECT USING (("job_id" IN ( SELECT "jobs"."id"
    FROM "public"."jobs"
   WHERE ("jobs"."posted_by" = "auth"."uid"()))));
 
 
 
-CREATE POLICY "Public profiles are viewable" ON "public"."profiles" FOR SELECT USING (("onboarding_completed" = true));
+CREATE POLICY "Service role can update parsing sessions" ON "public"."cv_parsing_sessions" FOR UPDATE USING (true);
+
+
+
+CREATE POLICY "Users can create own parsing sessions" ON "public"."cv_parsing_sessions" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can create their own jobs" ON "public"."cv_processing_jobs" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
 CREATE POLICY "Users can delete own documents" ON "public"."documents" FOR DELETE USING (("profile_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can delete own profile" ON "public"."profiles" FOR DELETE USING (("auth"."uid"() = "id"));
 
 
 
@@ -1909,6 +2023,10 @@ CREATE POLICY "Users can delete their own achievements" ON "public"."achievement
 
 
 CREATE POLICY "Users can delete their own cultural assessment" ON "public"."cultural_assessment" FOR DELETE USING (("auth"."uid"() = "profile_id"));
+
+
+
+CREATE POLICY "Users can delete their own jobs" ON "public"."cv_processing_jobs" FOR DELETE USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -1925,6 +2043,10 @@ CREATE POLICY "Users can insert own documents" ON "public"."documents" FOR INSER
 
 
 CREATE POLICY "Users can insert own interactions" ON "public"."user_interactions" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can insert own profile" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
 
 
 
@@ -1972,11 +2094,11 @@ CREATE POLICY "Users can manage own organizations" ON "public"."organizations" U
 
 
 
-CREATE POLICY "Users can manage own profile" ON "public"."profiles" USING (("auth"."uid"() = "id"));
-
-
-
 CREATE POLICY "Users can manage own work experience" ON "public"."work_experience" USING (("profile_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can select own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
 
 
 
@@ -1985,6 +2107,10 @@ CREATE POLICY "Users can update own documents" ON "public"."documents" FOR UPDAT
 
 
 CREATE POLICY "Users can update own interactions" ON "public"."user_interactions" FOR UPDATE USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can update own profile" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
 
 
 
@@ -1997,6 +2123,10 @@ CREATE POLICY "Users can update their own achievements" ON "public"."achievement
 
 
 CREATE POLICY "Users can update their own cultural assessment" ON "public"."cultural_assessment" FOR UPDATE USING (("auth"."uid"() = "profile_id"));
+
+
+
+CREATE POLICY "Users can update their own jobs" ON "public"."cv_processing_jobs" FOR UPDATE USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -2022,6 +2152,14 @@ CREATE POLICY "Users can view own interactions" ON "public"."user_interactions" 
 
 
 
+CREATE POLICY "Users can view own parsing sessions" ON "public"."cv_parsing_sessions" FOR SELECT USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can view own profile" ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
+
+
+
 CREATE POLICY "Users can view own voice_sessions" ON "public"."voice_sessions" FOR SELECT USING (("user_id" = "auth"."uid"()));
 
 
@@ -2031,6 +2169,10 @@ CREATE POLICY "Users can view their own achievements" ON "public"."achievements"
 
 
 CREATE POLICY "Users can view their own cultural assessment" ON "public"."cultural_assessment" FOR SELECT USING (("auth"."uid"() = "profile_id"));
+
+
+
+CREATE POLICY "Users can view their own jobs" ON "public"."cv_processing_jobs" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -2055,6 +2197,12 @@ ALTER TABLE "public"."certifications" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."cultural_assessment" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."cv_parsing_sessions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."cv_processing_jobs" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."documents" ENABLE ROW LEVEL SECURITY;
@@ -2283,6 +2431,12 @@ GRANT ALL ON FUNCTION "public"."calculate_profile_completeness"("profile_row" "p
 
 
 
+GRANT ALL ON FUNCTION "public"."cleanup_old_cv_processing_jobs"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cleanup_old_cv_processing_jobs"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cleanup_old_cv_processing_jobs"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."ensure_organization_owner"() TO "anon";
 GRANT ALL ON FUNCTION "public"."ensure_organization_owner"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."ensure_organization_owner"() TO "service_role";
@@ -2331,21 +2485,21 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."has_permission"("user_id" "uuid", "permission" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."has_permission"("user_id" "uuid", "permission" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."has_permission"("user_id" "uuid", "permission" "text") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."has_permission"("user_uuid" "uuid", "permission_name" character varying) TO "anon";
-GRANT ALL ON FUNCTION "public"."has_permission"("user_uuid" "uuid", "permission_name" character varying) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."has_permission"("user_uuid" "uuid", "permission_name" character varying) TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."is_org_member_with_permission"("org_id" "uuid", "user_id" "uuid", "required_permission" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."is_org_member_with_permission"("org_id" "uuid", "user_id" "uuid", "required_permission" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_org_member_with_permission"("org_id" "uuid", "user_id" "uuid", "required_permission" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_platform_admin"("user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_platform_admin"("user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_platform_admin"("user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_cv_processing_jobs_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_cv_processing_jobs_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_cv_processing_jobs_updated_at"() TO "service_role";
 
 
 
@@ -2370,6 +2524,12 @@ GRANT ALL ON FUNCTION "public"."update_organization_openings"() TO "service_role
 GRANT ALL ON FUNCTION "public"."update_profile_completeness"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_profile_completeness"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_profile_completeness"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_profile_completeness_enhanced"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_profile_completeness_enhanced"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_profile_completeness_enhanced"() TO "service_role";
 
 
 
@@ -2427,6 +2587,18 @@ GRANT ALL ON TABLE "public"."certifications" TO "service_role";
 GRANT ALL ON TABLE "public"."cultural_assessment" TO "anon";
 GRANT ALL ON TABLE "public"."cultural_assessment" TO "authenticated";
 GRANT ALL ON TABLE "public"."cultural_assessment" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cv_parsing_sessions" TO "anon";
+GRANT ALL ON TABLE "public"."cv_parsing_sessions" TO "authenticated";
+GRANT ALL ON TABLE "public"."cv_parsing_sessions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cv_processing_jobs" TO "anon";
+GRANT ALL ON TABLE "public"."cv_processing_jobs" TO "authenticated";
+GRANT ALL ON TABLE "public"."cv_processing_jobs" TO "service_role";
 
 
 

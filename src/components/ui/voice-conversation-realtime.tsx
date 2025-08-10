@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, PhoneOff, Loader2, Volume2 } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, Loader2, Volume2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
+import { VOICE_AI_CONTEXTS, AVAILABILITY_STATUS_LABELS, REMOTE_WORK_LABELS } from '@/lib/enums';
+import { generateSmartProfile, generateIntelligentQuestions } from '@/lib/profile-intelligence';
 
 interface VoiceConversationRealtimeProps {
   cvData: Record<string, any>;
@@ -28,10 +30,43 @@ export function VoiceConversationRealtime({
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [showRetryButton, setShowRetryButton] = useState(false);
   const isAISpeakingRef = useRef(false);
   const audioGenerationCompleteRef = useRef(false);
   const hasInitialResponseRef = useRef(false);
+
+  // Helper function to detect unclear/stuttered user responses
+  const checkIfUnclearUserResponse = (text: string): boolean => {
+    const lowerText = text.toLowerCase().trim();
+    
+    // Very short responses (likely just noise or stutters)
+    if (lowerText.length < 5) return true;
+    
+    // Common stutter patterns
+    const stutterPatterns = [
+      /^(um|uh|er|ah|hmm)\s*$/,
+      /^(um|uh|er)\s+(um|uh|er)/,
+      /^(i|i'm|i don't|not)\s*(um|uh|er)/,
+      /^(well|so|like)\s*(um|uh|er)/,
+    ];
+    
+    // Check for unclear response indicators
+    const unclearIndicators = [
+      'i don\'t know',
+      'not sure',
+      'unclear',
+      'what was the question',
+      'can you repeat',
+      'sorry what',
+    ];
+    
+    const hasStutterPattern = stutterPatterns.some(pattern => pattern.test(lowerText));
+    const hasUnclearIndicator = unclearIndicators.some(phrase => lowerText.includes(phrase));
+    
+    return hasStutterPattern || hasUnclearIndicator;
+  };
   const isCreatingResponseRef = useRef(false);
+  const responseStartTimeRef = useRef<number>(0);
   const [transcript, setTranscript] = useState('');
   const [conversationEvents, setConversationEvents] = useState<
     ConversationEvent[]
@@ -49,76 +84,60 @@ export function VoiceConversationRealtime({
   const analyzeCVData = useCallback(() => {
     const missingFields = [];
 
-    // Check basic contact info
-    if (!cvData.phone)
+    // 1. ESSENTIAL PROFILE INFORMATION (always ask if missing)
+    
+    // Basic identity and contact
+    if (!cvData.first_name && !cvData.firstName) {
+      missingFields.push({
+        field: 'name',
+        question: 'What is your full name?',
+      });
+    }
+    
+    if (!cvData.location) {
+      missingFields.push({
+        field: 'location',
+        question: 'What city and country are you based in?',
+      });
+    }
+
+    if (!cvData.phone) {
       missingFields.push({
         field: 'phone',
         question: 'What is your phone number?',
       });
-
-    // Check LinkedIn URL with all possible field variations
-    const hasLinkedIn =
-      cvData.linkedin_url ||
-      cvData.linkedinUrl ||
-      cvData.linkedInUrl ||
-      cvData.linkedin;
-    if (!hasLinkedIn)
-      missingFields.push({
-        field: 'linkedin_url',
-        question: 'What is your LinkedIn profile URL?',
-      });
-
-    if (!cvData.website)
-      missingFields.push({
-        field: 'website',
-        question: 'Do you have a personal or professional website?',
-      });
-
-    // Check professional attributes
-    if (!cvData.skills || cvData.skills.length === 0) {
-      missingFields.push({
-        field: 'skills',
-        question: 'What are your key professional skills?',
-      });
-    }
-    if (!cvData.languages || cvData.languages.length === 0) {
-      missingFields.push({
-        field: 'languages',
-        question: 'What languages do you speak?',
-      });
-    }
-    if (!cvData.sectors || cvData.sectors.length === 0) {
-      missingFields.push({
-        field: 'sectors',
-        question: 'Which industry sectors have you worked in?',
-      });
     }
 
-    // Check availability preferences
-    if (!cvData.availability_status)
-      missingFields.push({
-        field: 'availability_status',
-        question: 'What is your current availability for new opportunities?',
-      });
-    if (!cvData.remote_work_preference)
-      missingFields.push({
-        field: 'remote_work_preference',
-        question:
-          'What is your preference for remote work - fully remote, hybrid, or on-site?',
-      });
+    // NOTE: Professional headline is auto-generated from CV data - don't ask for it
+    // Bio will be offered as a recommendation, not asked from scratch
 
-    // Check compensation expectations
-    if (!cvData.compensation_expectation_min)
+    // 2. CAREER PROGRESSION (fundamental career information)
+    
+    // Work experience - check both workExperience and workHistory fields
+    const hasWorkExperience = (cvData.workExperience && cvData.workExperience.length > 0) || 
+                              (cvData.workHistory && cvData.workHistory.length > 0);
+    
+    if (!hasWorkExperience) {
       missingFields.push({
-        field: 'compensation',
-        question: 'What is your expected compensation range?',
+        field: 'work_experience_overview',
+        question: 'Can you walk me through your work experience? Start with your most recent or current position.',
       });
-
-    // Check work experience details
-    if (cvData.workExperience?.length > 0) {
-      cvData.workExperience.forEach(
+    } else {
+      // If work experience exists, intelligently check if enhancements are needed
+      // Only ask for achievements if the position seems important/recent and lacks detail
+      const workExperience = cvData.workExperience || cvData.workHistory || [];
+      workExperience.forEach(
         (exp: Record<string, any>, index: number) => {
-          if (!exp.key_achievements || exp.key_achievements.length === 0) {
+          const hasMinimalInfo = !exp.description || exp.description.length < 50;
+          const lacksAchievements = !exp.key_achievements || exp.key_achievements.length === 0;
+          const isRecentOrCurrent = exp.is_current || (exp.end_date && new Date(exp.end_date) > new Date('2020-01-01'));
+          const isSeniorRole = exp.position && (exp.position.toLowerCase().includes('senior') || 
+                                               exp.position.toLowerCase().includes('lead') || 
+                                               exp.position.toLowerCase().includes('director') || 
+                                               exp.position.toLowerCase().includes('manager'));
+          
+          // Only ask for achievements if it's a recent/current senior role that lacks detail
+          if (lacksAchievements && hasMinimalInfo && (isRecentOrCurrent || isSeniorRole)) {
             missingFields.push({
               field: `work_${index}_achievements`,
               question: `What were your key achievements at ${exp.company}?`,
@@ -128,11 +147,30 @@ export function VoiceConversationRealtime({
       );
     }
 
-    // Check board experience details
-    if (cvData.boardExperience?.length > 0) {
+    // Education - if completely missing, ask for it
+    if (!cvData.education || cvData.education.length === 0) {
+      missingFields.push({
+        field: 'education_overview',
+        question: 'What is your educational background? Please include your highest degree and any relevant qualifications.',
+      });
+    }
+
+    // Board experience - ask if they have any (important for executive roles)
+    if (!cvData.boardExperience || cvData.boardExperience.length === 0) {
+      missingFields.push({
+        field: 'board_experience_check',
+        question: 'Do you have any board experience or non-executive director roles?',
+      });
+    } else {
+      // If board experience exists, intelligently check if enhancements are needed
+      // Only ask for contributions if the role lacks meaningful detail
       cvData.boardExperience.forEach(
         (exp: Record<string, any>, index: number) => {
-          if (!exp.key_contributions) {
+          const hasMinimalInfo = !exp.description || exp.description.length < 30;
+          const lacksContributions = !exp.key_contributions || exp.key_contributions.length === 0;
+          
+          // Only ask for contributions if it's a detailed role that lacks specifics
+          if (lacksContributions && hasMinimalInfo && exp.organization) {
             missingFields.push({
               field: `board_${index}_contributions`,
               question: `What were your key contributions as ${exp.role} at ${exp.organization}?`,
@@ -140,6 +178,76 @@ export function VoiceConversationRealtime({
           }
         }
       );
+    }
+
+    // 3. PROFESSIONAL ATTRIBUTES (essential for matching)
+    
+    if (!cvData.skills || cvData.skills.length === 0) {
+      missingFields.push({
+        field: 'skills',
+        question: 'What are your key professional skills and areas of expertise?',
+      });
+    }
+
+    if (!cvData.sectors || cvData.sectors.length === 0) {
+      missingFields.push({
+        field: 'sectors',
+        question: 'Which industry sectors have you worked in?',
+      });
+    }
+
+    if (!cvData.languages || cvData.languages.length === 0) {
+      missingFields.push({
+        field: 'languages',
+        question: 'What languages do you speak?',
+      });
+    }
+
+    // 4. CAREER PREFERENCES (essential for job matching)
+    
+    if (!cvData.availability_status) {
+      const availabilityOptions = Object.values(AVAILABILITY_STATUS_LABELS).join(', ').replace(/,([^,]*)$/, ', or$1');
+      missingFields.push({
+        field: 'availability_status',
+        question: `When would you be available to start a new role? Choose from: ${availabilityOptions.toLowerCase()}.`,
+      });
+    }
+    
+    if (!cvData.remote_work_preference) {
+      const remoteWorkOptions = Object.values(REMOTE_WORK_LABELS).join(', ').replace(/,([^,]*)$/, ', or$1');
+      missingFields.push({
+        field: 'remote_work_preference',
+        question: `What are your remote work preferences? Choose from: ${remoteWorkOptions.toLowerCase()}.`,
+      });
+    }
+
+    if (!cvData.compensation_expectation_min) {
+      missingFields.push({
+        field: 'compensation',
+        question: 'What is your expected compensation range?',
+      });
+    }
+
+    // 5. OPTIONAL PROFESSIONAL LINKS (nice to have)
+    
+    // Check LinkedIn URL with all possible field variations
+    const hasLinkedIn =
+      cvData.linkedin_url ||
+      cvData.linkedinUrl ||
+      cvData.linkedInUrl ||
+      cvData.linkedin;
+    if (!hasLinkedIn) {
+      missingFields.push({
+        field: 'linkedin_url',
+        question: 'What is your LinkedIn profile URL?',
+      });
+    }
+
+    if (!cvData.website) {
+      missingFields.push({
+        field: 'website',
+        question: 'Do you have a personal or professional website?',
+      });
     }
 
     logger.debug(
@@ -177,6 +285,10 @@ export function VoiceConversationRealtime({
   const initializeAIContext = useCallback(() => {
     const missingFields = analyzeCVData();
     const userName = `${cvData.first_name || cvData.firstName || ''}`.trim();
+    
+    // Generate smart profile data
+    const smartProfile = generateSmartProfile(cvData);
+    const intelligentQuestions = generateIntelligentQuestions(cvData, missingFields);
 
     // Check LinkedIn URL with all possible field variations
     const hasLinkedIn =
@@ -190,41 +302,65 @@ export function VoiceConversationRealtime({
       cvData.linkedinUrl ||
       cvData.linkedin;
 
-    const context = `You are Nexus AI, an AI recruitment platform. 
-    You have just reviewed ${userName}'s CV and need to gather some additional information to complete their profile.
+    const context = `You are Nexus AI, an AI recruitment platform that deeply understands professionals from their CV data.
+    You have just analyzed ${userName}'s CV and have already generated intelligent insights about their profile.
     
-    IMPORTANT: You must start by acknowledging that you've reviewed their CV. Say something like:
-    "Hello ${userName}, and welcome to Nexus. 
-    I'd like to ask you a few questions to complete your profile to get to know you better and find the best opportunities for you. 
-    Feel free to speak naturally - I'll help transform your responses into polished profile content."
+    IMPORTANT: You must demonstrate that you understand them by:
+    1. Starting with a warm, personalized greeting that shows you've studied their background
+    2. Mentioning specific achievements or roles from their CV
+    3. Making intelligent recommendations instead of asking for information we can derive
     
-    Here's what we already know from the CV:
+    Start with something like:
+    "Hello ${userName}, and welcome to Nexus. I've reviewed your impressive background as ${smartProfile.professional_headline}.
+    ${cvData.workHistory?.length > 0 ? `I can see you've had a remarkable career journey with ${cvData.workHistory.length} key positions` : ''}
+    ${cvData.boardExperience?.length > 0 ? `, including ${cvData.boardExperience.length} board positions` : ''}.
+    I've already prepared some recommendations for your profile based on your experience. Let me quickly confirm a few details to ensure we match you with the perfect opportunities."
+    
+    Profile we've intelligently generated:
+    - Professional Headline: ${smartProfile.professional_headline}
+    - Bio Summary: ${smartProfile.bio.substring(0, 150)}...
+    ${smartProfile.skills_recommendation?.length > 0 ? `- Recommended Skills: ${smartProfile.skills_recommendation.slice(0, 3).join(', ')}` : ''}
+    ${smartProfile.sectors_recommendation?.length > 0 ? `- Industry Sectors: ${smartProfile.sectors_recommendation.join(', ')}` : ''}
+    
+    Here's what we know from the CV:
     - Name: ${userName}
-    - Current Role: ${cvData.title || cvData.professional_headline || 'Not specified'}
+    - Current Role: ${smartProfile.professional_headline}
     - Location: ${cvData.location || 'Not specified'}
     - Email: ${cvData.email || 'Not specified'}
     - LinkedIn: ${hasLinkedIn ? linkedInUrl : 'Not specified'}
-    ${cvData.bio ? `- Professional Summary: ${cvData.bio}` : ''}
-    ${cvData.workExperience?.length > 0 ? `- Work Experience: ${cvData.workExperience.length} positions` : ''}
+    ${(cvData.workExperience?.length > 0 || cvData.workHistory?.length > 0) ? `- Work Experience: ${(cvData.workExperience || cvData.workHistory || []).length} positions` : ''}
     ${cvData.boardExperience?.length > 0 ? `- Board Experience: ${cvData.boardExperience.length} positions` : ''}
     ${cvData.education?.length > 0 ? `- Education: ${cvData.education.length} qualifications` : ''}
     
-    We need to gather the following missing information:
-    ${missingFields.map((f) => `- ${f.question}`).join('\n')}
+    Smart questions to ask (show understanding, don't ask for derivable info):
+    ${intelligentQuestions.join('\n')}
+    
+    ${cvData.professionalBio ? 
+      `We already have your professional summary from your CV: "${cvData.professionalBio.substring(0, 100)}..." - this looks comprehensive!` :
+      `For the professional summary, present our generated bio and ask if they'd like to use it or modify it:
+      "I've drafted a professional summary for you: '${smartProfile.bio}' - Would you like to use this, or would you prefer to describe yourself differently?"`
+    }
+    
+    ${VOICE_AI_CONTEXTS.availability_status}
+    
+    ${VOICE_AI_CONTEXTS.remote_work_preference}
     
     IMPORTANT INSTRUCTIONS:
     1. Be conversational and professional - this is a friendly chat, not a formal interview. Don't be too slow, but don't be too fast either. We want to get it over with but make sure we have all of the information we'll need.
-    2. Ask questions naturally, one at a time - you
+    2. Ask questions naturally, one at a time - wait for their response before moving to the next question
     3. Acknowledge and validate their responses warmly - you want to be informative, not annoying and repetitive
     4. Let them know you'll help transform their casual responses into professional profile content
     5. If they seem hesitant about compensation, explain it helps match them with appropriate opportunities
     6. CRITICAL: You must ask ALL the missing questions listed above before ending the conversation
-    7. ONLY after you have received answers to ALL missing fields, then end with: "Thank you for your time. I have all the information I need to complete your profile. This call will end in a few seconds. Welcome to Nexus!"
-    8. If someone declines to answer a question, acknowledge it but continue with the remaining questions
-    9. For casual responses, acknowledge them naturally (e.g., if they say "I do Python stuff", you might say "Great! Python development skills, got it.")
-    10. If they ask about the company, say something like "Nexus is a platform that helps people find the best opportunities for them. We're a team of 100+ people and we're growing fast. We're based in London, UK and we're looking for people who are passionate about their work and who are looking for a new challenge."
-    11. If they start talking about weird stuff, remind them who Nexus is and what you do and ask them to focus on the questions.
-    12. CRITICAL: sometimes the user might not know exactly how to answer a question. They'll ask for recommendations, examples, or clarifications - you must ask them to confirm whether to user your recommendations before moving on and storing them.
+    7. For availability and remote work questions, use the EXACT wording provided in the context above
+    8. When they respond about availability or remote work, confirm their choice using the specific terms (e.g., "Great, so you're immediately available" or "Perfect, so you prefer hybrid work")
+    9. ONLY after you have received answers to ALL missing fields, then end with: "Thank you for your time. I have all the information I need to complete your profile. This call will end in a few seconds. Welcome to Nexus!"
+    10. If someone declines to answer a question, acknowledge it but continue with the remaining questions
+    11. For casual responses, acknowledge them naturally (e.g., if they say "I do Python stuff", you might say "Great! Python development skills, got it.")
+    12. If they ask about the company, say something like "Nexus is a platform that helps people find the best opportunities for them. We're a team of 100+ people and we're growing fast. We're based in London, UK and we're looking for people who are passionate about their work and who are looking for a new challenge."
+    13. If they start talking about weird stuff, remind them who Nexus is and what you do and ask them to focus on the questions.
+    14. CRITICAL: sometimes the user might not know exactly how to answer a question. They'll ask for recommendations, examples, or clarifications - you must ask them to confirm whether to use your recommendations before moving on and storing them.
+    15. IMPORTANT: If the user stutters, gives unclear responses, or says something like "um", "uh", "I don't know", or incomplete sentences, DON'T get stuck! Instead, gently ask them to try again or offer specific examples. For example: "I didn't catch that clearly - could you repeat that?" or "No problem, let me give you some options to choose from..." Never leave them hanging without a response.
 
     Remember this is a casual conversation - be friendly and natural. Let them know you'll help polish their responses for their profile.
     NEVER use the ending phrase until you have asked about ALL missing fields.
@@ -404,6 +540,16 @@ export function VoiceConversationRealtime({
           ) {
             hasInitialResponseRef.current = true;
             isCreatingResponseRef.current = true;
+            responseStartTimeRef.current = Date.now();
+            setShowRetryButton(false);
+            
+            // Show retry button after 6 seconds if initial response is still processing
+            setTimeout(() => {
+              if (isCreatingResponseRef.current) {
+                setShowRetryButton(true);
+              }
+            }, 6000);
+            
             const createResponse = {
               type: 'response.create',
               response: {
@@ -432,6 +578,16 @@ export function VoiceConversationRealtime({
                 'VOICE'
               );
               isCreatingResponseRef.current = true;
+              responseStartTimeRef.current = Date.now();
+              setShowRetryButton(false);
+              
+              // Show retry button after 6 seconds if response is still processing
+              setTimeout(() => {
+                if (isCreatingResponseRef.current) {
+                  setShowRetryButton(true);
+                }
+              }, 6000);
+              
               const createResponse = {
                 type: 'response.create',
                 response: {
@@ -445,6 +601,28 @@ export function VoiceConversationRealtime({
                 {},
                 'VOICE'
               );
+              
+              // Check how long the current response has been processing
+              const currentTime = Date.now();
+              const responseProcessingTime = currentTime - responseStartTimeRef.current;
+              
+              // If response has been processing for more than 5 seconds, allow interruption
+              // This handles cases where the AI is stuck or user wants to clarify
+              if (responseProcessingTime > 5000) {
+                logger.info('Response processing too long, allowing user interruption', 
+                  { processingTimeMs: responseProcessingTime }, 'VOICE');
+                isCreatingResponseRef.current = false;
+                responseStartTimeRef.current = Date.now();
+                
+                // Create new response for the latest user input
+                const createResponse = {
+                  type: 'response.create',
+                  response: {
+                    modalities: ['text', 'audio'],
+                  },
+                };
+                dc.send(JSON.stringify(createResponse));
+              }
             }
             break;
 
@@ -455,6 +633,14 @@ export function VoiceConversationRealtime({
             ) {
               const userText = event.item.content[0].transcript;
               logger.debug('User speech captured', { userText }, 'VOICE');
+              
+              // Check if this looks like an unclear/stuttered response
+              const isUnclear = checkIfUnclearUserResponse(userText);
+              if (isUnclear) {
+                logger.info('Detected unclear user response, prompting for clarification', 
+                  { userText, textLength: userText.length }, 'VOICE');
+              }
+              
               setConversationEvents((prev) => [
                 ...prev,
                 {
@@ -505,15 +691,16 @@ export function VoiceConversationRealtime({
 
               // Calculate estimated playback time based on message length
               const calculatePlaybackTime = (text: string) => {
-                // Average speaking rate: ~150 words per minute (2.5 words per second)
+                // Much faster speaking rate calculation
+                // Aim for ~200 words per minute (3.33 words per second)
                 // Average word length: ~5 characters
-                // So roughly 12.5 characters per second
-                const charactersPerSecond = 12;
+                // So roughly 16-17 characters per second
+                const charactersPerSecond = 17;
                 const estimatedSeconds = Math.ceil(
                   text.length / charactersPerSecond
                 );
-                // Add 2 second buffer for safety
-                const playbackTime = Math.max(estimatedSeconds + 2, 3); // Minimum 3 seconds
+                // Very minimal buffer - just 1 second, capped at 4 seconds max
+                const playbackTime = Math.min(Math.max(estimatedSeconds + 1, 2), 4); // Minimum 2 seconds, Maximum 4 seconds
                 logger.debug(
                   'Calculated playback time',
                   {
@@ -573,6 +760,7 @@ export function VoiceConversationRealtime({
             logger.debug('AI finished generating audio', {}, 'VOICE');
             audioGenerationCompleteRef.current = true;
             isCreatingResponseRef.current = false; // Reset the flag when response is complete
+            setShowRetryButton(false); // Hide retry button when response completes
             // Don't set isAISpeaking to false yet - wait for playback to complete
             break;
 
@@ -639,6 +827,47 @@ export function VoiceConversationRealtime({
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMuted(!audioTrack.enabled);
+      }
+    }
+  };
+
+  // Force retry if user gets stuck
+  const forceRetry = () => {
+    if (isCreatingResponseRef.current) {
+      logger.info('User manually forcing retry of stuck response', {}, 'VOICE');
+      isCreatingResponseRef.current = false;
+      responseStartTimeRef.current = 0;
+      setShowRetryButton(false);
+      
+      // Add a system message to help the AI understand what happened
+      if (dcRef.current) {
+        const systemMessage = {
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'system',
+            content: [{
+              type: 'input_text',
+              text: 'The user had trouble with their previous response and wants to try again. Please ask the current question again clearly and offer specific examples if needed.'
+            }]
+          }
+        };
+        dcRef.current.send(JSON.stringify(systemMessage));
+        
+        // Trigger new response
+        setTimeout(() => {
+          if (dcRef.current && !isCreatingResponseRef.current) {
+            isCreatingResponseRef.current = true;
+            responseStartTimeRef.current = Date.now();
+            const createResponse = {
+              type: 'response.create',
+              response: {
+                modalities: ['text', 'audio'],
+              },
+            };
+            dcRef.current.send(JSON.stringify(createResponse));
+          }
+        }, 100);
       }
     }
   };
@@ -741,6 +970,18 @@ export function VoiceConversationRealtime({
                   )}
                   {isMuted ? 'Unmute' : 'Mute'}
                 </Button>
+
+                {showRetryButton && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={forceRetry}
+                    className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Retry
+                  </Button>
+                )}
 
                 <Button
                   variant="destructive"

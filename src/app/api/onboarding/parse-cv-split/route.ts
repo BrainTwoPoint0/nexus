@@ -481,9 +481,9 @@ async function enhanceParsedData(data: any) {
         enhanced.currentCompany = allCurrentRoles[0].company;
     }
 
-    // Fallback to title field for current role
-    if (!enhanced.currentRole && enhanced.title) {
-      enhanced.currentRole = enhanced.title;
+    // Fallback to professionalHeadline field for current role
+    if (!enhanced.currentRole && enhanced.professionalHeadline) {
+      enhanced.currentRole = enhanced.professionalHeadline;
     }
   }
 

@@ -243,7 +243,7 @@ Required JSON structure (use null if not found, empty arrays if no items):
   "phone": null,
   "location": null,
   "linkedInUrl": null,
-  "title": null,
+  "professionalHeadline": null,
   "professionalBio": null,
   "boardExperience": [],
   "workHistory": [],

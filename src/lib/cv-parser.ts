@@ -36,7 +36,7 @@ export interface ExtractedCVData {
   website?: string;
 
   // Professional Summary
-  title?: string;
+  professionalHeadline?: string;
   currentRole?: string; // Computed from current work history
   currentCompany?: string; // Computed from current work history
   additionalCurrentRoles?: string[]; // Additional current roles for multi-role executives
@@ -632,7 +632,7 @@ function getFieldValue(data: ExtractedCVData, field: string): any {
     email: ['email'],
     phone: ['phone', 'phoneNumber'],
     location: ['location'],
-    currentRole: ['currentRole', 'title', 'professional_headline'],
+    currentRole: ['currentRole', 'professionalHeadline', 'professional_headline'],
     currentCompany: ['currentCompany', 'company'],
     professionalBio: ['professionalBio', 'bio', 'summary'],
     workHistory: ['workHistory', 'workExperience', 'work_history'],
@@ -766,7 +766,7 @@ Required JSON structure (use null if not found, empty arrays if no items):
   "phone": null,
   "location": null,
   "linkedInUrl": null,
-  "title": null,
+  "professionalHeadline": null,
   "professionalBio": null,
   "boardExperience": [],
   "workHistory": [],
@@ -1151,9 +1151,9 @@ async function enhanceParsedData(
       }
     }
 
-    // Fallback to title field for current role
-    if (!enhanced.currentRole && enhanced.title) {
-      enhanced.currentRole = enhanced.title;
+    // Fallback to professionalHeadline field for current role
+    if (!enhanced.currentRole && enhanced.professionalHeadline) {
+      enhanced.currentRole = enhanced.professionalHeadline;
     }
   }
 
@@ -1232,7 +1232,7 @@ export function mapCVDataToProfile(
   if (cvData.email) profileData.email = cvData.email;
   if (cvData.phone) profileData.phone = cvData.phone;
   if (cvData.location) profileData.location = cvData.location;
-  if (cvData.title) profileData.professional_headline = cvData.title;
+  if (cvData.professionalHeadline) profileData.professional_headline = cvData.professionalHeadline;
   if (cvData.summary) profileData.bio = cvData.summary;
   if (cvData.linkedInUrl) profileData.linkedin_url = cvData.linkedInUrl;
   if (cvData.website) profileData.website = cvData.website;

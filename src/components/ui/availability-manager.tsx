@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { RemoteWorkPreference } from '@/lib/enums';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +33,7 @@ interface AvailabilityData {
   availability_start_date: string | null;
   time_commitment_preference: string | null;
   travel_willingness: string | null;
-  remote_work_preference: string | null;
+  remote_work_preference: RemoteWorkPreference | null;
 }
 
 interface AvailabilityManagerProps {
@@ -527,7 +528,7 @@ export function AvailabilityManager({
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    remote_work_preference: value || null,
+                    remote_work_preference: (value as RemoteWorkPreference) || null,
                   })
                 }
               >

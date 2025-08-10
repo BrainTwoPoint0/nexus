@@ -30,8 +30,8 @@ import {
 } from 'lucide-react';
 
 interface CompensationData {
-  compensation_min: number | null;
-  compensation_max: number | null;
+  compensation_expectation_min: number | null;
+  compensation_expectation_max: number | null;
   compensation_currency: string;
   compensation_type: string;
   equity_interest: boolean;
@@ -160,7 +160,7 @@ export function CompensationManager({
   };
 
   const hasCompensationData =
-    compensation.compensation_min || compensation.compensation_max;
+    compensation.compensation_expectation_min || compensation.compensation_expectation_max;
 
   return (
     <div className="space-y-4">
@@ -187,8 +187,8 @@ export function CompensationManager({
               <div>
                 <div className="text-2xl font-bold text-green-600">
                   {formatCompensation(
-                    compensation.compensation_min,
-                    compensation.compensation_max,
+                    compensation.compensation_expectation_min,
+                    compensation.compensation_expectation_max,
                     compensation.compensation_currency
                   )}
                 </div>
@@ -307,11 +307,11 @@ export function CompensationManager({
                   id="minComp"
                   type="number"
                   min="0"
-                  value={formData.compensation_min || ''}
+                  value={formData.compensation_expectation_min || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      compensation_min: e.target.value
+                      compensation_expectation_min: e.target.value
                         ? parseInt(e.target.value)
                         : null,
                     })
@@ -325,11 +325,11 @@ export function CompensationManager({
                   id="maxComp"
                   type="number"
                   min="0"
-                  value={formData.compensation_max || ''}
+                  value={formData.compensation_expectation_max || ''}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      compensation_max: e.target.value
+                      compensation_expectation_max: e.target.value
                         ? parseInt(e.target.value)
                         : null,
                     })

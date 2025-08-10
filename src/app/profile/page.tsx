@@ -50,6 +50,7 @@ import {
   Calendar,
   FileText,
 } from 'lucide-react';
+import { AvailabilityStatus, RemoteWorkPreference, UserRole } from '@/lib/enums';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -66,11 +67,6 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-type AvailabilityStatus =
-  | 'immediately_available'
-  | 'available_in_1_month'
-  | 'available_in_3_months'
-  | 'not_available';
 type TravelWillingness =
   | 'none'
   | 'domestic_only'
@@ -94,6 +90,9 @@ interface Profile {
   avatar_url: string | null;
   skills: string[];
   languages: string[];
+  sectors: string[];
+  role: UserRole;
+  permissions: string[];
   availability_status: AvailabilityStatus;
   available_from: string | null;
   availability_start_date: string | null;
@@ -101,9 +100,9 @@ interface Profile {
   time_commitment_max: number | null;
   time_commitment_preference: string | null;
   travel_willingness: TravelWillingness | null;
-  remote_work_preference: string | null;
-  compensation_min: number | null;
-  compensation_max: number | null;
+  remote_work_preference: RemoteWorkPreference | null;
+  compensation_expectation_min: number | null;
+  compensation_expectation_max: number | null;
   compensation_currency: CompensationCurrency;
   compensation_type: string;
   equity_interest: boolean;
@@ -112,6 +111,7 @@ interface Profile {
   is_verified: boolean;
   onboarding_completed: boolean;
   visibility_status: VisibilityStatus;
+  last_profile_update: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -143,7 +143,7 @@ interface Certification {
 interface WorkHistory {
   id: string;
   company: string;
-  title: string;
+  position: string;
   company_size: string | null;
   location: string | null;
   start_date: string;
@@ -221,6 +221,32 @@ const AVAILABLE_SKILLS = [
   'Stakeholder Relations',
 ];
 
+// Available sectors for selection
+const AVAILABLE_SECTORS = [
+  'Technology',
+  'Healthcare',
+  'Financial Services',
+  'Consumer Goods',
+  'Manufacturing',
+  'Energy',
+  'Real Estate',
+  'Media & Entertainment',
+  'Education',
+  'Non-Profit',
+  'Government',
+  'Transportation',
+  'Retail',
+  'Telecommunications',
+  'Automotive',
+  'Aerospace',
+  'Pharmaceuticals',
+  'Agriculture',
+  'Construction',
+  'Hospitality',
+  'Professional Services',
+  'Insurance',
+];
+
 export default function ProfilePage() {
   const supabase = useSupabaseClient();
   const user = useUser();
@@ -236,6 +262,7 @@ export default function ProfilePage() {
   const [education, setEducation] = useState<Education[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [newSkill, setNewSkill] = useState('');
+  const [newSector, setNewSector] = useState('');
   const [activeTab, setActiveTab] = useState('personal');
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
@@ -333,6 +360,9 @@ export default function ProfilePage() {
             avatar_url: null,
             skills: [],
             languages: ['English'],
+            sectors: [],
+            role: 'candidate' as UserRole,
+            permissions: [],
             availability_status: 'immediately_available',
             available_from: null,
             availability_start_date: null,
@@ -341,8 +371,8 @@ export default function ProfilePage() {
             time_commitment_preference: null,
             travel_willingness: null,
             remote_work_preference: null,
-            compensation_min: null,
-            compensation_max: null,
+            compensation_expectation_min: null,
+            compensation_expectation_max: null,
             compensation_currency: 'USD',
             compensation_type: 'annual',
             equity_interest: false,
@@ -351,6 +381,7 @@ export default function ProfilePage() {
             is_verified: false,
             onboarding_completed: false,
             visibility_status: 'public',
+            last_profile_update: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -419,11 +450,15 @@ export default function ProfilePage() {
         website: profile.website,
         skills: profile.skills,
         languages: profile.languages,
+        sectors: profile.sectors,
+        role: profile.role,
+        permissions: profile.permissions,
         availability_status: profile.availability_status,
-        compensation_min: profile.compensation_min,
-        compensation_max: profile.compensation_max,
+        compensation_expectation_min: profile.compensation_expectation_min,
+        compensation_expectation_max: profile.compensation_expectation_max,
         compensation_currency: profile.compensation_currency,
         travel_willingness: profile.travel_willingness,
+        last_profile_update: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
@@ -577,6 +612,37 @@ export default function ProfilePage() {
     );
   };
 
+  const addSector = () => {
+    if (
+      !profile ||
+      !newSector.trim() ||
+      profile.sectors.includes(newSector.trim())
+    )
+      return;
+
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            sectors: [...prev.sectors, newSector.trim()],
+          }
+        : null
+    );
+    setNewSector('');
+  };
+
+  const removeSector = (sectorToRemove: string) => {
+    if (!profile) return;
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            sectors: prev.sectors.filter((sector) => sector !== sectorToRemove),
+          }
+        : null
+    );
+  };
+
   const handleBoardExperienceUpdate = async (
     updatedExperience: BoardExperience[]
   ) => {
@@ -662,8 +728,8 @@ export default function ProfilePage() {
   };
 
   const handleCompensationUpdate = async (compensationData: {
-    compensation_min: number | null;
-    compensation_max: number | null;
+    compensation_expectation_min: number | null;
+    compensation_expectation_max: number | null;
     compensation_currency: CompensationCurrency;
     compensation_type: string;
     equity_interest: boolean;
@@ -675,8 +741,8 @@ export default function ProfilePage() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          compensation_min: compensationData.compensation_min,
-          compensation_max: compensationData.compensation_max,
+          compensation_expectation_min: compensationData.compensation_expectation_min,
+          compensation_expectation_max: compensationData.compensation_expectation_max,
           compensation_currency: compensationData.compensation_currency,
           compensation_type: compensationData.compensation_type,
           equity_interest: compensationData.equity_interest,
@@ -690,8 +756,8 @@ export default function ProfilePage() {
         prev
           ? {
               ...prev,
-              compensation_min: compensationData.compensation_min,
-              compensation_max: compensationData.compensation_max,
+              compensation_expectation_min: compensationData.compensation_expectation_min,
+              compensation_expectation_max: compensationData.compensation_expectation_max,
               compensation_currency: compensationData.compensation_currency,
               compensation_type: compensationData.compensation_type,
               equity_interest: compensationData.equity_interest,
@@ -718,7 +784,7 @@ export default function ProfilePage() {
     availability_start_date: string | null;
     time_commitment_preference: string | null;
     travel_willingness: TravelWillingness | null;
-    remote_work_preference: string | null;
+    remote_work_preference: RemoteWorkPreference | null;
   }) => {
     if (!user) return;
 
@@ -1510,20 +1576,20 @@ export default function ProfilePage() {
                         </div>
                       </div>
 
-                      {(profile.compensation_min ||
-                        profile.compensation_max) && (
+                      {(profile.compensation_expectation_min ||
+                        profile.compensation_expectation_max) && (
                         <div>
                           <Label className="text-base font-medium">
                             Compensation Expectations
                           </Label>
                           <div className="mt-2">
                             <Badge variant="outline">
-                              {profile.compensation_min &&
-                              profile.compensation_max
-                                ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K - ${(profile.compensation_max / 1000).toFixed(0)}K`
-                                : profile.compensation_min
-                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_min / 1000).toFixed(0)}K+`
-                                  : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_max || 0) / 1000).toFixed(0)}K`}
+                              {profile.compensation_expectation_min &&
+                              profile.compensation_expectation_max
+                                ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_expectation_min / 1000).toFixed(0)}K - ${(profile.compensation_expectation_max / 1000).toFixed(0)}K`
+                                : profile.compensation_expectation_min
+                                  ? `${profile.compensation_currency || 'GBP'} ${(profile.compensation_expectation_min / 1000).toFixed(0)}K+`
+                                  : `Up to ${profile.compensation_currency || 'GBP'} ${((profile.compensation_expectation_max || 0) / 1000).toFixed(0)}K`}
                             </Badge>
                           </div>
                         </div>
@@ -1670,6 +1736,82 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
 
+                {/* Industry Sectors */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Industry Experience</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap gap-2">
+                        {profile.sectors && profile.sectors.length > 0 ? (
+                          profile.sectors.map((sector, index) => (
+                            <Badge
+                              key={index}
+                              variant="secondary"
+                              className="text-sm"
+                            >
+                              {sector}
+                              {isEditing && (
+                                <button
+                                  onClick={() => removeSector(sector)}
+                                  className="ml-2 text-muted-foreground hover:text-foreground"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </Badge>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            {isEditing
+                              ? 'Add industries to highlight your sector experience'
+                              : 'No industry experience added yet'}
+                          </p>
+                        )}
+                      </div>
+
+                      {isEditing && (
+                        <div className="space-y-3">
+                          <div className="flex space-x-2">
+                            <Input
+                              name="newSector"
+                              placeholder="Add an industry sector..."
+                              value={newSector}
+                              onChange={(e) => setNewSector(e.target.value)}
+                              onKeyPress={(e) =>
+                                e.key === 'Enter' && addSector()
+                              }
+                            />
+                            <Button onClick={addSector} variant="outline">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Suggested:{' '}
+                            {AVAILABLE_SECTORS.filter(
+                              (s) => !profile.sectors?.includes(s)
+                            )
+                              .slice(0, 5)
+                              .map((sector) => (
+                                <button
+                                  key={sector}
+                                  onClick={() => {
+                                    setNewSector(sector);
+                                    addSector();
+                                  }}
+                                  className="mr-2 underline hover:text-foreground"
+                                >
+                                  {sector}
+                                </button>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardContent className="pt-6">
                     <CertificationsManager
@@ -1704,8 +1846,8 @@ export default function ProfilePage() {
               <TabsContent value="compensation" className="space-y-6">
                 <CompensationManager
                   compensation={{
-                    compensation_min: profile.compensation_min,
-                    compensation_max: profile.compensation_max,
+                    compensation_expectation_min: profile.compensation_expectation_min,
+                    compensation_expectation_max: profile.compensation_expectation_max,
                     compensation_currency:
                       profile.compensation_currency as CompensationCurrency,
                     compensation_type: profile.compensation_type,

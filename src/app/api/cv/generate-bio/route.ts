@@ -100,8 +100,8 @@ async function enhanceParsedData(data: any) {
     }
 
     // Fallback to title field for current role
-    if (!enhanced.currentRole && enhanced.title) {
-      enhanced.currentRole = enhanced.title;
+    if (!enhanced.currentRole && enhanced.professionalHeadline) {
+      enhanced.currentRole = enhanced.professionalHeadline;
     }
   }
 

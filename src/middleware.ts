@@ -51,6 +51,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith(path)
   );
   const isAuthPath = authPaths.some((path) => pathname.startsWith(path));
+  const isOnboardingPath = pathname.startsWith('/onboarding');
 
   // If user is not authenticated and trying to access protected route
   if (!user && isProtectedPath) {
@@ -60,10 +61,42 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // If user is authenticated and trying to access auth pages, redirect to dashboard
+  // If user is authenticated, check if they completed onboarding
+  if (user && !isOnboardingPath && !isAuthPath) {
+    // Check if user has completed onboarding
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single();
+
+    // If no profile exists or onboarding not completed, redirect to onboarding
+    if (!profile || !profile.onboarding_completed) {
+      // Only redirect if they're trying to access a protected path
+      if (isProtectedPath) {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/onboarding';
+        // Store where they were trying to go for after onboarding
+        if (pathname !== '/dashboard') {
+          redirectUrl.searchParams.set('redirectTo', pathname);
+        }
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+  }
+
+  // If user is authenticated and trying to access auth pages, redirect based on onboarding status
   if (user && isAuthPath) {
+    // Check if user has completed onboarding
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single();
+
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/dashboard';
+    // If onboarding not completed, send to onboarding, otherwise to dashboard
+    redirectUrl.pathname = !profile || !profile.onboarding_completed ? '/onboarding' : '/dashboard';
     return NextResponse.redirect(redirectUrl);
   }
 

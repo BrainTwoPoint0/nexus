@@ -35,7 +35,7 @@ import {
 interface WorkHistory {
   id: string;
   company: string;
-  title: string;
+  position: string;
   company_size: string | null;
   location: string | null;
   start_date: string;
@@ -70,7 +70,7 @@ export function WorkHistoryManager({
   );
   const [formData, setFormData] = useState<Partial<WorkHistory>>({
     company: '',
-    title: '',
+    position: '',
     company_size: '',
     location: '',
     start_date: '',
@@ -112,7 +112,7 @@ export function WorkHistoryManager({
     setEditingHistory(null);
     setFormData({
       company: '',
-      title: '',
+      position: '',
       company_size: '',
       location: '',
       start_date: '',
@@ -131,12 +131,12 @@ export function WorkHistoryManager({
   };
 
   const handleSave = () => {
-    if (!formData.company || !formData.title || !formData.start_date) return;
+    if (!formData.company || !formData.position || !formData.start_date) return;
 
     const newHistory: WorkHistory = {
       id: editingHistory?.id || crypto.randomUUID(),
       company: formData.company!,
-      title: formData.title!,
+      position: formData.position!,
       company_size: formData.company_size || null,
       location: formData.location || null,
       start_date: formData.start_date!,
@@ -204,7 +204,7 @@ export function WorkHistoryManager({
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="text-lg font-semibold">
-                          {history.title}
+                          {history.position}
                         </h4>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Building className="h-4 w-4" />
@@ -335,12 +335,12 @@ export function WorkHistoryManager({
           <div className="space-y-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="title">Job Title *</Label>
+                <Label htmlFor="position">Job Title *</Label>
                 <Input
-                  id="title"
-                  value={formData.title || ''}
+                  id="position"
+                  value={formData.position || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
+                    setFormData({ ...formData, position: e.target.value })
                   }
                   placeholder="e.g. Senior Software Engineer"
                 />
@@ -480,7 +480,7 @@ export function WorkHistoryManager({
               <Button
                 onClick={handleSave}
                 disabled={
-                  !formData.company || !formData.title || !formData.start_date
+                  !formData.company || !formData.position || !formData.start_date
                 }
               >
                 {editingHistory ? 'Update' : 'Add'} Experience
