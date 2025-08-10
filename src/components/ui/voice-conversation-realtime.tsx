@@ -3,11 +3,25 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, PhoneOff, Loader2, Volume2, RotateCcw } from 'lucide-react';
+import {
+  Mic,
+  MicOff,
+  PhoneOff,
+  Loader2,
+  Volume2,
+  RotateCcw,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
-import { VOICE_AI_CONTEXTS, AVAILABILITY_STATUS_LABELS, REMOTE_WORK_LABELS } from '@/lib/enums';
-import { generateSmartProfile, generateIntelligentQuestions } from '@/lib/profile-intelligence';
+import {
+  VOICE_AI_CONTEXTS,
+  AVAILABILITY_STATUS_LABELS,
+  REMOTE_WORK_LABELS,
+} from '@/lib/enums';
+import {
+  generateSmartProfile,
+  generateIntelligentQuestions,
+} from '@/lib/profile-intelligence';
 
 interface VoiceConversationRealtimeProps {
   cvData: Record<string, any>;
@@ -38,10 +52,10 @@ export function VoiceConversationRealtime({
   // Helper function to detect unclear/stuttered user responses
   const checkIfUnclearUserResponse = (text: string): boolean => {
     const lowerText = text.toLowerCase().trim();
-    
+
     // Very short responses (likely just noise or stutters)
     if (lowerText.length < 5) return true;
-    
+
     // Common stutter patterns
     const stutterPatterns = [
       /^(um|uh|er|ah|hmm)\s*$/,
@@ -49,20 +63,24 @@ export function VoiceConversationRealtime({
       /^(i|i'm|i don't|not)\s*(um|uh|er)/,
       /^(well|so|like)\s*(um|uh|er)/,
     ];
-    
+
     // Check for unclear response indicators
     const unclearIndicators = [
-      'i don\'t know',
+      "i don't know",
       'not sure',
       'unclear',
       'what was the question',
       'can you repeat',
       'sorry what',
     ];
-    
-    const hasStutterPattern = stutterPatterns.some(pattern => pattern.test(lowerText));
-    const hasUnclearIndicator = unclearIndicators.some(phrase => lowerText.includes(phrase));
-    
+
+    const hasStutterPattern = stutterPatterns.some((pattern) =>
+      pattern.test(lowerText)
+    );
+    const hasUnclearIndicator = unclearIndicators.some((phrase) =>
+      lowerText.includes(phrase)
+    );
+
     return hasStutterPattern || hasUnclearIndicator;
   };
   const isCreatingResponseRef = useRef(false);
@@ -85,7 +103,7 @@ export function VoiceConversationRealtime({
     const missingFields = [];
 
     // 1. ESSENTIAL PROFILE INFORMATION (always ask if missing)
-    
+
     // Basic identity and contact
     if (!cvData.first_name && !cvData.firstName) {
       missingFields.push({
@@ -93,7 +111,7 @@ export function VoiceConversationRealtime({
         question: 'What is your full name?',
       });
     }
-    
+
     if (!cvData.location) {
       missingFields.push({
         field: 'location',
@@ -112,46 +130,56 @@ export function VoiceConversationRealtime({
     // Bio will be offered as a recommendation, not asked from scratch
 
     // 2. CAREER PROGRESSION (fundamental career information)
-    
+
     // Work experience - check both workExperience and workHistory fields
-    const hasWorkExperience = (cvData.workExperience && cvData.workExperience.length > 0) || 
-                              (cvData.workHistory && cvData.workHistory.length > 0);
-    
+    const hasWorkExperience =
+      (cvData.workExperience && cvData.workExperience.length > 0) ||
+      (cvData.workHistory && cvData.workHistory.length > 0);
+
     if (!hasWorkExperience) {
       missingFields.push({
         field: 'work_experience_overview',
-        question: 'Can you walk me through your work experience? Start with your most recent or current position.',
+        question:
+          'Can you walk me through your work experience? Start with your most recent or current position.',
       });
     } else {
       // If work experience exists, intelligently check if enhancements are needed
       // Only ask for achievements if the position seems important/recent and lacks detail
       const workExperience = cvData.workExperience || cvData.workHistory || [];
-      workExperience.forEach(
-        (exp: Record<string, any>, index: number) => {
-          const hasMinimalInfo = !exp.description || exp.description.length < 50;
-          const lacksAchievements = !exp.key_achievements || exp.key_achievements.length === 0;
-          const isRecentOrCurrent = exp.is_current || (exp.end_date && new Date(exp.end_date) > new Date('2020-01-01'));
-          const isSeniorRole = exp.position && (exp.position.toLowerCase().includes('senior') || 
-                                               exp.position.toLowerCase().includes('lead') || 
-                                               exp.position.toLowerCase().includes('director') || 
-                                               exp.position.toLowerCase().includes('manager'));
-          
-          // Only ask for achievements if it's a recent/current senior role that lacks detail
-          if (lacksAchievements && hasMinimalInfo && (isRecentOrCurrent || isSeniorRole)) {
-            missingFields.push({
-              field: `work_${index}_achievements`,
-              question: `What were your key achievements at ${exp.company}?`,
-            });
-          }
+      workExperience.forEach((exp: Record<string, any>, index: number) => {
+        const hasMinimalInfo = !exp.description || exp.description.length < 50;
+        const lacksAchievements =
+          !exp.key_achievements || exp.key_achievements.length === 0;
+        const isRecentOrCurrent =
+          exp.is_current ||
+          (exp.end_date && new Date(exp.end_date) > new Date('2020-01-01'));
+        const isSeniorRole =
+          exp.position &&
+          (exp.position.toLowerCase().includes('senior') ||
+            exp.position.toLowerCase().includes('lead') ||
+            exp.position.toLowerCase().includes('director') ||
+            exp.position.toLowerCase().includes('manager'));
+
+        // Only ask for achievements if it's a recent/current senior role that lacks detail
+        if (
+          lacksAchievements &&
+          hasMinimalInfo &&
+          (isRecentOrCurrent || isSeniorRole)
+        ) {
+          missingFields.push({
+            field: `work_${index}_achievements`,
+            question: `What were your key achievements at ${exp.company}?`,
+          });
         }
-      );
+      });
     }
 
     // Education - if completely missing, ask for it
     if (!cvData.education || cvData.education.length === 0) {
       missingFields.push({
         field: 'education_overview',
-        question: 'What is your educational background? Please include your highest degree and any relevant qualifications.',
+        question:
+          'What is your educational background? Please include your highest degree and any relevant qualifications.',
       });
     }
 
@@ -159,16 +187,19 @@ export function VoiceConversationRealtime({
     if (!cvData.boardExperience || cvData.boardExperience.length === 0) {
       missingFields.push({
         field: 'board_experience_check',
-        question: 'Do you have any board experience or non-executive director roles?',
+        question:
+          'Do you have any board experience or non-executive director roles?',
       });
     } else {
       // If board experience exists, intelligently check if enhancements are needed
       // Only ask for contributions if the role lacks meaningful detail
       cvData.boardExperience.forEach(
         (exp: Record<string, any>, index: number) => {
-          const hasMinimalInfo = !exp.description || exp.description.length < 30;
-          const lacksContributions = !exp.key_contributions || exp.key_contributions.length === 0;
-          
+          const hasMinimalInfo =
+            !exp.description || exp.description.length < 30;
+          const lacksContributions =
+            !exp.key_contributions || exp.key_contributions.length === 0;
+
           // Only ask for contributions if it's a detailed role that lacks specifics
           if (lacksContributions && hasMinimalInfo && exp.organization) {
             missingFields.push({
@@ -181,11 +212,12 @@ export function VoiceConversationRealtime({
     }
 
     // 3. PROFESSIONAL ATTRIBUTES (essential for matching)
-    
+
     if (!cvData.skills || cvData.skills.length === 0) {
       missingFields.push({
         field: 'skills',
-        question: 'What are your key professional skills and areas of expertise?',
+        question:
+          'What are your key professional skills and areas of expertise?',
       });
     }
 
@@ -204,17 +236,21 @@ export function VoiceConversationRealtime({
     }
 
     // 4. CAREER PREFERENCES (essential for job matching)
-    
+
     if (!cvData.availability_status) {
-      const availabilityOptions = Object.values(AVAILABILITY_STATUS_LABELS).join(', ').replace(/,([^,]*)$/, ', or$1');
+      const availabilityOptions = Object.values(AVAILABILITY_STATUS_LABELS)
+        .join(', ')
+        .replace(/,([^,]*)$/, ', or$1');
       missingFields.push({
         field: 'availability_status',
         question: `When would you be available to start a new role? Choose from: ${availabilityOptions.toLowerCase()}.`,
       });
     }
-    
+
     if (!cvData.remote_work_preference) {
-      const remoteWorkOptions = Object.values(REMOTE_WORK_LABELS).join(', ').replace(/,([^,]*)$/, ', or$1');
+      const remoteWorkOptions = Object.values(REMOTE_WORK_LABELS)
+        .join(', ')
+        .replace(/,([^,]*)$/, ', or$1');
       missingFields.push({
         field: 'remote_work_preference',
         question: `What are your remote work preferences? Choose from: ${remoteWorkOptions.toLowerCase()}.`,
@@ -229,7 +265,7 @@ export function VoiceConversationRealtime({
     }
 
     // 5. OPTIONAL PROFESSIONAL LINKS (nice to have)
-    
+
     // Check LinkedIn URL with all possible field variations
     const hasLinkedIn =
       cvData.linkedin_url ||
@@ -285,10 +321,13 @@ export function VoiceConversationRealtime({
   const initializeAIContext = useCallback(() => {
     const missingFields = analyzeCVData();
     const userName = `${cvData.first_name || cvData.firstName || ''}`.trim();
-    
+
     // Generate smart profile data
     const smartProfile = generateSmartProfile(cvData);
-    const intelligentQuestions = generateIntelligentQuestions(cvData, missingFields);
+    const intelligentQuestions = generateIntelligentQuestions(
+      cvData,
+      missingFields
+    );
 
     // Check LinkedIn URL with all possible field variations
     const hasLinkedIn =
@@ -319,8 +358,8 @@ export function VoiceConversationRealtime({
     Profile we've intelligently generated:
     - Professional Headline: ${smartProfile.professional_headline}
     - Bio Summary: ${smartProfile.bio.substring(0, 150)}...
-    ${smartProfile.skills_recommendation?.length > 0 ? `- Recommended Skills: ${smartProfile.skills_recommendation.slice(0, 3).join(', ')}` : ''}
-    ${smartProfile.sectors_recommendation?.length > 0 ? `- Industry Sectors: ${smartProfile.sectors_recommendation.join(', ')}` : ''}
+    ${smartProfile.skills_recommendation && smartProfile.skills_recommendation.length > 0 ? `- Recommended Skills: ${smartProfile.skills_recommendation.slice(0, 3).join(', ')}` : ''}
+    ${smartProfile.sectors_recommendation && smartProfile.sectors_recommendation.length > 0 ? `- Industry Sectors: ${smartProfile.sectors_recommendation.join(', ')}` : ''}
     
     Here's what we know from the CV:
     - Name: ${userName}
@@ -328,16 +367,17 @@ export function VoiceConversationRealtime({
     - Location: ${cvData.location || 'Not specified'}
     - Email: ${cvData.email || 'Not specified'}
     - LinkedIn: ${hasLinkedIn ? linkedInUrl : 'Not specified'}
-    ${(cvData.workExperience?.length > 0 || cvData.workHistory?.length > 0) ? `- Work Experience: ${(cvData.workExperience || cvData.workHistory || []).length} positions` : ''}
+    ${cvData.workExperience?.length > 0 || cvData.workHistory?.length > 0 ? `- Work Experience: ${(cvData.workExperience || cvData.workHistory || []).length} positions` : ''}
     ${cvData.boardExperience?.length > 0 ? `- Board Experience: ${cvData.boardExperience.length} positions` : ''}
     ${cvData.education?.length > 0 ? `- Education: ${cvData.education.length} qualifications` : ''}
     
     Smart questions to ask (show understanding, don't ask for derivable info):
     ${intelligentQuestions.join('\n')}
     
-    ${cvData.professionalBio ? 
-      `We already have your professional summary from your CV: "${cvData.professionalBio.substring(0, 100)}..." - this looks comprehensive!` :
-      `For the professional summary, present our generated bio and ask if they'd like to use it or modify it:
+    ${
+      cvData.professionalBio
+        ? `We already have your professional summary from your CV: "${cvData.professionalBio.substring(0, 100)}..." - this looks comprehensive!`
+        : `For the professional summary, present our generated bio and ask if they'd like to use it or modify it:
       "I've drafted a professional summary for you: '${smartProfile.bio}' - Would you like to use this, or would you prefer to describe yourself differently?"`
     }
     
@@ -542,14 +582,14 @@ export function VoiceConversationRealtime({
             isCreatingResponseRef.current = true;
             responseStartTimeRef.current = Date.now();
             setShowRetryButton(false);
-            
+
             // Show retry button after 6 seconds if initial response is still processing
             setTimeout(() => {
               if (isCreatingResponseRef.current) {
                 setShowRetryButton(true);
               }
             }, 6000);
-            
+
             const createResponse = {
               type: 'response.create',
               response: {
@@ -580,14 +620,14 @@ export function VoiceConversationRealtime({
               isCreatingResponseRef.current = true;
               responseStartTimeRef.current = Date.now();
               setShowRetryButton(false);
-              
+
               // Show retry button after 6 seconds if response is still processing
               setTimeout(() => {
                 if (isCreatingResponseRef.current) {
                   setShowRetryButton(true);
                 }
               }, 6000);
-              
+
               const createResponse = {
                 type: 'response.create',
                 response: {
@@ -601,19 +641,23 @@ export function VoiceConversationRealtime({
                 {},
                 'VOICE'
               );
-              
+
               // Check how long the current response has been processing
               const currentTime = Date.now();
-              const responseProcessingTime = currentTime - responseStartTimeRef.current;
-              
+              const responseProcessingTime =
+                currentTime - responseStartTimeRef.current;
+
               // If response has been processing for more than 5 seconds, allow interruption
               // This handles cases where the AI is stuck or user wants to clarify
               if (responseProcessingTime > 5000) {
-                logger.info('Response processing too long, allowing user interruption', 
-                  { processingTimeMs: responseProcessingTime }, 'VOICE');
+                logger.info(
+                  'Response processing too long, allowing user interruption',
+                  { processingTimeMs: responseProcessingTime },
+                  'VOICE'
+                );
                 isCreatingResponseRef.current = false;
                 responseStartTimeRef.current = Date.now();
-                
+
                 // Create new response for the latest user input
                 const createResponse = {
                   type: 'response.create',
@@ -633,14 +677,17 @@ export function VoiceConversationRealtime({
             ) {
               const userText = event.item.content[0].transcript;
               logger.debug('User speech captured', { userText }, 'VOICE');
-              
+
               // Check if this looks like an unclear/stuttered response
               const isUnclear = checkIfUnclearUserResponse(userText);
               if (isUnclear) {
-                logger.info('Detected unclear user response, prompting for clarification', 
-                  { userText, textLength: userText.length }, 'VOICE');
+                logger.info(
+                  'Detected unclear user response, prompting for clarification',
+                  { userText, textLength: userText.length },
+                  'VOICE'
+                );
               }
-              
+
               setConversationEvents((prev) => [
                 ...prev,
                 {
@@ -700,7 +747,10 @@ export function VoiceConversationRealtime({
                   text.length / charactersPerSecond
                 );
                 // Very minimal buffer - just 1 second, capped at 4 seconds max
-                const playbackTime = Math.min(Math.max(estimatedSeconds + 1, 2), 4); // Minimum 2 seconds, Maximum 4 seconds
+                const playbackTime = Math.min(
+                  Math.max(estimatedSeconds + 1, 2),
+                  4
+                ); // Minimum 2 seconds, Maximum 4 seconds
                 logger.debug(
                   'Calculated playback time',
                   {
@@ -838,7 +888,7 @@ export function VoiceConversationRealtime({
       isCreatingResponseRef.current = false;
       responseStartTimeRef.current = 0;
       setShowRetryButton(false);
-      
+
       // Add a system message to help the AI understand what happened
       if (dcRef.current) {
         const systemMessage = {
@@ -846,14 +896,16 @@ export function VoiceConversationRealtime({
           item: {
             type: 'message',
             role: 'system',
-            content: [{
-              type: 'input_text',
-              text: 'The user had trouble with their previous response and wants to try again. Please ask the current question again clearly and offer specific examples if needed.'
-            }]
-          }
+            content: [
+              {
+                type: 'input_text',
+                text: 'The user had trouble with their previous response and wants to try again. Please ask the current question again clearly and offer specific examples if needed.',
+              },
+            ],
+          },
         };
         dcRef.current.send(JSON.stringify(systemMessage));
-        
+
         // Trigger new response
         setTimeout(() => {
           if (dcRef.current && !isCreatingResponseRef.current) {
@@ -976,7 +1028,7 @@ export function VoiceConversationRealtime({
                     variant="outline"
                     size="sm"
                     onClick={forceRetry}
-                    className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                    className="border-orange-200 text-orange-600 hover:bg-orange-50"
                   >
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Retry

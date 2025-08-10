@@ -95,7 +95,9 @@ export const useUserRole = () => {
     if (isOnboardingPath) {
       // Only log once across all instances
       if (!hasLoggedRef.current) {
-        console.log('[useUserRole] Onboarding page detected - using minimal profile');
+        console.log(
+          '[useUserRole] Onboarding page detected - using minimal profile'
+        );
         hasLoggedRef.current = true;
       }
       // Return minimal profile for onboarding
@@ -110,14 +112,14 @@ export const useUserRole = () => {
         permissions: {},
         role_display_name: 'Candidate',
       };
-      
+
       // Cache the profile
       profileCache = {
         userId: user.id,
         profile: onboardingProfile,
         timestamp: now,
       };
-      
+
       setUserProfile(onboardingProfile);
       setLoading(false);
       return;
@@ -178,14 +180,14 @@ export const useUserRole = () => {
 
         if (profileData) {
           const mappedProfile = mapProfileData(profileData);
-          
+
           // Cache the profile
           profileCache = {
             userId: user.id,
             profile: mappedProfile,
             timestamp: Date.now(),
           };
-          
+
           setUserProfile(mappedProfile);
         }
       } catch (err) {

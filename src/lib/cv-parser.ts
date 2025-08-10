@@ -632,7 +632,11 @@ function getFieldValue(data: ExtractedCVData, field: string): any {
     email: ['email'],
     phone: ['phone', 'phoneNumber'],
     location: ['location'],
-    currentRole: ['currentRole', 'professionalHeadline', 'professional_headline'],
+    currentRole: [
+      'currentRole',
+      'professionalHeadline',
+      'professional_headline',
+    ],
     currentCompany: ['currentCompany', 'company'],
     professionalBio: ['professionalBio', 'bio', 'summary'],
     workHistory: ['workHistory', 'workExperience', 'work_history'],
@@ -1232,7 +1236,8 @@ export function mapCVDataToProfile(
   if (cvData.email) profileData.email = cvData.email;
   if (cvData.phone) profileData.phone = cvData.phone;
   if (cvData.location) profileData.location = cvData.location;
-  if (cvData.professionalHeadline) profileData.professional_headline = cvData.professionalHeadline;
+  if (cvData.professionalHeadline)
+    profileData.professional_headline = cvData.professionalHeadline;
   if (cvData.summary) profileData.bio = cvData.summary;
   if (cvData.linkedInUrl) profileData.linkedin_url = cvData.linkedInUrl;
   if (cvData.website) profileData.website = cvData.website;

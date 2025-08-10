@@ -33,11 +33,11 @@ import {
   Plus,
 } from 'lucide-react';
 import { logger } from '@/lib/logger';
-import { 
+import {
   AVAILABILITY_STATUS_LABELS,
   REMOTE_WORK_LABELS,
   AvailabilityStatus,
-  RemoteWorkPreference
+  RemoteWorkPreference,
 } from '@/lib/enums';
 
 interface ProfileReviewProps {
@@ -480,11 +480,13 @@ export function ProfileReview({
                   <SelectValue placeholder="Select availability" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(AVAILABILITY_STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  {Object.entries(AVAILABILITY_STATUS_LABELS).map(
+                    ([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>

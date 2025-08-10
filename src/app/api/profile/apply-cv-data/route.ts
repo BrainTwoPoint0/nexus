@@ -287,8 +287,6 @@ export async function POST(request: NextRequest) {
     // Mark onboarding as completed
     profileUpdates.onboarding_completed = true;
 
-
-
     // Update profile if there are changes
     if (Object.keys(profileUpdates).length > 0) {
       const { data: profileData, error: updateError } = await supabase
@@ -303,16 +301,27 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         console.error('Profile update error:', updateError);
-        console.error('Failed profile data:', JSON.stringify({
-          id: user.id,
-          ...profileUpdates,
-          updated_at: new Date().toISOString(),
-        }, null, 2));
-        logger.error('Profile update failed', {
-          error: updateError,
-          profileUpdates: Object.keys(profileUpdates),
-          userId: user.id
-        }, 'API');
+        console.error(
+          'Failed profile data:',
+          JSON.stringify(
+            {
+              id: user.id,
+              ...profileUpdates,
+              updated_at: new Date().toISOString(),
+            },
+            null,
+            2
+          )
+        );
+        logger.error(
+          'Profile update failed',
+          {
+            error: updateError,
+            profileUpdates: Object.keys(profileUpdates),
+            userId: user.id,
+          },
+          'API'
+        );
         return NextResponse.json(
           { error: updateError.message },
           { status: 500 }

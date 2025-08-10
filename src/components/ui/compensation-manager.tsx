@@ -160,7 +160,8 @@ export function CompensationManager({
   };
 
   const hasCompensationData =
-    compensation.compensation_expectation_min || compensation.compensation_expectation_max;
+    compensation.compensation_expectation_min ||
+    compensation.compensation_expectation_max;
 
   return (
     <div className="space-y-4">

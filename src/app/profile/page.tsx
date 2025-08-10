@@ -50,7 +50,11 @@ import {
   Calendar,
   FileText,
 } from 'lucide-react';
-import { AvailabilityStatus, RemoteWorkPreference, UserRole } from '@/lib/enums';
+import {
+  AvailabilityStatus,
+  RemoteWorkPreference,
+  UserRole,
+} from '@/lib/enums';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -741,8 +745,10 @@ export default function ProfilePage() {
       const { error } = await supabase
         .from('profiles')
         .update({
-          compensation_expectation_min: compensationData.compensation_expectation_min,
-          compensation_expectation_max: compensationData.compensation_expectation_max,
+          compensation_expectation_min:
+            compensationData.compensation_expectation_min,
+          compensation_expectation_max:
+            compensationData.compensation_expectation_max,
           compensation_currency: compensationData.compensation_currency,
           compensation_type: compensationData.compensation_type,
           equity_interest: compensationData.equity_interest,
@@ -756,8 +762,10 @@ export default function ProfilePage() {
         prev
           ? {
               ...prev,
-              compensation_expectation_min: compensationData.compensation_expectation_min,
-              compensation_expectation_max: compensationData.compensation_expectation_max,
+              compensation_expectation_min:
+                compensationData.compensation_expectation_min,
+              compensation_expectation_max:
+                compensationData.compensation_expectation_max,
               compensation_currency: compensationData.compensation_currency,
               compensation_type: compensationData.compensation_type,
               equity_interest: compensationData.equity_interest,
@@ -1846,8 +1854,10 @@ export default function ProfilePage() {
               <TabsContent value="compensation" className="space-y-6">
                 <CompensationManager
                   compensation={{
-                    compensation_expectation_min: profile.compensation_expectation_min,
-                    compensation_expectation_max: profile.compensation_expectation_max,
+                    compensation_expectation_min:
+                      profile.compensation_expectation_min,
+                    compensation_expectation_max:
+                      profile.compensation_expectation_max,
                     compensation_currency:
                       profile.compensation_currency as CompensationCurrency,
                     compensation_type: profile.compensation_type,

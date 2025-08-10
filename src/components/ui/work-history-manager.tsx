@@ -480,7 +480,9 @@ export function WorkHistoryManager({
               <Button
                 onClick={handleSave}
                 disabled={
-                  !formData.company || !formData.position || !formData.start_date
+                  !formData.company ||
+                  !formData.position ||
+                  !formData.start_date
                 }
               >
                 {editingHistory ? 'Update' : 'Add'} Experience

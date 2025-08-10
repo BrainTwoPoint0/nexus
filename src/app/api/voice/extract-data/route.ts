@@ -1,27 +1,30 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createClient } from '@/lib/supabaseServer';
-import { 
-  parseAvailabilityFromText, 
+import {
+  parseAvailabilityFromText,
   parseRemoteWorkFromText,
   isValidAvailabilityStatus,
   isValidRemoteWorkPreference,
   AVAILABILITY_STATUS_VALUES,
-  REMOTE_WORK_VALUES 
+  REMOTE_WORK_VALUES,
 } from '@/lib/enums';
 import { generateSmartProfile } from '@/lib/profile-intelligence';
 
 /**
  * Detect if the user's response was unclear, stuttered, or contained no useful information
  */
-function checkForUnclearResponse(transcript: string, extractedData: any): boolean {
+function checkForUnclearResponse(
+  transcript: string,
+  extractedData: any
+): boolean {
   const lowerTranscript = transcript.toLowerCase().trim();
-  
+
   // Check if transcript is very short (likely just stutters or unclear sounds)
   if (lowerTranscript.length < 10) {
     return true;
   }
-  
+
   // Check for common unclear response patterns
   const unclearPatterns = [
     /^(um|uh|er|ah|hmm|well)\s*$/i,
@@ -29,17 +32,24 @@ function checkForUnclearResponse(transcript: string, extractedData: any): boolea
     /^(what|huh|sorry)\s*$/i,
     /^(um|uh|er)\s+(um|uh|er)\s*$/i, // Multiple stutters
   ];
-  
-  const hasUnclearPattern = unclearPatterns.some(pattern => pattern.test(lowerTranscript));
-  
+
+  const hasUnclearPattern = unclearPatterns.some((pattern) =>
+    pattern.test(lowerTranscript)
+  );
+
   // Check if no meaningful data was extracted (empty object or only system fields)
-  const meaningfulFields = Object.keys(extractedData).filter(key => 
-    !key.startsWith('_') && extractedData[key] !== null && extractedData[key] !== ''
+  const meaningfulFields = Object.keys(extractedData).filter(
+    (key) =>
+      !key.startsWith('_') &&
+      extractedData[key] !== null &&
+      extractedData[key] !== ''
   );
   const hasNoMeaningfulData = meaningfulFields.length === 0;
-  
+
   // Return true if it looks like an unclear response
-  return hasUnclearPattern || (hasNoMeaningfulData && lowerTranscript.length < 50);
+  return (
+    hasUnclearPattern || (hasNoMeaningfulData && lowerTranscript.length < 50)
+  );
 }
 
 /**
@@ -48,28 +58,28 @@ function checkForUnclearResponse(transcript: string, extractedData: any): boolea
  */
 function validateAndFixEnumValues(extractedData: any, transcript: string): any {
   const validated = { ...extractedData };
-  
+
   // Validate availability_status
   if (validated.availability_status) {
     if (!isValidAvailabilityStatus(validated.availability_status)) {
       logger.warn(
         'Invalid availability_status from AI, attempting natural language parsing',
-        { 
+        {
           originalValue: validated.availability_status,
-          validOptions: AVAILABILITY_STATUS_VALUES 
+          validOptions: AVAILABILITY_STATUS_VALUES,
         },
         'VOICE_API'
       );
-      
+
       // Try to parse from the original transcript
       const parsedAvailability = parseAvailabilityFromText(transcript);
       if (parsedAvailability) {
         validated.availability_status = parsedAvailability;
         logger.info(
           'Successfully fixed availability_status using natural language parsing',
-          { 
+          {
             original: extractedData.availability_status,
-            fixed: parsedAvailability 
+            fixed: parsedAvailability,
           },
           'VOICE_API'
         );
@@ -84,28 +94,28 @@ function validateAndFixEnumValues(extractedData: any, transcript: string): any {
       }
     }
   }
-  
+
   // Validate remote_work_preference
   if (validated.remote_work_preference) {
     if (!isValidRemoteWorkPreference(validated.remote_work_preference)) {
       logger.warn(
         'Invalid remote_work_preference from AI, attempting natural language parsing',
-        { 
+        {
           originalValue: validated.remote_work_preference,
-          validOptions: REMOTE_WORK_VALUES 
+          validOptions: REMOTE_WORK_VALUES,
         },
         'VOICE_API'
       );
-      
+
       // Try to parse from the original transcript
       const parsedRemoteWork = parseRemoteWorkFromText(transcript);
       if (parsedRemoteWork) {
         validated.remote_work_preference = parsedRemoteWork;
         logger.info(
           'Successfully fixed remote_work_preference using natural language parsing',
-          { 
+          {
             original: extractedData.remote_work_preference,
-            fixed: parsedRemoteWork 
+            fixed: parsedRemoteWork,
           },
           'VOICE_API'
         );
@@ -120,7 +130,7 @@ function validateAndFixEnumValues(extractedData: any, transcript: string): any {
       }
     }
   }
-  
+
   return validated;
 }
 
@@ -306,59 +316,81 @@ CRITICAL RULES:
         // Clean up the response to ensure it's valid JSON
         const cleanContent = content.replace(/```json\n?|```\n?/g, '').trim();
         extractedData = JSON.parse(cleanContent);
-        
+
         // Check if this was an unclear/stuttered response that yielded no useful data
-        const isUnclearResponse = checkForUnclearResponse(transcript, extractedData);
+        const isUnclearResponse = checkForUnclearResponse(
+          transcript,
+          extractedData
+        );
         if (isUnclearResponse) {
-          logger.info('Detected unclear response from user', 
-            { transcriptLength: transcript.length, extractedFields: Object.keys(extractedData).length }, 
+          logger.info(
+            'Detected unclear response from user',
+            {
+              transcriptLength: transcript.length,
+              extractedFields: Object.keys(extractedData).length,
+            },
             'VOICE_API'
           );
           // Return minimal data to indicate the response was unclear
           extractedData._unclear_response = true;
         }
-        
+
         // Validate and fix enum values using natural language parsing
         extractedData = validateAndFixEnumValues(extractedData, transcript);
-        
+
         // Add auto-generated professional headline and bio if not extracted
         if (cvData) {
           const smartProfile = generateSmartProfile(cvData);
-          
+
           // Add professional headline if not in extracted data
-          if (!extractedData.professional_headline && smartProfile.professional_headline) {
-            extractedData.professional_headline = smartProfile.professional_headline;
-            logger.info('Added auto-generated professional headline', 
-              { headline: smartProfile.professional_headline }, 
+          if (
+            !extractedData.professional_headline &&
+            smartProfile.professional_headline
+          ) {
+            extractedData.professional_headline =
+              smartProfile.professional_headline;
+            logger.info(
+              'Added auto-generated professional headline',
+              { headline: smartProfile.professional_headline },
               'VOICE_API'
             );
           }
-          
+
           // If user accepted the generated bio (check transcript for acceptance)
           if (!extractedData.bio && smartProfile.bio) {
             // Check if user accepted the bio recommendation in the conversation
-            const bioAccepted = transcript.toLowerCase().includes('yes') && 
-                               (transcript.toLowerCase().includes('use this') || 
-                                transcript.toLowerCase().includes('sounds good') ||
-                                transcript.toLowerCase().includes('that works') ||
-                                transcript.toLowerCase().includes('perfect'));
-            
+            const bioAccepted =
+              transcript.toLowerCase().includes('yes') &&
+              (transcript.toLowerCase().includes('use this') ||
+                transcript.toLowerCase().includes('sounds good') ||
+                transcript.toLowerCase().includes('that works') ||
+                transcript.toLowerCase().includes('perfect'));
+
             if (bioAccepted) {
               extractedData.bio = smartProfile.bio;
-              logger.info('User accepted auto-generated bio', 
-                { bioLength: smartProfile.bio.length }, 
+              logger.info(
+                'User accepted auto-generated bio',
+                { bioLength: smartProfile.bio.length },
                 'VOICE_API'
               );
             }
           }
-          
+
           // Add recommended skills if mentioned positively
-          if (!extractedData.skills && smartProfile.skills_recommendation?.length > 0) {
+          if (
+            !extractedData.skills &&
+            smartProfile.skills_recommendation &&
+            smartProfile.skills_recommendation.length > 0
+          ) {
             extractedData.skills = smartProfile.skills_recommendation;
           }
-          
+
           // Add recommended sectors
-          if (!extractedData.sectors && smartProfile.sectors_recommendation?.length > 0) {
+          if (
+            !extractedData.sectors &&
+            smartProfile.sectors_recommendation &&
+            smartProfile.sectors_recommendation.length > 0
+          ) {
             extractedData.sectors = smartProfile.sectors_recommendation;
           }
         }

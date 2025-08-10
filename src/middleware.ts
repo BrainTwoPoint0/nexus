@@ -96,7 +96,8 @@ export async function middleware(request: NextRequest) {
 
     const redirectUrl = request.nextUrl.clone();
     // If onboarding not completed, send to onboarding, otherwise to dashboard
-    redirectUrl.pathname = !profile || !profile.onboarding_completed ? '/onboarding' : '/dashboard';
+    redirectUrl.pathname =
+      !profile || !profile.onboarding_completed ? '/onboarding' : '/dashboard';
     return NextResponse.redirect(redirectUrl);
   }
 

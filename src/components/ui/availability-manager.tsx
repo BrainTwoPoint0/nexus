@@ -528,7 +528,8 @@ export function AvailabilityManager({
                 onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    remote_work_preference: (value as RemoteWorkPreference) || null,
+                    remote_work_preference:
+                      (value as RemoteWorkPreference) || null,
                   })
                 }
               >
