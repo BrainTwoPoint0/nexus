@@ -286,29 +286,49 @@ export function VoiceConversationRealtime({
       });
     }
 
-    logger.debug(
-      'Missing fields analysis',
+    // Enhanced logging to debug missing fields detection
+    logger.info(
+      '🔍 MISSING FIELDS ANALYSIS - CRITICAL DEBUG INFO',
       {
         missingCount: missingFields.length,
+        missingFieldsList: missingFields.map((f) => f.field).join(', '),
         fields: missingFields,
         cvDataKeys: Object.keys(cvData || {}),
-        fieldChecks: {
+        criticalChecks: {
+          website: {
+            exists: !!cvData.website,
+            value: cvData.website,
+            willAsk: !cvData.website,
+          },
+          compensation: {
+            min: cvData.compensation_expectation_min,
+            max: cvData.compensation_expectation_max,
+            hasMin: !!cvData.compensation_expectation_min,
+            willAsk: !cvData.compensation_expectation_min,
+          },
           linkedIn: {
             linkedin_url: cvData.linkedin_url,
             linkedinUrl: cvData.linkedinUrl,
             linkedInUrl: cvData.linkedInUrl,
             linkedin: cvData.linkedin,
             hasLinkedIn: hasLinkedIn,
+            willAsk: !hasLinkedIn,
           },
           skills: {
             exists: !!cvData.skills,
             length: cvData.skills?.length || 0,
             value: cvData.skills,
+            willAsk: !cvData.skills || cvData.skills.length === 0,
           },
-          languages: {
-            exists: !!cvData.languages,
-            length: cvData.languages?.length || 0,
-            value: cvData.languages,
+          availabilityStatus: {
+            exists: !!cvData.availability_status,
+            value: cvData.availability_status,
+            willAsk: !cvData.availability_status,
+          },
+          remoteWork: {
+            exists: !!cvData.remote_work_preference,
+            value: cvData.remote_work_preference,
+            willAsk: !cvData.remote_work_preference,
           },
         },
       },
@@ -370,6 +390,11 @@ export function VoiceConversationRealtime({
     ${cvData.workExperience?.length > 0 || cvData.workHistory?.length > 0 ? `- Work Experience: ${(cvData.workExperience || cvData.workHistory || []).length} positions` : ''}
     ${cvData.boardExperience?.length > 0 ? `- Board Experience: ${cvData.boardExperience.length} positions` : ''}
     ${cvData.education?.length > 0 ? `- Education: ${cvData.education.length} qualifications` : ''}
+    
+    🚨 CRITICAL: MISSING FIELDS YOU MUST ASK ABOUT (${missingFields.length} total):
+    ${missingFields.map((field, index) => `${index + 1}. REQUIRED: ${field.field} - "${field.question}"`).join('\n    ')}
+    
+    ⚠️ IMPORTANT: You have ${missingFields.length} questions to ask. DO NOT end the conversation until you have asked about ALL ${missingFields.length} fields above.
     
     Smart questions to ask (show understanding, don't ask for derivable info):
     ${intelligentQuestions.join('\n')}
@@ -738,19 +763,15 @@ export function VoiceConversationRealtime({
 
               // Calculate estimated playback time based on message length
               const calculatePlaybackTime = (text: string) => {
-                // Much faster speaking rate calculation
-                // Aim for ~200 words per minute (3.33 words per second)
+                // Average speaking rate: ~150 words per minute (2.5 words per second)
                 // Average word length: ~5 characters
-                // So roughly 16-17 characters per second
-                const charactersPerSecond = 17;
+                // So roughly 12.5 characters per second
+                const charactersPerSecond = 12;
                 const estimatedSeconds = Math.ceil(
                   text.length / charactersPerSecond
                 );
-                // Very minimal buffer - just 1 second, capped at 4 seconds max
-                const playbackTime = Math.min(
-                  Math.max(estimatedSeconds + 1, 2),
-                  4
-                ); // Minimum 2 seconds, Maximum 4 seconds
+                // Add 2 second buffer for safety (no maximum cap - let it grow dynamically)
+                const playbackTime = Math.max(estimatedSeconds + 2, 3); // Minimum 3 seconds, no maximum
                 logger.debug(
                   'Calculated playback time',
                   {
